@@ -44,3 +44,13 @@
 .driver-opt-sub    { font-size:11px; color:var(--text-faint); }
 .driver-opt-info   { flex:1; min-width:0; }
 .driver-opt-rating { font-size:13px; font-weight:700; color:var(--amber); }
+
+@media (max-width: 680px) {
+  .orders-toolbar { flex-direction: column; align-items: stretch; }
+  .search-wrap { width: 100%; }
+  .status-filters { overflow-x: auto; padding-bottom: 4px; flex-wrap: nowrap; }
+  .filter-btn { flex-shrink: 0; }
+}
+@media (max-width: 480px) {
+  .table-wrap { font-size: 12px; }
+}

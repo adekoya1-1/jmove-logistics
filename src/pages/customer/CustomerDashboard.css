@@ -57,3 +57,6 @@
 .qa-desc  { font-size:12px; color:var(--text-muted); margin-top:2px; }
 .qa-arrow { font-size:20px; color:var(--text-faint); margin-left:auto; }
 @media (max-width:680px) { .quick-actions { grid-template-columns:1fr; } }
+
+@media (max-width:600px){.cust-stats{grid-template-columns:1fr 1fr;}.quick-actions{grid-template-columns:1fr;}}
+@media (max-width:400px){.cust-stats{grid-template-columns:1fr;}}

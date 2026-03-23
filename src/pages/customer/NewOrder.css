@@ -110,3 +110,23 @@
 .pm-icon  { font-size: 22px; flex-shrink: 0; }
 .pm-label { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
 .pm-desc  { font-size: 12px; color: var(--text-muted); }
+
+/* ── Mobile responsive ── */
+@media (max-width: 600px) {
+  .new-order { max-width: 100%; }
+  .order-card { padding: 20px 16px; }
+  .step-bar { gap: 2px; }
+  .step-circle { width: 26px; height: 26px; font-size: 11px; }
+  .step-label { font-size: 10px; }
+  .step-line { flex: 1; }
+  .field-row { grid-template-columns: 1fr; }
+  .service-type-grid .service-option { padding: 11px 13px; }
+  .payment-method-grid .pm-option { padding: 11px 13px; }
+  .step-cta-row { flex-direction: column; }
+  .step-cta-row .btn-secondary { width: 100%; justify-content: center; }
+  .pricing-total { flex-direction: column; gap: 6px; text-align: center; }
+  .pt-total { font-size: 26px; }
+}
+@media (max-width: 400px) {
+  .step-label { display: none; }
+}

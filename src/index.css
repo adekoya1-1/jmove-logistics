@@ -351,3 +351,21 @@ tbody tr:hover td { background: var(--bg-elevated); }
   font-size: 13px; color: var(--text-faint);
 }
 .page-btns { display: flex; gap: 6px; }
+
+/* ── Global mobile overrides ── */
+@media (max-width: 768px) {
+  .page-content { padding: 16px !important; }
+  .page-title   { font-size: 18px; }
+  .stat-card .stat-value { font-size: 22px; }
+  .modal-box { margin: 8px; }
+  .modal-body { padding: 16px; }
+  .modal-header { padding: 14px 16px; }
+}
+@media (max-width: 480px) {
+  .btn-primary, .btn-secondary { font-size: 13px; padding: 9px 16px; }
+  .page-content { padding: 12px !important; }
+  table { font-size: 12px; }
+  thead th, tbody td { padding: 10px 10px; }
+  thead th:first-child, tbody td:first-child { padding-left: 12px; }
+  thead th:last-child,  tbody td:last-child  { padding-right: 12px; }
+}

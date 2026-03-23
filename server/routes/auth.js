@@ -58,11 +58,25 @@ router.post('/login', [
     const { password } = req.body;
     const email = req.body.email.toLowerCase().trim();
     const user = await User.findOne({ email });
-    if (!user || !user.isActive)
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
 
-    if (!await bcrypt.compare(password, user.password))
+    // User not found
+    if (!user) {
+      if (process.env.NODE_ENV !== 'production')
+        console.log(`[Login] No user found for email: ${email} — run: npm run seed`);
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    // User deactivated
+    if (!user.isActive)
+      return res.status(401).json({ success: false, message: 'Account has been deactivated. Contact admin.' });
+
+    // Wrong password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      if (process.env.NODE_ENV !== 'production')
+        console.log(`[Login] Wrong password for: ${email}`);
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
 
     const dp = user.role === 'driver' ? await DriverProfile.findOne({ userId: user._id }) : null;
     const tokens = makeTokens(user._id, user.role);

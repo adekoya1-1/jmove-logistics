@@ -1,6 +1,51 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import './Landing.css';
+
+function MobileNav() {
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  return (
+    <>
+      <nav className="landing-nav">
+        <div className="nav-inner">
+          <div className="nav-logo">
+            <img src="/logo-dark.png" alt="JMove Logistics" style={{ height:40, width:'auto', objectFit:'contain' }} />
+          </div>
+          {/* Desktop links */}
+          <div className="nav-links nav-links-desktop">
+            <a href="#services" className="nav-item">Services</a>
+            <a href="#tracking" className="nav-item">Track Shipment</a>
+            <a href="#about"    className="nav-item">About Us</a>
+            <a href="#why-us"   className="nav-item">Why JMove</a>
+            <Link to="/login"    className="nav-signin">Sign In</Link>
+            <Link to="/register" className="btn-primary nav-register">Get Started</Link>
+          </div>
+          {/* Mobile hamburger */}
+          <button className="nav-hamburger" onClick={() => setOpen(!open)} aria-label="Toggle menu">
+            {open
+              ? <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M4 4l14 14M18 4L4 18"/></svg>
+              : <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M3 6h16M3 11h16M3 16h16"/></svg>
+            }
+          </button>
+        </div>
+      </nav>
+      {/* Mobile drawer */}
+      {open && (
+        <div className="nav-drawer">
+          <a href="#services" className="nav-drawer-item" onClick={close}>Services</a>
+          <a href="#tracking" className="nav-drawer-item" onClick={close}>Track Shipment</a>
+          <a href="#about"    className="nav-drawer-item" onClick={close}>About Us</a>
+          <a href="#why-us"   className="nav-drawer-item" onClick={close}>Why JMove</a>
+          <div className="nav-drawer-actions">
+            <Link to="/login"    className="nav-drawer-signin" onClick={close}>Sign In</Link>
+            <Link to="/register" className="btn-primary nav-drawer-cta" onClick={close}>Get Started</Link>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 function TrackForm() {
   const [waybill, setWaybill] = useState('');
@@ -74,21 +119,7 @@ export default function Landing() {
       </div>
 
       {/* ── Nav ── */}
-      <nav className="landing-nav">
-        <div className="nav-inner">
-          <div className="nav-logo">
-            <img src="/logo-dark.png" alt="JMove Logistics" style={{ height:44, width:'auto', objectFit:'contain' }} />
-          </div>
-          <div className="nav-links">
-            <a href="#services" className="nav-item">Services</a>
-            <a href="#tracking" className="nav-item">Track Shipment</a>
-            <a href="#about" className="nav-item">About Us</a>
-            <a href="#why-us" className="nav-item">Why JMove</a>
-            <Link to="/login" className="nav-signin">Sign In</Link>
-            <Link to="/register" className="btn-primary nav-register">Get Started</Link>
-          </div>
-        </div>
-      </nav>
+      <MobileNav />
 
       {/* ── Hero ── */}
       <section className="hero">
