@@ -28,13 +28,11 @@ const server = createServer(app);
 // ── Socket.io ──────────────────────────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174',
-    ],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.some(o => origin.startsWith(o))) return callback(null, true);
+      if (process.env.NODE_ENV === 'production' && origin?.endsWith('.vercel.app')) return callback(null, true);
+      callback(new Error('Socket CORS blocked'));
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -47,18 +45,28 @@ app.set('io', io);
 
 // ── Security ───────────────────────────────────────────────────────────────
 app.use(helmet({ crossOriginEmbedderPolicy: false }));
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-];
+// Build allowed origins list — supports multiple comma-separated FRONTEND_URLs
+const buildOrigins = () => {
+  const base = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+  ];
+  if (process.env.FRONTEND_URL) {
+    process.env.FRONTEND_URL.split(',').forEach(u => base.push(u.trim()));
+  }
+  return base;
+};
+const allowedOrigins = buildOrigins();
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman)
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    // Allow no-origin requests (curl, Postman, mobile apps)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(o => origin.startsWith(o))) return callback(null, true);
+    // In production allow same Vercel deployment URLs (*.vercel.app)
+    if (process.env.NODE_ENV === 'production' && origin.endsWith('.vercel.app')) return callback(null, true);
     callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
@@ -84,7 +92,13 @@ app.use('/api/drivers',  driverRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users',    userRoutes);
 app.use('/api/tracking', trackingRoutes);
-app.get('/api/health', (_, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+app.get('/api/health', (_, res) => res.json({
+  status: 'ok',
+  service: 'JMove Logistics API',
+  uptime: Math.floor(process.uptime()),
+  environment: process.env.NODE_ENV || 'development',
+  timestamp: new Date().toISOString(),
+}));
 
 // ── 404 & Error ────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ success: false, message: `Route ${req.method} ${req.path} not found` }));
@@ -103,9 +117,11 @@ const PORT = process.env.PORT || 5000;
 connectDB().then(() => {
   server.listen(PORT, () => {
     console.log('');
-    console.log('  ⚡ JMove Logistics Server');
-    console.log(`  🚀 http://localhost:${PORT}`);
-    console.log(`  🌍 ${process.env.NODE_ENV || 'development'}`);
+    console.log('  🚛 JMove Logistics API');
+    console.log(`  🚀 Port: ${PORT}`);
+    console.log(`  🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`  ✅ MongoDB: connected`);
+    console.log(`  🏥 Health: http://localhost:${PORT}/api/health`);
     console.log('');
   });
 });

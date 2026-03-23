@@ -1,5 +1,5 @@
 {
-  "name": "swifthaul-server",
+  "name": "jmove-logistics-server",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -21,5 +21,9 @@
     "socket.io": "^4.7.5",
     "axios": "^1.7.2",
     "multer": "^2.0.0"
+  },
+  "description": "JMove Logistics Backend API",
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

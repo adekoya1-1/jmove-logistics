@@ -3,9 +3,28 @@ import react from '@vitejs/plugin-react-swc'
 
 export default defineConfig({
   plugins: [react()],
+
+  // ── Build optimizations ────────────────────────────────────────────────
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'esbuild',
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor:   ['react', 'react-dom', 'react-router-dom'],
+          charts:   ['recharts'],
+          socket:   ['socket.io-client'],
+          utils:    ['date-fns'],
+        },
+      },
+    },
+  },
+
+  // ── Dev server with proxy ──────────────────────────────────────────────
   server: {
     port: 5173,
-    // If 5173 is taken, Vite will use the next available port (5174, etc.)
     strictPort: false,
     proxy: {
       '/api': {
@@ -13,9 +32,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         configure: (proxy) => {
-          proxy.on('error', (err) => {
-            console.error('\n❌ Proxy error — is the backend running?');
-            console.error('   Run: cd server && npm run dev\n');
+          proxy.on('error', () => {
+            console.error('\n❌ Backend not running — cd server && npm run dev\n');
           });
         },
       },

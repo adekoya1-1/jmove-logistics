@@ -1,0 +1,40 @@
+# Render.com deployment configuration
+# This deploys the JMove Logistics backend API
+
+services:
+  - type: web
+    name: jmove-logistics-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false          # Set this in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a secure secret
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: PAYSTACK_SECRET_KEY
+        sync: false          # Set this in Render dashboard
+      - key: FRONTEND_URL
+        sync: false          # Set to your Vercel URL after deploying frontend
+      - key: EMAIL_FROM
+        value: noreply@jmovelogistics.com
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false

@@ -1,5 +1,5 @@
 {
-  "name": "swifthaul",
+  "name": "jmove-logistics",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -28,5 +28,6 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "vite": "^7.2.4"
-  }
+  },
+  "description": "JMove Logistics \u2014 On Time. Everytime."
 }
