@@ -1,0 +1,22 @@
+.admin-map-page { display:flex; flex-direction:column; gap:16px; height:calc(100vh - 120px); }
+.map-page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; flex-shrink:0; }
+.map-legend { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.legend-item { display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-muted); font-weight:500; }
+.legend-dot  { width:9px; height:9px; border-radius:50%; }
+.legend-dot.brand { background:var(--brand); }
+.legend-dot.green { background:var(--green); }
+.map-layout  { display:grid; grid-template-columns:1fr 256px; gap:14px; flex:1; min-height:0; }
+.map-container-card { overflow:hidden; }
+.map-canvas  { height:100%; background:var(--bg-elevated); position:relative; }
+.map-placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:14px; text-align:center; flex-direction:column; gap:6px; }
+.map-sidebar { padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+.map-sidebar-title { font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:space-between; color:var(--text); }
+.map-count   { background:var(--brand-dim); color:var(--brand); padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; }
+.map-driver-list { display:flex; flex-direction:column; gap:6px; }
+.map-driver-item { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:var(--radius); background:var(--bg-elevated); border:1px solid var(--border); }
+.map-driver-avatar { width:28px; height:28px; border-radius:var(--radius-sm); background:var(--brand-dim); color:var(--brand); font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.map-driver-name   { font-size:12px; font-weight:700; color:var(--text); }
+.map-driver-sub    { font-size:11px; color:var(--text-faint); text-transform:capitalize; }
+.map-driver-info   { flex:1; min-width:0; overflow:hidden; }
+.map-driver-info p { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media (max-width:900px) { .map-layout { grid-template-columns:1fr; } .admin-map-page { height:auto; } .map-canvas { height:340px; } }

@@ -1,0 +1,112 @@
+.new-order { display:flex; flex-direction:column; gap:18px; max-width:640px; }
+.step-bar  { display:flex; align-items:center; }
+.step-item { display:flex; align-items:center; flex:1; gap:8px; }
+.step-circle {
+  width:32px; height:32px; border-radius:50%; border:2px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;
+  flex-shrink:0; transition:all 0.2s; background:var(--bg-white); color:var(--text-faint);
+}
+.step-circle.active { border-color:var(--brand); background:var(--brand); color:#FFFFFF; }
+.step-circle.done   { border-color:var(--green); background:var(--green); color:#FFFFFF; }
+.step-label  { font-size:12px; color:var(--text-faint); white-space:nowrap; font-weight:500; }
+.step-label.active { color:var(--brand); font-weight:700; }
+.step-line   { flex:1; height:2px; background:var(--border); margin:0 6px; }
+.step-line.done { background:var(--green); }
+
+.order-card   { padding:28px 32px; }
+.order-step   { display:flex; flex-direction:column; gap:0; }
+.step-title   { font-size:18px; font-weight:700; color:var(--text); margin-bottom:22px; letter-spacing:-0.01em; }
+.order-fields { display:flex; flex-direction:column; gap:14px; }
+.order-divider{ height:1px; background:var(--border); margin:4px 0; }
+.field-row    { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+.fragile-toggle {
+  display:flex; align-items:flex-start; gap:10px; padding:12px 14px;
+  background:var(--bg-elevated); border:1.5px solid var(--border);
+  border-radius:var(--radius); cursor:pointer; transition:border-color 0.15s;
+}
+.fragile-toggle:hover { border-color:var(--border-strong); }
+.fragile-toggle input { width:16px; height:16px; accent-color:var(--brand); margin-top:2px; flex-shrink:0; }
+.fragile-label { font-size:13px; font-weight:600; color:var(--text); }
+.fragile-sub   { font-size:12px; color:var(--text-muted); margin-top:2px; }
+
+.step-cta     { width:100%; margin-top:22px; padding:13px; font-size:15px; }
+.step-cta-row { display:flex; gap:10px; margin-top:22px; }
+.step-cta-row .btn-secondary { flex-shrink:0; }
+.step-cta-row .step-cta     { flex:1; margin-top:0; }
+
+.pricing-box { border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+.pricing-row { display:flex; justify-content:space-between; align-items:center; padding:13px 18px; border-bottom:1px solid var(--border); font-size:14px; }
+.pr-label    { color:var(--text-muted); }
+.pr-val      { font-weight:600; color:var(--text); }
+.pricing-total {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:18px; background:var(--navy);
+}
+.pricing-total span:first-child { font-weight:700; font-size:15px; color:rgba(255,255,255,0.7); }
+.pt-total    { font-size:30px; font-weight:700; color:var(--gold); letter-spacing:-0.02em; }
+
+.order-success { align-items:center; text-align:center; gap:12px; }
+.success-icon  { width:72px; height:72px; border-radius:50%; background:var(--green-light); display:flex; align-items:center; justify-content:center; font-size:36px; }
+.success-sub   { font-size:14px; color:var(--text-muted); }
+.success-amount{ padding:20px 36px; background:var(--navy); border-radius:var(--radius-lg); margin:8px 0; }
+.sa-val { font-size:36px; font-weight:700; color:var(--gold); letter-spacing:-0.02em; }
+.sa-lbl { font-size:13px; color:rgba(255,255,255,0.5); margin-top:4px; }
+
+@media (max-width:480px) { .field-row { grid-template-columns:1fr; } .step-label { display:none; } }
+
+/* ── GIG-style additions ── */
+.order-error {
+  background: var(--red-light); border: 1px solid var(--brand-border);
+  color: var(--red); font-size: 13px; padding: 11px 16px;
+  border-radius: var(--radius); margin-bottom: 4px;
+}
+.od-section {
+  font-size: 11px; font-weight: 700; color: var(--brand);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding-bottom: 6px; border-bottom: 2px solid var(--brand);
+  display: inline-block;
+}
+.od-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ── Service type grid ── */
+.service-type-grid { display: flex; flex-direction: column; gap: 8px; }
+.service-option {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 13px 15px; border: 1.5px solid var(--border);
+  border-radius: var(--radius); cursor: pointer; transition: all 0.15s;
+  background: var(--bg-white);
+}
+.service-option:hover  { border-color: var(--border-strong); background: var(--bg-elevated); }
+.service-option.active { border-color: var(--brand); background: var(--brand-dim); }
+.so-header { display: flex; align-items: center; justify-content: space-between; }
+.so-label  { font-size: 14px; font-weight: 700; color: var(--text); }
+.so-extra  { font-size: 12px; font-weight: 700; color: var(--brand); background: var(--red-light); padding: 2px 8px; border-radius: 4px; }
+.so-desc   { font-size: 12px; color: var(--text-muted); }
+
+/* ── Quote route display ── */
+.quote-route {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px;
+}
+.qr-city  { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 700; color: var(--text); }
+.qr-dot   { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.qr-dot.origin { background: var(--brand); }
+.qr-dot.dest   { background: var(--green); }
+.qr-arrow { font-size: 18px; color: var(--text-faint); }
+.qr-badge { margin-left: auto; background: var(--blue-light); color: var(--blue); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.qr-eta   { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+/* ── Payment method grid ── */
+.payment-method-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.pm-option {
+  display: flex; align-items: flex-start; gap: 12px; padding: 13px 15px;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: all 0.15s; background: var(--bg-white);
+}
+.pm-option:hover  { border-color: var(--border-strong); background: var(--bg-elevated); }
+.pm-option.active { border-color: var(--brand); background: var(--brand-dim); }
+.pm-icon  { font-size: 22px; flex-shrink: 0; }
+.pm-label { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.pm-desc  { font-size: 12px; color: var(--text-muted); }

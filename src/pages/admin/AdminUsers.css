@@ -1,0 +1,12 @@
+.admin-users { display:flex; flex-direction:column; gap:18px; }
+.user-cell { display:flex; align-items:center; gap:10px; }
+.user-cell-avatar { width:34px; height:34px; border-radius:var(--radius-sm); background:var(--bg-elevated); border:1px solid var(--border); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--text-muted); }
+.role-badge { padding:2px 9px; border-radius:var(--radius-xs); font-size:11px; font-weight:700; text-transform:capitalize; letter-spacing:0.02em; }
+.role-customer { background:var(--blue-light); color:var(--blue); }
+.role-driver   { background:var(--purple-light); color:var(--purple); }
+.role-admin    { background:var(--red-light); color:var(--brand); }
+.toggle-btn { padding:5px 12px; border-radius:var(--radius-xs); font-size:11px; font-weight:700; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:5px; text-transform:uppercase; letter-spacing:0.03em; }
+.toggle-btn.deactivate { background:var(--red-light); color:var(--red); border-color:var(--brand-border); }
+.toggle-btn.deactivate:hover { background:rgba(212,5,17,0.15); }
+.toggle-btn.activate   { background:var(--green-light); color:var(--green); border-color:rgba(13,122,62,0.2); }
+.toggle-btn.activate:hover { background:rgba(13,122,62,0.18); }

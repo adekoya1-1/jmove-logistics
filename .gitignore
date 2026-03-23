@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Build output
+dist/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.production
+server/.env
+
+# Local DB & uploads (dev only)
+server/tsedaqah_store.json
+server/uploads/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log

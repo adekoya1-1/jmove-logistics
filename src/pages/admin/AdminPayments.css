@@ -1,0 +1,4 @@
+.admin-payments { display:flex; flex-direction:column; gap:18px; }
+.payment-total  { text-align:right; }
+.pt-label { font-size:12px; color:var(--text-muted); font-weight:500; }
+.pt-value { font-size:28px; font-weight:700; color:var(--green); letter-spacing:-0.02em; }

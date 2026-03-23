@@ -1,0 +1,13 @@
+.customer-orders { display:flex; flex-direction:column; gap:18px; }
+.order-row { display:flex; align-items:center; gap:14px; padding:14px 22px; border-bottom:1px solid var(--border); text-decoration:none; transition:background 0.12s; }
+.order-row:last-child { border-bottom:none; }
+.order-row:hover { background:var(--bg-elevated); }
+.or-icon   { width:36px; height:36px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:16px; }
+.or-info   { flex:1; min-width:0; }
+.or-top    { display:flex; align-items:center; gap:8px; margin-bottom:3px; flex-wrap:wrap; }
+.or-num    { font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--brand); }
+.or-addr   { font-size:12px; color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.or-right  { text-align:right; flex-shrink:0; }
+.or-amount { font-size:13px; font-weight:700; color:var(--text); }
+.or-date   { font-size:11px; color:var(--text-faint); margin-top:2px; }
+.or-arrow  { font-size:18px; color:var(--text-faint); }
