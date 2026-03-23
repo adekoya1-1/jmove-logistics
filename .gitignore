@@ -20,3 +20,5 @@ server/uploads/
 Thumbs.db
 .vscode/
 *.log
+.env # Ignore .env files in the root directory as well, if any
+.env.* # Ignore all .env files, including .env.local, .env.production, etc.
