@@ -135,6 +135,10 @@ const orderSchema = new mongoose.Schema({
 
   // Internal notes
   staffNotes: { type: String },
+
+  // Truck type selected for this shipment (optional — set when dynamic pricing used)
+  truckTypeId:   { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', default: null },
+  truckTypeName: { type: String, trim: true, default: null },
 }, { timestamps: true });
 
 // Payment schema
@@ -191,6 +195,37 @@ const driverEarningSchema = new mongoose.Schema({
   destinationCity: { type: String },
 }, { timestamps: true });
 
+// ── Distance Zone — admin-configurable pricing zones ──────────────────────
+const zoneSchema = new mongoose.Schema({
+  name:        { type: String, required: true, trim: true },
+  description: { type: String, trim: true, default: '' },
+  zoneNumber:  { type: Number, required: true, min: 0, max: 10 },
+  cities:      [{ type: String, lowercase: true, trim: true }],
+  isActive:    { type: Boolean, default: true },
+  sortOrder:   { type: Number, default: 0 },
+}, { timestamps: true });
+zoneSchema.index({ zoneNumber: 1 }, { unique: true });
+
+// ── Truck Type — vehicle capacity tiers for pricing ───────────────────────
+const truckTypeSchema = new mongoose.Schema({
+  name:         { type: String, required: true, trim: true },
+  description:  { type: String, trim: true, default: '' },
+  capacityTons: { type: Number, required: true, min: 0 },
+  icon:         { type: String, default: '🚛' },
+  sortOrder:    { type: Number, default: 0 },
+  isActive:     { type: Boolean, default: true },
+}, { timestamps: true });
+
+// ── Pricing Rule — base price for zone × truck type combination ───────────
+const pricingRuleSchema = new mongoose.Schema({
+  zoneId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Zone',      required: true },
+  truckTypeId: { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', required: true },
+  basePrice:   { type: Number, required: true, min: 0 },
+  pricePerKm:  { type: Number, default: 0, min: 0 },
+  isActive:    { type: Boolean, default: true },
+}, { timestamps: true });
+pricingRuleSchema.index({ zoneId: 1, truckTypeId: 1 }, { unique: true });
+
 // ── OTP Token — for email verification and password reset ──────────────────
 // Security design:
 //   • OTP is bcrypt-hashed (10 rounds) — never stored in plain text
@@ -225,5 +260,8 @@ export const Notification   = mongoose.model('Notification', notificationSchema)
 export const Review         = mongoose.model('Review', reviewSchema);
 export const DriverEarning  = mongoose.model('DriverEarning', driverEarningSchema);
 export const OtpToken       = mongoose.model('OtpToken', otpTokenSchema);
+export const Zone         = mongoose.model('Zone', zoneSchema);
+export const TruckType    = mongoose.model('TruckType', truckTypeSchema);
+export const PricingRule  = mongoose.model('PricingRule', pricingRuleSchema);
 
 export default connectDB;

@@ -15,7 +15,8 @@ import { randomBytes } from 'crypto';
 import { Order, Payment, User, DriverProfile, DriverEarning, Notification } from '../db.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate, validateAll, orderSchemas } from '../middleware/validate.js';
-import { calcPrice, getCityList } from '../utils/pricing.js';
+import { calcDynamicPrice } from '../services/pricingService.js';
+import { getCityList } from '../utils/pricing.js';
 import { sendOrderConfirmation, sendOrderUpdate, sendDriverAssignment } from '../utils/email.js';
 
 const router = Router();
@@ -40,7 +41,7 @@ router.get('/cities', (req, res) => {
 // ── POST /api/orders/calculate-price ────────────────────
 router.post('/calculate-price', validate(orderSchemas.calcPrice), async (req, res, next) => {
   try {
-    const pricing = calcPrice(req.body);
+    const pricing = await calcDynamicPrice(req.body);
     res.json({ success: true, data: pricing });
   } catch (e) { next(e); }
 });
@@ -71,10 +72,10 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       description, weight, quantity, category, isFragile, declaredValue, specialInstructions,
       serviceType, paymentMethod, codAmount,
       pickupLat, pickupLng, deliveryLat, deliveryLng,
-      staffNotes,
+      staffNotes, truckTypeId,
     } = req.body;
 
-    const pricing  = calcPrice({ originCity, destinationCity, weight, serviceType, isFragile, declaredValue });
+    const pricing  = await calcDynamicPrice({ originCity, destinationCity, weight, serviceType, isFragile, declaredValue, truckTypeId });
     const isAdmin  = req.user.role === 'admin';
 
     const order = await Order.create({
@@ -97,6 +98,8 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       serviceType: serviceType || 'standard',
       deliveryType:      pricing.deliveryType,
       estimatedDelivery: pricing.estimatedDelivery,
+      truckTypeId:       pricing.truckType?._id || null,
+      truckTypeName:     pricing.truckType?.name || null,
 
       basePrice:        pricing.basePrice,
       weightSurcharge:  pricing.weightSurcharge,

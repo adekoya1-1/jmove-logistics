@@ -146,6 +146,7 @@ export const orderSchemas = {
     deliveryLng:      z.coerce.number().min(-180).max(180).optional(),
 
     staffNotes:       z.string().max(500).trim().optional(),
+    truckTypeId:  objectId.optional(),
   }),
 
   calcPrice: z.object({
@@ -155,6 +156,7 @@ export const orderSchemas = {
     serviceType:     z.enum(['standard', 'express', 'sameday']).optional(),
     isFragile:       z.coerce.boolean().optional(),
     declaredValue:   z.coerce.number().min(0).optional(),
+    truckTypeId:     objectId.optional(),
   }),
 
   addNote: z.object({
@@ -315,6 +317,60 @@ export const otpSchemas = {
       .regex(/[A-Z]/,        'Password must contain an uppercase letter')
       .regex(/[0-9]/,        'Password must contain a number')
       .regex(/[^A-Za-z0-9]/, 'Password must contain a special character'),
+  }),
+};
+
+// ── Pricing ─────────────────────────────────────────────
+export const pricingSchemas = {
+  createZone: z.object({
+    name:        z.string().min(1).max(100).trim(),
+    description: z.string().max(200).trim().optional().default(''),
+    zoneNumber:  z.coerce.number().int().min(0).max(10),
+    cities:      z.array(z.string().toLowerCase().trim()).optional().default([]),
+    sortOrder:   z.coerce.number().int().min(0).optional().default(0),
+  }),
+
+  updateZone: z.object({
+    name:        z.string().min(1).max(100).trim().optional(),
+    description: z.string().max(200).trim().optional(),
+    zoneNumber:  z.coerce.number().int().min(0).max(10).optional(),
+    cities:      z.array(z.string().toLowerCase().trim()).optional(),
+    isActive:    z.boolean().optional(),
+    sortOrder:   z.coerce.number().int().min(0).optional(),
+  }),
+
+  createTruckType: z.object({
+    name:         z.string().min(1).max(100).trim(),
+    description:  z.string().max(200).trim().optional().default(''),
+    capacityTons: z.coerce.number().min(0).max(1000),
+    icon:         z.string().max(10).optional().default('🚛'),
+    sortOrder:    z.coerce.number().int().min(0).optional().default(0),
+  }),
+
+  updateTruckType: z.object({
+    name:         z.string().min(1).max(100).trim().optional(),
+    description:  z.string().max(200).trim().optional(),
+    capacityTons: z.coerce.number().min(0).max(1000).optional(),
+    icon:         z.string().max(10).optional(),
+    isActive:     z.boolean().optional(),
+    sortOrder:    z.coerce.number().int().min(0).optional(),
+  }),
+
+  upsertRule: z.object({
+    zoneId:      z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid zone ID' }),
+    truckTypeId: z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid truck type ID' }),
+    basePrice:   z.coerce.number().min(0).max(100_000_000),
+    pricePerKm:  z.coerce.number().min(0).max(100_000).optional().default(0),
+  }),
+
+  updateRule: z.object({
+    basePrice:   z.coerce.number().min(0).max(100_000_000).optional(),
+    pricePerKm:  z.coerce.number().min(0).max(100_000).optional(),
+    isActive:    z.boolean().optional(),
+  }),
+
+  idParam: z.object({
+    id: z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid ID format' }),
   }),
 };
 

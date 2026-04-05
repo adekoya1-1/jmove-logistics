@@ -19,6 +19,8 @@ const nav = [
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 14h14v1H1zM3 10h2v4H3zm4-3h2v7H7zm4-4h2v11h-2z"/></svg> },
   { to: '/admin/payments',  label: 'Payments',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="14" height="9" rx="1.5"/><path d="M1 7h14"/></svg> },
+  { to: '/admin/pricing',   label: 'Pricing',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v1.5M8 10.5V12M5.5 9.5A1.5 1.5 0 007 11h2a1.5 1.5 0 000-3H7a1.5 1.5 0 010-3h2A1.5 1.5 0 0110.5 6.5"/></svg> },
 ];
 
 export default function AdminLayout() {

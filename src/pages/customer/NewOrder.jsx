@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ordersAPI, paymentsAPI } from '../../api/client.js';
+import { ordersAPI, paymentsAPI, pricingAPI } from '../../api/client.js';
 import { useAuth } from '../../App.jsx';
 import './NewOrder.css';
 
@@ -32,6 +32,7 @@ export default function NewOrder() {
   const [loading,  setLoading] = useState(false);
   const [cities,   setCities]  = useState([]);
   const [pricing,  setPricing] = useState(null);
+  const [pricingConfig, setPricingConfig] = useState(null);
   const [orderId,  setOrderId] = useState(null);
   const [error,    setError]   = useState('');
 
@@ -49,6 +50,7 @@ export default function NewOrder() {
     description: '', weight: '', quantity: '1',
     category: 'general goods', isFragile: false,
     declaredValue: '', specialInstructions: '',
+    truckTypeId: '',
     // Service
     serviceType: 'standard',
     // Payment
@@ -57,6 +59,7 @@ export default function NewOrder() {
 
   useEffect(() => {
     ordersAPI.cities().then(r => setCities(r.data)).catch(console.error);
+    pricingAPI.config().then(r => setPricingConfig(r.data)).catch(console.error);
   }, []);
 
   const set = k => e => setForm(f => ({
@@ -70,6 +73,7 @@ export default function NewOrder() {
         originCity: form.originCity, destinationCity: form.destinationCity,
         weight: +form.weight, serviceType: form.serviceType,
         isFragile: form.isFragile, declaredValue: +form.declaredValue || 0,
+        truckTypeId: form.truckTypeId || undefined,
       });
       setPricing(r.data); setStep(3);
     } catch (e) { setError(e?.response?.data?.message || 'Failed to calculate price'); }
@@ -83,6 +87,7 @@ export default function NewOrder() {
         ...form, weight: +form.weight, quantity: +form.quantity,
         declaredValue: +form.declaredValue || 0,
         codAmount: +form.codAmount || 0,
+        truckTypeId: form.truckTypeId || undefined,
       });
       setOrderId(r.data.order._id);
       if (form.paymentMethod === 'online') {
@@ -97,7 +102,8 @@ export default function NewOrder() {
 
   const step1Valid = form.senderName && form.senderPhone && form.originCity &&
                      form.receiverName && form.receiverPhone && form.receiverAddress && form.destinationCity;
-  const step2Valid = form.description && form.weight && +form.weight > 0;
+  const step2Valid = form.description && form.weight && +form.weight > 0 &&
+                     (pricingConfig?.hasDynamicPricing ? !!form.truckTypeId : true);
 
   const fmt = n => Number(n||0).toLocaleString('en-NG');
 
@@ -206,6 +212,27 @@ export default function NewOrder() {
               </label>
 
               <div className="field"><label className="label">Special Instructions</label><textarea className="input" style={{resize:'none',height:72}} value={form.specialInstructions} onChange={set('specialInstructions')} placeholder="Any handling notes or delivery instructions…" /></div>
+
+              {pricingConfig?.hasDynamicPricing && pricingConfig.truckTypes?.length > 0 && (
+                <>
+                  <div className="od-divider" />
+                  <div className="od-section">Vehicle Type *</div>
+                  <div className="service-type-grid">
+                    {pricingConfig.truckTypes.map(tt => (
+                      <label key={tt._id} className={`service-option ${form.truckTypeId === tt._id ? 'active' : ''}`}>
+                        <input type="radio" name="truckTypeId" value={tt._id} checked={form.truckTypeId === tt._id} onChange={set('truckTypeId')} hidden />
+                        <div className="so-header">
+                          <p className="so-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 18 }}>{tt.icon}</span> <span>{tt.name}</span>
+                          </p>
+                          <span className="so-extra">{tt.capacityTons}t Cap.</span>
+                        </div>
+                        {tt.description && <p className="so-desc">{tt.description}</p>}
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <div className="od-divider" />
               <div className="od-section">Service Type</div>

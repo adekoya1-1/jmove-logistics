@@ -134,6 +134,7 @@ import AdminUsers        from './pages/admin/AdminUsers.jsx';
 import AdminMap          from './pages/admin/AdminMap.jsx';
 import AdminAnalytics    from './pages/admin/AdminAnalytics.jsx';
 import AdminPayments     from './pages/admin/AdminPayments.jsx';
+import AdminPricing      from './pages/admin/AdminPricing.jsx';
 
 import CustomerLayout    from './components/customer/CustomerLayout.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
@@ -178,6 +179,7 @@ export default function App() {
             <Route path="map"        element={<AdminMap />} />
             <Route path="analytics"  element={<AdminAnalytics />} />
             <Route path="payments"   element={<AdminPayments />} />
+            <Route path="pricing"    element={<AdminPricing />} />
           </Route>
 
           {/* Customer */}

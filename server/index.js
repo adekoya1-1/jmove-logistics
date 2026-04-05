@@ -19,6 +19,7 @@ import paymentRoutes  from './routes/payments.js';
 import userRoutes     from './routes/users.js';
 import trackingRoutes from './routes/tracking.js';
 import reviewRoutes   from './routes/reviews.js';
+import pricingRoutes  from './routes/pricing.js';
 import socketHandler  from './utils/socketHandler.js';
 
 import { noSqlSanitize, xssSanitize, hppProtect } from './middleware/sanitize.js';
@@ -196,6 +197,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/users',    userRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/reviews',  reviewRoutes);
+app.use('/api/pricing', pricingRoutes);
 
 // ── Health check ────────────────────────────────────────
 app.get('/api/health', (_, res) => res.json({
