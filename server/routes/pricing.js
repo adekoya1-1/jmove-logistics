@@ -55,7 +55,8 @@ router.get('/admin/full', authenticate, authorize('admin'), async (req, res, nex
       Zone.find().sort({ zoneNumber: 1 }).lean(),
       TruckType.find().sort({ sortOrder: 1, capacityTons: 1 }).lean(),
       PricingRule.find()
-        .populate('zoneId',      'name zoneNumber')
+        .populate('fromZoneId',      'name states')
+        .populate('toZoneId',        'name states')
         .populate('truckTypeId', 'name capacityTons icon')
         .lean(),
     ]);
@@ -78,11 +79,12 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
     }
 
     const DEFAULT_ZONES = [
-      { name: 'Local / Intrastate', description: 'Same-city deliveries', zoneNumber: 0, cities: ['lagos','lekki','abeokuta','abuja','kano','ibadan','portharcourt','enugu','benin','owerri','onitsha','asaba','warri','kaduna','jos','ilorin','uyo','calabar','maiduguri','sokoto','yola','akure'], sortOrder: 0 },
-      { name: 'Zone 1 — Lagos Metro', description: 'Lagos and immediate surroundings', zoneNumber: 1, cities: ['lagos','lekki','abeokuta'], sortOrder: 1 },
-      { name: 'Zone 2 — South West / South East', description: 'Abuja, Port Harcourt, Ibadan, Enugu and nearby cities', zoneNumber: 2, cities: ['abuja','portharcourt','ibadan','enugu','benin','owerri','onitsha','asaba','ilorin','akure'], sortOrder: 2 },
-      { name: 'Zone 3 — North Central / South South', description: 'Warri, Kaduna, Jos, Uyo, Calabar, Kano', zoneNumber: 3, cities: ['warri','kaduna','jos','uyo','calabar','kano'], sortOrder: 3 },
-      { name: 'Zone 4 — Far North / Remote', description: 'Maiduguri, Sokoto, Yola and remote areas', zoneNumber: 4, cities: ['maiduguri','sokoto','yola'], sortOrder: 4 },
+      { name: 'South West', states: ['lagos','ogun','oyo','osun','ondo','ekiti'], sortOrder: 0 },
+      { name: 'South East', states: ['enugu','anambra','ebonyi','imo','abia'], sortOrder: 1 },
+      { name: 'South South', states: ['rivers','delta','akwa_ibom','cross_river','bayelsa','edo'], sortOrder: 2 },
+      { name: 'North Central', states: ['kogi','kwara','plateau','niger','benue','nasarawa','fct'], sortOrder: 3 },
+      { name: 'North East', states: ['borno','adamawa','yobe','taraba','bauchi','gombe'], sortOrder: 4 },
+      { name: 'North West', states: ['kano','kaduna','katsina','jigawa','kebbi','sokoto','zamfara'], sortOrder: 5 },
     ];
     const DEFAULT_TRUCKS = [
       { name: 'Small Van',    description: 'Up to 1 ton — parcels, documents, electronics', capacityTons: 1,  icon: '🚐', sortOrder: 0 },
@@ -94,26 +96,23 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
     const zones      = await Zone.insertMany(DEFAULT_ZONES);
     const truckTypes = await TruckType.insertMany(DEFAULT_TRUCKS);
 
-    // Seed the full 5×4 pricing matrix
-    const MATRIX = [
-      // [zoneIdx, truckIdx, basePrice, pricePerKm]
-      [0,0, 1500,0], [0,1, 2500,0], [0,2, 4000,0],  [0,3, 7000,0],
-      [1,0, 2500,0], [1,1, 3500,0], [1,2, 6000,0],  [1,3,10000,0],
-      [2,0, 3500,0], [2,1, 5000,0], [2,2, 8500,0],  [2,3,14000,0],
-      [3,0, 5000,0], [3,1, 7500,0], [3,2,12000,0],  [3,3,20000,0],
-      [4,0, 7500,0], [4,1,10000,0], [4,2,16000,0],  [4,3,28000,0],
-    ];
-    await PricingRule.insertMany(
-      MATRIX.map(([zi, ti, basePrice, pricePerKm]) => ({
-        zoneId: zones[zi]._id, truckTypeId: truckTypes[ti]._id, basePrice, pricePerKm,
-      }))
-    );
+    const rules = [];
+    for (let o = 0; o < zones.length; o++) {
+      for (let d = 0; d < zones.length; d++) {
+        for (let t = 0; t < truckTypes.length; t++) {
+           let base = 5000 + (t * 5000); 
+           if (o !== d) base += 20000;
+           rules.push({ fromZoneId: zones[o]._id, toZoneId: zones[d]._id, truckTypeId: truckTypes[t]._id, price: base });
+        }
+      }
+    }
+    await PricingRule.insertMany(rules);
     invalidateCache();
 
     res.json({
       success: true,
       message: 'Default pricing initialised successfully',
-      data: { zones: zones.length, truckTypes: truckTypes.length, rules: MATRIX.length },
+      data: { zones: zones.length, truckTypes: truckTypes.length, rules: rules.length },
     });
   } catch (e) { next(e); }
 });
@@ -124,7 +123,7 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
 
 router.get('/zones', authenticate, authorize('admin'), async (req, res, next) => {
   try {
-    const zones = await Zone.find().sort({ zoneNumber: 1 }).lean();
+    const zones = await Zone.find().sort({ sortOrder: 1 }).lean();
     res.json({ success: true, data: zones });
   } catch (e) { next(e); }
 });
@@ -153,7 +152,7 @@ router.put('/zones/:id', authenticate, authorize('admin'),
 router.delete('/zones/:id', authenticate, authorize('admin'),
   validate(pricingSchemas.idParam, 'params'), async (req, res, next) => {
   try {
-    const ruleCount = await PricingRule.countDocuments({ zoneId: req.params.id });
+    const ruleCount = await PricingRule.countDocuments({ $or: [{ fromZoneId: req.params.id }, { toZoneId: req.params.id }] });
     if (ruleCount > 0) {
       await Zone.findByIdAndUpdate(req.params.id, { isActive: false });
       invalidateCache();
@@ -219,7 +218,8 @@ router.delete('/truck-types/:id', authenticate, authorize('admin'),
 router.get('/rules', authenticate, authorize('admin'), async (req, res, next) => {
   try {
     const rules = await PricingRule.find()
-      .populate('zoneId',      'name zoneNumber')
+      .populate('fromZoneId',      'name states')
+      .populate('toZoneId',        'name states')
       .populate('truckTypeId', 'name capacityTons icon')
       .lean();
     res.json({ success: true, data: rules });
@@ -230,17 +230,19 @@ router.get('/rules', authenticate, authorize('admin'), async (req, res, next) =>
 router.post('/rules', authenticate, authorize('admin'),
   validate(pricingSchemas.upsertRule), async (req, res, next) => {
   try {
-    const { zoneId, truckTypeId, basePrice, pricePerKm } = req.body;
-    const [zone, tt] = await Promise.all([
-      Zone.findById(zoneId).lean(),
+    const { fromZoneId, toZoneId, truckTypeId, price } = req.body;
+    const [fromZ, toZ, tt] = await Promise.all([
+      Zone.findById(fromZoneId).lean(),
+      Zone.findById(toZoneId).lean(),
       TruckType.findById(truckTypeId).lean(),
     ]);
-    if (!zone) return res.status(404).json({ success: false, message: 'Zone not found' });
-    if (!tt)   return res.status(404).json({ success: false, message: 'Truck type not found' });
+    if (!fromZ) return res.status(404).json({ success: false, message: 'Origin zone not found' });
+    if (!toZ)   return res.status(404).json({ success: false, message: 'Destination zone not found' });
+    if (!tt)    return res.status(404).json({ success: false, message: 'Truck type not found' });
 
     const rule = await PricingRule.findOneAndUpdate(
-      { zoneId, truckTypeId },
-      { basePrice, pricePerKm: pricePerKm || 0, isActive: true },
+      { fromZoneId, toZoneId, truckTypeId },
+      { price: price, isActive: true },
       { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
     );
     invalidateCache();

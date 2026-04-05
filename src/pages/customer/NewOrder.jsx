@@ -147,9 +147,9 @@ export default function NewOrder() {
               <div className="field-row">
                 <div className="field"><label className="label">Sender Email</label><input type="email" className="input" value={form.senderEmail} onChange={set('senderEmail')} placeholder="sender@email.com" /></div>
                 <div className="field">
-                  <label className="label">Origin City *</label>
+                  <label className="label">Origin State *</label>
                   <select className="input" value={form.originCity} onChange={set('originCity')} required>
-                    <option value="">Select city…</option>
+                    <option value="">Select state…</option>
                     {cities.map(c => <option key={c.key} value={c.key}>{c.name}</option>)}
                   </select>
                 </div>
@@ -166,9 +166,9 @@ export default function NewOrder() {
               <div className="field-row">
                 <div className="field"><label className="label">Receiver Email</label><input type="email" className="input" value={form.receiverEmail} onChange={set('receiverEmail')} placeholder="receiver@email.com" /></div>
                 <div className="field">
-                  <label className="label">Destination City *</label>
+                  <label className="label">Destination State *</label>
                   <select className="input" value={form.destinationCity} onChange={set('destinationCity')} required>
-                    <option value="">Select city…</option>
+                    <option value="">Select state…</option>
                     {cities.map(c => <option key={c.key} value={c.key}>{c.name}</option>)}
                   </select>
                 </div>

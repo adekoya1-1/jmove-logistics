@@ -34,8 +34,7 @@ function ZoneForm({ initial, onSave, onCancel, saving }) {
   const [form, setForm] = useState({
     name:        initial?.name        || '',
     description: initial?.description || '',
-    zoneNumber:  initial?.zoneNumber  ?? '',
-    cities:      initial?.cities?.join(', ') || '',
+    states:      initial?.states?.join(', ') || '',
     sortOrder:   initial?.sortOrder   ?? 0,
   });
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -45,8 +44,7 @@ function ZoneForm({ initial, onSave, onCancel, saving }) {
     onSave({
       name:        form.name.trim(),
       description: form.description.trim(),
-      zoneNumber:  Number(form.zoneNumber),
-      cities:      form.cities.split(',').map(c => c.trim().toLowerCase()).filter(Boolean),
+      states:      form.states.split(',').map(c => c.trim().toLowerCase()).filter(Boolean),
       sortOrder:   Number(form.sortOrder),
     });
   };
@@ -56,11 +54,11 @@ function ZoneForm({ initial, onSave, onCancel, saving }) {
       <div className="ap-form-row">
         <div className="ap-field">
           <label className="ap-label">Zone Name *</label>
-          <input className="ap-input" value={form.name} onChange={set('name')} placeholder="e.g. Zone 1 — Lagos Metro" required />
+          <input className="ap-input" value={form.name} onChange={set('name')} placeholder="e.g. South West" required />
         </div>
         <div className="ap-field ap-field--sm">
-          <label className="ap-label">Zone Number *</label>
-          <input className="ap-input" type="number" min="0" max="10" value={form.zoneNumber} onChange={set('zoneNumber')} placeholder="0–10" required />
+          <label className="ap-label">Sort Order</label>
+          <input className="ap-input" type="number" min="0" value={form.sortOrder} onChange={set('sortOrder')} />
         </div>
       </div>
       <div className="ap-field">
@@ -68,8 +66,8 @@ function ZoneForm({ initial, onSave, onCancel, saving }) {
         <input className="ap-input" value={form.description} onChange={set('description')} placeholder="Brief description of this zone" />
       </div>
       <div className="ap-field">
-        <label className="ap-label">Cities <span className="ap-hint">(comma-separated lowercase city keys)</span></label>
-        <textarea className="ap-input ap-textarea" value={form.cities} onChange={set('cities')} placeholder="lagos, lekki, abeokuta" rows={3} />
+        <label className="ap-label">States <span className="ap-hint">(comma-separated lowercase states)</span></label>
+        <textarea className="ap-input ap-textarea" value={form.states} onChange={set('states')} placeholder="lagos, ogun, oyo" rows={3} />
       </div>
       <div className="ap-form-actions">
         <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
@@ -142,21 +140,20 @@ function TruckTypeForm({ initial, onSave, onCancel, saving }) {
 }
 
 // ── Rule form (used inside the matrix cell modal) ─────────────────────────
-function RuleForm({ zone, truckType, rule, onSave, onDelete, onCancel, saving }) {
-  const [basePrice,  setBasePrice]  = useState(rule?.basePrice  ?? '');
-  const [pricePerKm, setPricePerKm] = useState(rule?.pricePerKm ?? 0);
+function RuleForm({ originZone, destZone, truckType, rule, onSave, onDelete, onCancel, saving }) {
+  const [price, setPrice] = useState(rule?.price ?? '');
 
   const handleSubmit = e => {
     e.preventDefault();
-    onSave({ zoneId: zone._id, truckTypeId: truckType._id, basePrice: Number(basePrice), pricePerKm: Number(pricePerKm) });
+    onSave({ fromZoneId: originZone._id, toZoneId: destZone._id, truckTypeId: truckType._id, price: Number(price) });
   };
 
   return (
     <form className="ap-form" onSubmit={handleSubmit}>
       <div className="ap-rule-context">
         <div className="ap-rule-ctx-item">
-          <span className="ap-rule-ctx-label">Zone</span>
-          <span className="ap-rule-ctx-val">{zone.name}</span>
+          <span className="ap-rule-ctx-label">Route</span>
+          <span className="ap-rule-ctx-val">{originZone.name} ➔ {destZone.name}</span>
         </div>
         <span className="ap-rule-ctx-sep">×</span>
         <div className="ap-rule-ctx-item">
@@ -168,21 +165,10 @@ function RuleForm({ zone, truckType, rule, onSave, onDelete, onCancel, saving })
       <div className="ap-form-row">
         <div className="ap-field">
           <label className="ap-label">Base Price (₦) *</label>
-          <input className="ap-input" type="number" min="0" value={basePrice} onChange={e => setBasePrice(e.target.value)} placeholder="e.g. 5000" required />
-          <p className="ap-field-hint">Flat rate for this zone + vehicle combination</p>
-        </div>
-        <div className="ap-field">
-          <label className="ap-label">Price per km (₦) <span className="ap-hint">optional</span></label>
-          <input className="ap-input" type="number" min="0" step="10" value={pricePerKm} onChange={e => setPricePerKm(e.target.value)} placeholder="0" />
-          <p className="ap-field-hint">Added on top of base price using estimated route km</p>
+          <input className="ap-input" type="number" min="0" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g. 5000" required />
+          <p className="ap-field-hint">Flat rate for this specific origin to destination zone route.</p>
         </div>
       </div>
-
-      {Number(pricePerKm) > 0 && (
-        <div className="ap-per-km-note">
-          ℹ️ Price per km is applied to estimated distances between cities in this zone. It is in addition to the base price.
-        </div>
-      )}
 
       <div className="ap-form-actions">
         {rule && (
@@ -205,6 +191,7 @@ function RuleForm({ zone, truckType, rule, onSave, onDelete, onCancel, saving })
 export default function AdminPricing() {
   const [tab,    setTab]    = useState('matrix'); // 'matrix' | 'zones' | 'truckTypes'
   const [data,   setData]   = useState({ zones: [], truckTypes: [], rules: [] });
+  const [activeTruckTypeId, setActiveTruckTypeId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [seeding, setSeeding] = useState(false);
@@ -214,7 +201,7 @@ export default function AdminPricing() {
   // modal shapes:
   // { type: 'zone',      mode: 'create'|'edit', data: zoneObj|null }
   // { type: 'truckType', mode: 'create'|'edit', data: truckTypeObj|null }
-  // { type: 'rule',      zone: zoneObj, truckType: truckTypeObj, rule: ruleObj|null }
+  // { type: 'rule',      originZone: zoneObj, destZone: zoneObj, truckType: truckTypeObj, rule: ruleObj|null }
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -222,6 +209,9 @@ export default function AdminPricing() {
     try {
       const r = await pricingAPI.adminFull();
       setData(r.data);
+      if (r.data.truckTypes.length > 0 && !activeTruckTypeId) {
+        setActiveTruckTypeId(r.data.truckTypes[0]._id);
+      }
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to load pricing data');
     } finally {
@@ -237,14 +227,15 @@ export default function AdminPricing() {
   };
 
   // ── Helper: find rule for a matrix cell ──────────────────────────────────
-  const getCellRule = (zoneId, truckTypeId) =>
+  const getCellRule = (fromZoneId, toZoneId, truckTypeId) =>
     data.rules.find(r =>
-      (r.zoneId?._id || r.zoneId)?.toString() === zoneId.toString() &&
+      (r.fromZoneId?._id || r.fromZoneId)?.toString() === fromZoneId.toString() &&
+      (r.toZoneId?._id || r.toZoneId)?.toString() === toZoneId.toString() &&
       (r.truckTypeId?._id || r.truckTypeId)?.toString() === truckTypeId.toString()
     );
 
   // ── Computed status ───────────────────────────────────────────────────────
-  const totalCells    = data.zones.length * data.truckTypes.length;
+  const totalCells    = data.zones.length * data.zones.length * data.truckTypes.length;
   const configuredCells = data.rules.filter(r => r.isActive !== false).length;
   const isDynamic     = totalCells > 0 && configuredCells === totalCells;
   const isPartial     = configuredCells > 0 && configuredCells < totalCells;
@@ -363,7 +354,7 @@ export default function AdminPricing() {
   };
 
   // ── Sorted lists ──────────────────────────────────────────────────────────
-  const sortedZones      = [...data.zones].sort((a, b) => a.zoneNumber - b.zoneNumber);
+  const sortedZones      = [...data.zones].sort((a, b) => a.sortOrder - b.sortOrder);
   const sortedTruckTypes = [...data.truckTypes].sort((a, b) =>
     (a.sortOrder - b.sortOrder) || (a.capacityTons - b.capacityTons)
   );
@@ -447,44 +438,47 @@ export default function AdminPricing() {
             </div>
           ) : (
             <>
-              <p className="ap-matrix-legend">Click any cell to set or edit the price for that zone × vehicle combination.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p className="ap-matrix-legend" style={{ margin: 0 }}>Click any cell to set or edit the price for that Origin → Destination route based on the selected vehicle type.</p>
+                <select className="ap-input" style={{ width: 250 }} value={activeTruckTypeId} onChange={e => setActiveTruckTypeId(e.target.value)}>
+                  {sortedTruckTypes.map(tt => (
+                    <option key={tt._id} value={tt._id}>{tt.icon} {tt.name} ({tt.capacityTons}t)</option>
+                  ))}
+                </select>
+              </div>
+              
               <div className="ap-matrix-scroll">
                 <table className="ap-matrix-table">
                   <thead>
                     <tr>
-                      <th className="ap-matrix-corner">Zone</th>
-                      {sortedTruckTypes.map(tt => (
-                        <th key={tt._id} className="ap-matrix-th">
-                          <span className="ap-matrix-icon">{tt.icon}</span>
-                          <span className="ap-matrix-th-name">{tt.name}</span>
-                          <span className="ap-matrix-th-cap">{tt.capacityTons}t</span>
+                      <th className="ap-matrix-corner" style={{ background: '#f0f0f0' }}>Origin ↓ / Dest →</th>
+                      {sortedZones.map(toZone => (
+                        <th key={toZone._id} className="ap-matrix-th">
+                          <span className="ap-matrix-th-name">{toZone.name}</span>
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedZones.map(zone => (
-                      <tr key={zone._id}>
-                        <td className={`ap-matrix-zone-cell ${!zone.isActive ? 'ap-inactive' : ''}`}>
-                          <p className="ap-zone-cell-name">{zone.name}</p>
-                          <span className="ap-zone-num-badge">Zone {zone.zoneNumber}</span>
-                          {!zone.isActive && <span className="ap-inactive-tag">inactive</span>}
+                    {sortedZones.map(fromZone => (
+                      <tr key={fromZone._id}>
+                        <td className={`ap-matrix-zone-cell ${!fromZone.isActive ? 'ap-inactive' : ''}`}>
+                          <p className="ap-zone-cell-name">{fromZone.name}</p>
+                          {!fromZone.isActive && <span className="ap-inactive-tag">inactive</span>}
                         </td>
-                        {sortedTruckTypes.map(tt => {
-                          const rule = getCellRule(zone._id, tt._id);
-                          const inactive = !zone.isActive || !tt.isActive;
+                        {sortedZones.map(toZone => {
+                          const activeTruck = sortedTruckTypes.find(t => t._id === activeTruckTypeId);
+                          const rule = getCellRule(fromZone._id, toZone._id, activeTruckTypeId);
+                          const inactive = !fromZone.isActive || !toZone.isActive || !activeTruck?.isActive;
                           return (
-                            <td key={tt._id}
+                            <td key={toZone._id}
                               className={`ap-matrix-cell ${rule ? 'ap-matrix-cell--set' : 'ap-matrix-cell--empty'} ${inactive ? 'ap-matrix-cell--inactive' : ''}`}
-                              onClick={() => !inactive && setModal({ type: 'rule', zone, truckType: tt, rule: rule || null })}
-                              title={inactive ? 'Zone or vehicle type is inactive' : rule ? `₦${fmt(rule.basePrice)} base${rule.pricePerKm > 0 ? ` + ₦${fmt(rule.pricePerKm)}/km` : ''}` : 'Click to set price'}
+                              onClick={() => !inactive && setModal({ type: 'rule', originZone: fromZone, destZone: toZone, truckType: activeTruck, rule: rule || null })}
+                              title={inactive ? 'Zone or vehicle is inactive' : rule ? `₦${fmt(rule.price)}` : 'Click to set price'}
                             >
                               {rule ? (
                                 <div className="ap-cell-price">
-                                  <span className="ap-cell-base">₦{fmt(rule.basePrice)}</span>
-                                  {rule.pricePerKm > 0 && (
-                                    <span className="ap-cell-perkm">+₦{fmt(rule.pricePerKm)}/km</span>
-                                  )}
+                                  <span className="ap-cell-base">₦{fmt(rule.price)}</span>
                                 </div>
                               ) : inactive ? (
                                 <span className="ap-cell-dash">—</span>
@@ -502,7 +496,7 @@ export default function AdminPricing() {
               <div className="ap-matrix-footer">
                 <div className="ap-legend">
                   <span className="ap-legend-item"><span className="ap-legend-swatch ap-legend-set" />Price set</span>
-                  <span className="ap-legend-item"><span className="ap-legend-swatch ap-legend-empty" />Not configured (uses weight-based fallback)</span>
+                  <span className="ap-legend-item"><span className="ap-legend-swatch ap-legend-empty" />Not configured</span>
                   <span className="ap-legend-item"><span className="ap-legend-swatch ap-legend-inactive" />Inactive</span>
                 </div>
               </div>
@@ -553,15 +547,15 @@ export default function AdminPricing() {
                       <tr key={zone._id}>
                         <td>
                           <div className="ap-zone-name">{zone.name}</div>
-                          <div className="td-sub">Zone {zone.zoneNumber}{zone.description ? ` · ${zone.description}` : ''}</div>
+                          <div className="td-sub">{zone.description || 'No description'}</div>
                         </td>
                         <td>
                           <div className="ap-city-tags">
-                            {(zone.cities || []).slice(0, 5).map(c => (
+                            {(zone.states || []).slice(0, 5).map(c => (
                               <span key={c} className="ap-city-tag">{c}</span>
                             ))}
-                            {(zone.cities?.length || 0) > 5 && (
-                              <span className="ap-city-tag ap-city-more">+{zone.cities.length - 5} more</span>
+                            {(zone.states?.length || 0) > 5 && (
+                              <span className="ap-city-tag ap-city-more">+{zone.states.length - 5} more</span>
                             )}
                           </div>
                         </td>
@@ -716,7 +710,8 @@ export default function AdminPricing() {
           onClose={() => setModal(null)}
         >
           <RuleForm
-            zone={modal.zone}
+            originZone={modal.originZone}
+            destZone={modal.destZone}
             truckType={modal.truckType}
             rule={modal.rule}
             onSave={saveRule}

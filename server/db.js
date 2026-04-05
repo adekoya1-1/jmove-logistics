@@ -195,16 +195,14 @@ const driverEarningSchema = new mongoose.Schema({
   destinationCity: { type: String },
 }, { timestamps: true });
 
-// ── Distance Zone — admin-configurable pricing zones ──────────────────────
+// ── Zone — admin-configurable geographic regions ────────────────────────────
 const zoneSchema = new mongoose.Schema({
   name:        { type: String, required: true, trim: true },
   description: { type: String, trim: true, default: '' },
-  zoneNumber:  { type: Number, required: true, min: 0, max: 10 },
-  cities:      [{ type: String, lowercase: true, trim: true }],
+  states:      [{ type: String, lowercase: true, trim: true }],
   isActive:    { type: Boolean, default: true },
   sortOrder:   { type: Number, default: 0 },
 }, { timestamps: true });
-zoneSchema.index({ zoneNumber: 1 }, { unique: true });
 
 // ── Truck Type — vehicle capacity tiers for pricing ───────────────────────
 const truckTypeSchema = new mongoose.Schema({
@@ -216,15 +214,15 @@ const truckTypeSchema = new mongoose.Schema({
   isActive:     { type: Boolean, default: true },
 }, { timestamps: true });
 
-// ── Pricing Rule — base price for zone × truck type combination ───────────
+// ── Pricing Rule — price for origin zone → dest zone × truck type ────────
 const pricingRuleSchema = new mongoose.Schema({
-  zoneId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Zone',      required: true },
+  fromZoneId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Zone',      required: true },
+  toZoneId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Zone',      required: true },
   truckTypeId: { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', required: true },
-  basePrice:   { type: Number, required: true, min: 0 },
-  pricePerKm:  { type: Number, default: 0, min: 0 },
+  price:       { type: Number, required: true, min: 0 },
   isActive:    { type: Boolean, default: true },
 }, { timestamps: true });
-pricingRuleSchema.index({ zoneId: 1, truckTypeId: 1 }, { unique: true });
+pricingRuleSchema.index({ fromZoneId: 1, toZoneId: 1, truckTypeId: 1 }, { unique: true });
 
 // ── OTP Token — for email verification and password reset ──────────────────
 // Security design:

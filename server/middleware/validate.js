@@ -325,16 +325,14 @@ export const pricingSchemas = {
   createZone: z.object({
     name:        z.string().min(1).max(100).trim(),
     description: z.string().max(200).trim().optional().default(''),
-    zoneNumber:  z.coerce.number().int().min(0).max(10),
-    cities:      z.array(z.string().toLowerCase().trim()).optional().default([]),
+    states:      z.array(z.string().toLowerCase().trim()).optional().default([]),
     sortOrder:   z.coerce.number().int().min(0).optional().default(0),
   }),
 
   updateZone: z.object({
     name:        z.string().min(1).max(100).trim().optional(),
     description: z.string().max(200).trim().optional(),
-    zoneNumber:  z.coerce.number().int().min(0).max(10).optional(),
-    cities:      z.array(z.string().toLowerCase().trim()).optional(),
+    states:      z.array(z.string().toLowerCase().trim()).optional(),
     isActive:    z.boolean().optional(),
     sortOrder:   z.coerce.number().int().min(0).optional(),
   }),
@@ -357,15 +355,14 @@ export const pricingSchemas = {
   }),
 
   upsertRule: z.object({
-    zoneId:      z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid zone ID' }),
+    fromZoneId:  z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid origin zone ID' }),
+    toZoneId:    z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid destination zone ID' }),
     truckTypeId: z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid truck type ID' }),
-    basePrice:   z.coerce.number().min(0).max(100_000_000),
-    pricePerKm:  z.coerce.number().min(0).max(100_000).optional().default(0),
+    price:       z.coerce.number().min(0).max(100_000_000),
   }),
 
   updateRule: z.object({
-    basePrice:   z.coerce.number().min(0).max(100_000_000).optional(),
-    pricePerKm:  z.coerce.number().min(0).max(100_000).optional(),
+    price:       z.coerce.number().min(0).max(100_000_000).optional(),
     isActive:    z.boolean().optional(),
   }),
 

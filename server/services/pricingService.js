@@ -32,7 +32,8 @@ async function loadConfig() {
     Zone.find({ isActive: true }).sort({ zoneNumber: 1 }).lean(),
     TruckType.find({ isActive: true }).sort({ sortOrder: 1, capacityTons: 1 }).lean(),
     PricingRule.find({ isActive: true })
-      .populate('zoneId',      'zoneNumber name cities')
+      .populate('fromZoneId',  'name states')
+      .populate('toZoneId',    'name states')
       .populate('truckTypeId', 'name capacityTons icon')
       .lean(),
   ]);
@@ -42,29 +43,9 @@ async function loadConfig() {
   return _cache;
 }
 
-// ── Rough estimated km between zones (used only when pricePerKm > 0) ──────
-const ZONE_PAIR_KM = {
-  '0-0': 15, '1-1': 80, '1-2': 200, '2-2': 250,
-  '1-3': 400, '2-3': 350, '3-3': 450,
-  '1-4': 700, '2-4': 650, '3-4': 550, '4-4': 800,
-};
-const estimateKm = (a, b) => {
-  const key = [Math.min(a, b), Math.max(a, b)].join('-');
-  return ZONE_PAIR_KM[key] || 500;
-};
-
-// ── Same-city detection (kept in sync with static pricing.js) ─────────────
-const LAGOS_GROUP = ['lagos', 'lekki', 'abeokuta'];
-const isSameCity = (a, b) => {
-  if (LAGOS_GROUP.includes(a) && LAGOS_GROUP.includes(b)) return true;
-  return a === b;
-};
-
-// ── Map city key → zone number (DB first, then static fallback) ───────────
-const getCityZoneNum = (cityKey, dbZones) => {
-  const hit = dbZones.find(z => z.cities?.includes(cityKey.toLowerCase()));
-  if (hit) return hit.zoneNumber;
-  return STATIC_ZONES[cityKey]?.zone ?? 4;
+// ── Map city/state key → zone (DB first, no fallback for dynamic) ───────────
+const getStateZone = (stateKey, dbZones) => {
+  return dbZones.find(z => z.states?.includes(stateKey.toLowerCase()));
 };
 
 const SERVICE_SURCHARGES = { standard: 0, express: 2000, sameday: 3000 };
@@ -110,35 +91,25 @@ export const calcDynamicPrice = async ({
     return { ...staticResult, isDynamic: false, truckType: null };
   }
 
-  // Determine route zone number
-  const sameCityRoute = isSameCity(originCity, destinationCity);
-  const deliveryType  = sameCityRoute ? 'intrastate' : 'interstate';
+  const originZoneObj = getStateZone(originCity, zones);
+  const destZoneObj   = getStateZone(destinationCity, zones);
 
-  const routeZoneNum = sameCityRoute
-    ? 0
-    : Math.max(getCityZoneNum(originCity, zones), getCityZoneNum(destinationCity, zones));
-
-  // Find a Zone document with the computed zoneNumber
-  const matchedZone = zones.find(z => z.zoneNumber === routeZoneNum);
-  if (!matchedZone) {
+  if (!originZoneObj || !destZoneObj) {
     return { ...staticResult, isDynamic: false, truckType };
   }
 
-  // Find a pricing rule for (zone, truckType)
   const rule = rules.find(r =>
-    r.zoneId?._id?.toString()      === matchedZone._id.toString() &&
+    r.fromZoneId?._id?.toString()  === originZoneObj._id.toString() &&
+    r.toZoneId?._id?.toString()    === destZoneObj._id.toString() &&
     r.truckTypeId?._id?.toString() === truckType._id.toString()
   );
+
   if (!rule) {
     return { ...staticResult, isDynamic: false, truckType };
   }
 
   // ── Build dynamic price ──────────────────────────────────────────────────
-  const originZoneNum = getCityZoneNum(originCity, zones);
-  const destZoneNum   = getCityZoneNum(destinationCity, zones);
-  const estKm         = sameCityRoute ? 15 : estimateKm(originZoneNum, destZoneNum);
-
-  const basePrice        = Math.round(rule.basePrice + (rule.pricePerKm || 0) * estKm);
+  const basePrice        = rule.price;
   const serviceSurcharge = SERVICE_SURCHARGES[serviceType] || 0;
   const fragileSurcharge = isFragile ? 1000 : 0;
   const insuranceFee     = declaredValue > 0
@@ -146,11 +117,14 @@ export const calcDynamicPrice = async ({
     : 0;
   const totalAmount = basePrice + serviceSurcharge + fragileSurcharge + insuranceFee;
 
+  const sameCityRoute = originCity.toLowerCase() === destinationCity.toLowerCase();
+  const deliveryType  = sameCityRoute ? 'intrastate' : 'interstate';
+
   const deliveryDays = deliveryType === 'intrastate'
     ? (serviceType === 'sameday' ? 'Same day' : '1–2 hours')
     : serviceType === 'express'
       ? '24–48 hours'
-      : `${routeZoneNum}–${routeZoneNum + 1} business days`;
+      : `3–5 business days`;
 
   return {
     deliveryType,
@@ -172,8 +146,6 @@ export const calcDynamicPrice = async ({
       serviceSurcharge,
       fragileSurcharge,
       insuranceFee,
-      estimatedKm:      estKm,
-      pricePerKm:       rule.pricePerKm || 0,
     },
   };
 };

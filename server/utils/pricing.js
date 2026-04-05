@@ -13,29 +13,19 @@
 // Nigerian delivery zones (simplified)
 // Zone determines base rate for interstate
 export const ZONES = {
-  lagos:       { name: 'Lagos',        zone: 1 },
-  abuja:       { name: 'Abuja (FCT)',  zone: 2 },
-  portharcourt:{ name: 'Port Harcourt',zone: 2 },
-  ibadan:      { name: 'Ibadan',       zone: 2 },
-  kano:        { name: 'Kano',         zone: 3 },
-  enugu:       { name: 'Enugu',        zone: 2 },
-  benin:       { name: 'Benin City',   zone: 2 },
-  owerri:      { name: 'Owerri',       zone: 2 },
-  onitsha:     { name: 'Onitsha',      zone: 2 },
-  asaba:       { name: 'Asaba',        zone: 2 },
-  warri:       { name: 'Warri',        zone: 3 },
-  kaduna:      { name: 'Kaduna',       zone: 3 },
-  jos:         { name: 'Jos',          zone: 3 },
-  ilorin:      { name: 'Ilorin',       zone: 2 },
-  uyo:         { name: 'Uyo',          zone: 3 },
-  calabar:     { name: 'Calabar',      zone: 3 },
-  maiduguri:   { name: 'Maiduguri',    zone: 4 },
-  sokoto:      { name: 'Sokoto',       zone: 4 },
-  yola:        { name: 'Yola',         zone: 4 },
-  akure:       { name: 'Akure',        zone: 2 },
-  abeokuta:    { name: 'Abeokuta',     zone: 1 },
-  lekki:       { name: 'Lekki',        zone: 1 },
-  others:      { name: 'Other',        zone: 4 },
+  abia: { name: 'Abia', zone: 3 }, adamawa: { name: 'Adamawa', zone: 4 }, akwa_ibom: { name: 'Akwa Ibom', zone: 3 },
+  anambra: { name: 'Anambra', zone: 3 }, bauchi: { name: 'Bauchi', zone: 4 }, bayelsa: { name: 'Bayelsa', zone: 3 },
+  benue: { name: 'Benue', zone: 3 }, borno: { name: 'Borno', zone: 4 }, cross_river: { name: 'Cross River', zone: 3 },
+  delta: { name: 'Delta', zone: 3 }, ebonyi: { name: 'Ebonyi', zone: 3 }, edo: { name: 'Edo', zone: 3 },
+  ekiti: { name: 'Ekiti', zone: 2 }, enugu: { name: 'Enugu', zone: 3 }, gombe: { name: 'Gombe', zone: 4 },
+  imo: { name: 'Imo', zone: 3 }, jigawa: { name: 'Jigawa', zone: 4 }, kaduna: { name: 'Kaduna', zone: 4 },
+  kano: { name: 'Kano', zone: 4 }, katsina: { name: 'Katsina', zone: 4 }, kebbi: { name: 'Kebbi', zone: 4 },
+  kogi: { name: 'Kogi', zone: 3 }, kwara: { name: 'Kwara', zone: 3 }, lagos: { name: 'Lagos', zone: 1 },
+  nasarawa: { name: 'Nasarawa', zone: 3 }, niger: { name: 'Niger', zone: 3 }, ogun: { name: 'Ogun', zone: 1 },
+  ondo: { name: 'Ondo', zone: 2 }, osun: { name: 'Osun', zone: 2 }, oyo: { name: 'Oyo', zone: 2 },
+  plateau: { name: 'Plateau', zone: 3 }, rivers: { name: 'Rivers', zone: 3 }, sokoto: { name: 'Sokoto', zone: 4 },
+  taraba: { name: 'Taraba', zone: 4 }, yobe: { name: 'Yobe', zone: 4 }, zamfara: { name: 'Zamfara', zone: 4 },
+  fct: { name: 'FCT (Abuja)', zone: 3 },
 };
 
 // Intrastate base prices (₦) — same city delivery
@@ -82,10 +72,6 @@ const getWeightSurcharge = (kg) => {
  * Determine if two city keys are the same city
  */
 const isSameCity = (originKey, destinationKey) => {
-  // Group related city keys
-  const lagosGroup = ['lagos','lekki','abeokuta'];
-  const inLagos = (k) => lagosGroup.includes(k);
-  if (inLagos(originKey) && inLagos(destinationKey)) return true;
   return originKey === destinationKey;
 };
 
