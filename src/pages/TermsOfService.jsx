@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import './StaticPage.css';
+import PublicNav from '../components/PublicNav.jsx';
 
 const SECTIONS = [
   {
@@ -115,12 +116,7 @@ function renderBody(text) {
 export default function TermsOfService() {
   return (
     <div className="sp-page">
-      <nav className="sp-nav">
-        <Link to="/" className="sp-nav-logo">
-          <img src="/logo-dark.png" alt="JMove Logistics" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
-        </Link>
-        <Link to="/" className="sp-nav-back">← Back to Home</Link>
-      </nav>
+      <PublicNav />
 
       <div className="sp-hero sp-hero--compact">
         <div className="sp-hero-inner">

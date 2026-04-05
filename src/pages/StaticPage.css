@@ -11,28 +11,6 @@
   background: var(--bg);
 }
 
-/* ── Nav ── */
-.sp-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-  height: 64px;
-  background: var(--bg-white);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.sp-nav-logo img { display: block; }
-.sp-nav-back {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: color 0.15s;
-}
-.sp-nav-back:hover { color: var(--brand); }
 
 /* ── Hero ── */
 .sp-hero {
@@ -384,7 +362,6 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .sp-nav { padding: 0 20px; }
   .sp-hero { padding: 44px 20px; }
   .sp-hero-title { font-size: 28px; }
   .sp-content { padding: 36px 20px; }

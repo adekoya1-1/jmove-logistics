@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './StaticPage.css';
+import PublicNav from '../components/PublicNav.jsx';
 
 const FAQS = [
   {
@@ -42,12 +43,7 @@ export default function HelpSupport() {
 
   return (
     <div className="sp-page">
-      <nav className="sp-nav">
-        <Link to="/" className="sp-nav-logo">
-          <img src="/logo-dark.png" alt="JMove Logistics" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
-        </Link>
-        <Link to="/" className="sp-nav-back">← Back to Home</Link>
-      </nav>
+      <PublicNav />
 
       <div className="sp-hero">
         <div className="sp-hero-inner">

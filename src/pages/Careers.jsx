@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import './StaticPage.css';
+import PublicNav from '../components/PublicNav.jsx';
 
 const ROLES = [
   {
@@ -28,12 +29,7 @@ const ROLES = [
 export default function Careers() {
   return (
     <div className="sp-page">
-      <nav className="sp-nav">
-        <Link to="/" className="sp-nav-logo">
-          <img src="/logo-dark.png" alt="JMove Logistics" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
-        </Link>
-        <Link to="/" className="sp-nav-back">← Back to Home</Link>
-      </nav>
+      <PublicNav />
 
       <div className="sp-hero">
         <div className="sp-hero-inner">
