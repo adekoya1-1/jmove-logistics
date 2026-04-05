@@ -191,6 +191,31 @@ const driverEarningSchema = new mongoose.Schema({
   destinationCity: { type: String },
 }, { timestamps: true });
 
+// ── OTP Token — for email verification and password reset ──────────────────
+// Security design:
+//   • OTP is bcrypt-hashed (10 rounds) — never stored in plain text
+//   • MongoDB TTL index auto-deletes documents after expiresAt
+//   • attempts field enforces max-retry limit at application level
+//   • usedAt set on success — enforces single-use
+//   • compound index { email, purpose } for fast, consistent lookup
+const otpTokenSchema = new mongoose.Schema({
+  email:     { type: String, required: true, lowercase: true, trim: true },
+  hashedOtp: { type: String, required: true },
+  purpose:   {
+    type: String,
+    enum: ['email_verification', 'password_reset'],
+    required: true,
+  },
+  expiresAt: { type: Date, required: true },  // enforced in code AND TTL index
+  attempts:  { type: Number, default: 0 },    // wrong guesses; capped at 5
+  usedAt:    { type: Date, default: null },    // null = unused, Date = single-use consumed
+}, { timestamps: true });
+
+// MongoDB TTL: auto-remove document the moment expiresAt is reached (±60s jitter)
+otpTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// Fast lookup: always query by email + purpose together
+otpTokenSchema.index({ email: 1, purpose: 1 });
+
 export const User           = mongoose.model('User', userSchema);
 export const DriverProfile  = mongoose.model('DriverProfile', driverProfileSchema);
 export const Order          = mongoose.model('Order', orderSchema);
@@ -199,5 +224,6 @@ export const TrackingEvent  = mongoose.model('TrackingEvent', trackingEventSchem
 export const Notification   = mongoose.model('Notification', notificationSchema);
 export const Review         = mongoose.model('Review', reviewSchema);
 export const DriverEarning  = mongoose.model('DriverEarning', driverEarningSchema);
+export const OtpToken       = mongoose.model('OtpToken', otpTokenSchema);
 
 export default connectDB;

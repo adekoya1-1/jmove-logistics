@@ -94,15 +94,30 @@ const doRefresh = async () => {
 // ── Core fetch with auth + auto-refresh ─────────────────
 async function fetchWithAuth(url, options = {}) {
   const { accessToken } = getTokens();
-  const headers = { 'Content-Type': 'application/json', ...options.headers };
+
+  // Only set Content-Type to JSON when we are NOT sending FormData.
+  // For FormData the browser must set it (includes the multipart boundary).
+  const isFormData = options.body instanceof FormData;
+  const headers = {
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...options.headers,
+  };
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
 
   const res = await fetch(`${BASE}${url}`, { ...options, headers });
 
   if (res.status === 401) {
-    const body = await res.json().catch(() => ({}));
+    // ── CRITICAL FIX ──────────────────────────────────────────────────────
+    // A Response body is a ReadableStream — it can only be consumed ONCE.
+    // We must clone before reading so the original `res` body remains intact
+    // for the caller (request()) to read afterwards.
+    // The previous code called `res.json()` directly which drained the stream;
+    // when request() then called `res.json()` again it got a TypeError, which
+    // the .catch() fallback silently replaced with 'Network error'.
+    // ─────────────────────────────────────────────────────────────────────
+    const body = await res.clone().json().catch(() => ({}));
 
-    // Session invalidated (password changed) — force full logout
+    // Session invalidated (password changed / forced logout) — wipe and redirect
     if (body.code === 'TOKEN_INVALIDATED') {
       clearTokens();
       window.location.href = '/login?reason=session_expired';
@@ -128,6 +143,8 @@ async function fetchWithAuth(url, options = {}) {
         return res;
       }
     }
+    // Any other 401 (e.g. wrong credentials): fall through and return res intact.
+    // The original body stream is still readable because we used .clone() above.
   }
 
   return res;
@@ -143,10 +160,49 @@ async function request(method, url, data, options = {}) {
     throw new Error('Request body too large');
   }
 
-  const headers = data instanceof FormData ? {} : {};
-  const res  = await fetchWithAuth(url, { method, body, headers, ...options });
-  const json = await res.json().catch(() => ({ success: false, message: 'Network error' }));
-  if (!res.ok) throw Object.assign(new Error(json.message || 'Request failed'), { response: { data: json } });
+  // fetchWithAuth sets Content-Type itself — pass empty headers so it decides.
+  const headers = {};
+
+  // ── Distinguish: (a) server responded with error  vs  (b) no response at all
+  let res;
+  try {
+    res = await fetchWithAuth(url, { method, body, headers, ...options });
+  } catch (networkErr) {
+    // fetch() itself threw — the server was unreachable or the network is down.
+    // Attach a flag so callers can show the right message.
+    const err = new Error('Network issue — check your connection and try again.');
+    err.isNetworkError = true;
+    err.originalError  = networkErr;
+    throw err;
+  }
+
+  // Parse the response body.
+  // After the fetchWithAuth fix (res.clone() for 401 inspection), the body
+  // stream is always intact here regardless of the status code.
+  let json;
+  try {
+    json = await res.json();
+  } catch {
+    // The server replied but with non-JSON (e.g. a stray HTML error page).
+    const err = new Error(
+      res.ok
+        ? 'Unexpected response from server.'
+        : `Server error (${res.status}) — please try again.`
+    );
+    err.isParseError = true;
+    err.status       = res.status;
+    throw err;
+  }
+
+  if (!res.ok) {
+    // Server responded with a structured error — surface the backend message directly.
+    const err = new Error(json.message || `Request failed (${res.status})`);
+    err.status       = res.status;
+    err.response     = { data: json, status: res.status };
+    err.isServerError = true;
+    throw err;
+  }
+
   return json;
 }
 
@@ -170,12 +226,19 @@ const api = {
 
 // ── Named API helpers ────────────────────────────────────
 export const authAPI = {
-  register:       (d) => api.post('/auth/register', d),
-  login:          (d) => api.post('/auth/login', d),
-  logout:         ()  => api.post('/auth/logout'),
-  profile:        ()  => api.get('/auth/profile'),
-  updateProfile:  (d) => api.put('/auth/profile', d),
-  changePassword: (d) => api.put('/auth/change-password', d),
+  register:        (d)      => api.post('/auth/register', d),
+  login:           (d)      => api.post('/auth/login', d),
+  logout:          ()       => api.post('/auth/logout'),
+  profile:         ()       => api.get('/auth/profile'),
+  updateProfile:   (d)      => api.put('/auth/profile', d),
+  changePassword:  (d)      => api.put('/auth/change-password', d),
+  // OTP — email verification
+  verifyOtp:       (d)      => api.post('/auth/verify-otp', d),
+  resendOtp:       (email)  => api.post('/auth/resend-otp', { email }),
+  // OTP — password reset
+  forgotPassword:  (email)  => api.post('/auth/forgot-password', { email }),
+  verifyResetOtp:  (d)      => api.post('/auth/verify-reset-otp', d),
+  resetPassword:   (d)      => api.post('/auth/reset-password', d),
 };
 
 export const ordersAPI = {

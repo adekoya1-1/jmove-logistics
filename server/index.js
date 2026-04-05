@@ -167,10 +167,18 @@ app.use('/api/', limiters.general);
 // ══════════════════════════════════════════════════════════
 //  ROUTE-LEVEL RATE LIMITS
 // ══════════════════════════════════════════════════════════
-app.use('/api/auth/login',           limiters.auth);
-app.use('/api/auth/register',        limiters.auth);
-app.use('/api/auth/refresh',         limiters.auth);
-app.use('/api/auth/change-password', limiters.strict);
+app.use('/api/auth/login',              limiters.auth);
+app.use('/api/auth/register',           limiters.auth);
+app.use('/api/auth/refresh',            limiters.auth);
+app.use('/api/auth/change-password',    limiters.strict);
+// OTP send endpoints — 5 requests per 10 min per IP
+app.use('/api/auth/resend-otp',         limiters.otp);
+app.use('/api/auth/forgot-password',    limiters.otp);
+// OTP verify endpoints — per-record attempt limit enforced inside route handler
+app.use('/api/auth/verify-otp',         limiters.otpVerify);
+app.use('/api/auth/verify-reset-otp',   limiters.otpVerify);
+// Reset password — strict: 5 per hour per IP
+app.use('/api/auth/reset-password',     limiters.strict);
 app.use('/api/payments/initialize',  limiters.payment);
 app.use('/api/payments/verify',      limiters.payment);
 app.use('/api/orders',               (req, res, next) => {

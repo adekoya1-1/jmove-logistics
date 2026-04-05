@@ -278,4 +278,44 @@ export const reviewSchemas = {
   driverIdParam:z.object({ driverId: objectId }),
 };
 
+// ── OTP ─────────────────────────────────────────────────
+const otpCode = z.string()
+  .length(6, 'Verification code must be exactly 6 digits')
+  .regex(/^\d{6}$/, 'Verification code must contain only digits');
+
+export const otpSchemas = {
+  // Resend email-verification OTP (for registered but unverified accounts)
+  resendOtp: z.object({
+    email: z.string().email('Invalid email address').max(254).toLowerCase().trim(),
+  }),
+
+  // Verify email-verification OTP → issues access/refresh tokens
+  verifyOtp: z.object({
+    email: z.string().email('Invalid email address').max(254).toLowerCase().trim(),
+    otp:   otpCode,
+  }),
+
+  // Request password-reset OTP (always 200 — anti-enumeration)
+  forgotPassword: z.object({
+    email: z.string().email('Invalid email address').max(254).toLowerCase().trim(),
+  }),
+
+  // Verify password-reset OTP → returns short-lived resetToken JWT
+  verifyResetOtp: z.object({
+    email: z.string().email('Invalid email address').max(254).toLowerCase().trim(),
+    otp:   otpCode,
+  }),
+
+  // Use resetToken JWT + new password to complete the reset
+  resetPassword: z.object({
+    resetToken:  z.string().min(1).max(600),
+    newPassword: z.string()
+      .min(8,   'Password must be at least 8 characters')
+      .max(72,  'Password too long')
+      .regex(/[A-Z]/,        'Password must contain an uppercase letter')
+      .regex(/[0-9]/,        'Password must contain a number')
+      .regex(/[^A-Za-z0-9]/, 'Password must contain a special character'),
+  }),
+};
+
 export { objectId };

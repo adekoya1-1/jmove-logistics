@@ -19,12 +19,24 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const res = await authAPI.register({ ...form, role: 'customer' });
-      login(res.data.user, { accessToken: res.data.accessToken, refreshToken: res.data.refreshToken });
-      navigate('/dashboard');
+      const res = await authAPI.register({ ...form });
+      // Registration no longer auto-logs in — account must be verified first.
+      // Backend returns { data: { email } } — redirect to OTP page.
+      const email = res.data?.email || form.email;
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
-      const msg = err?.response?.data?.errors?.[0]?.msg || err?.response?.data?.message || 'Registration failed';
-      setError(msg);
+      if (err.isNetworkError) {
+        setError('Network issue — check your connection and try again.');
+      } else if (err.status === 409) {
+        setError('An account with this email already exists. Try logging in instead.');
+      } else if (err.status === 400) {
+        const first = err?.response?.data?.errors?.[0]?.message;
+        setError(first || err?.response?.data?.message || 'Please check your details and try again.');
+      } else if (err.status >= 500) {
+        setError('Something went wrong on our end — please try again in a moment.');
+      } else {
+        setError(err?.response?.data?.message || 'Registration failed — please try again.');
+      }
     } finally { setLoading(false); }
   };
 

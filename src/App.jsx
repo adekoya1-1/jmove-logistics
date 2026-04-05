@@ -108,6 +108,8 @@ function RequireAuth({ children, roles }) {
 import Landing           from './pages/Landing.jsx';
 import Login             from './pages/Login.jsx';
 import Register          from './pages/Register.jsx';
+import VerifyEmail       from './pages/VerifyEmail.jsx';
+import ForgotPassword    from './pages/ForgotPassword.jsx';
 import PaymentVerify     from './pages/PaymentVerify.jsx';
 import TrackOrder        from './pages/TrackOrder.jsx';
 
@@ -140,11 +142,13 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* Public */}
-          <Route path="/"        element={<Landing />} />
-          <Route path="/login"   element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/track"   element={<TrackOrder />} />
-          <Route path="/payment/verify" element={<PaymentVerify />} />
+          <Route path="/"                 element={<Landing />} />
+          <Route path="/login"            element={<Login />} />
+          <Route path="/register"         element={<Register />} />
+          <Route path="/verify-email"     element={<VerifyEmail />} />
+          <Route path="/forgot-password"  element={<ForgotPassword />} />
+          <Route path="/track"            element={<TrackOrder />} />
+          <Route path="/payment/verify"   element={<PaymentVerify />} />
 
           {/* Admin */}
           <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminLayout /></RequireAuth>}>

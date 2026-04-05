@@ -122,6 +122,24 @@ export const limiters = {
     max: 60,  // 1 per second max
     message: 'Location update rate exceeded.',
   }),
+
+  // OTP send/resend/forgot-password — very tight: 5 per 10 min per IP
+  // Per-email cooldown (60s) is enforced separately inside the route handler
+  otp: make({
+    name: 'otp',
+    windowMs: 10 * 60 * 1000,
+    max: 5,
+    message: 'Too many OTP requests from this IP. Please wait 10 minutes before trying again.',
+  }),
+
+  // OTP verification — slightly looser to allow 5 attempts × 2 OTPs
+  // Actual per-record attempt limit (5) is enforced inside the route handler
+  otpVerify: make({
+    name: 'otpVerify',
+    windowMs: 10 * 60 * 1000,
+    max: 15,
+    message: 'Too many verification attempts. Please wait 10 minutes.',
+  }),
 };
 
 export { checkBlocked, trackAbuse };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../App.jsx';
 import { authAPI } from '../api/client.js';
 import './Login.css';
@@ -12,6 +12,12 @@ export default function Login() {
   const [loading,  setLoading]  = useState(false);
   const { login }  = useAuth();
   const navigate   = useNavigate();
+  const [params]   = useSearchParams();
+
+  // Show a message when redirected back after session expiry
+  const sessionMsg = params.get('reason') === 'session_expired'
+    ? 'Your session expired. Please log in again.'
+    : null;
 
   const fill = (role) => {
     const c = { admin:['admin@jmovelogistics.com','Admin@123'], customer:['customer@jmovelogistics.com','Customer@123'], driver:['driver@jmovelogistics.com','Driver@123'] };
@@ -26,7 +32,28 @@ export default function Login() {
       const map = { admin: '/admin', customer: '/dashboard', driver: '/driver' };
       navigate(map[res.data.user.role] || '/dashboard');
     } catch (err) {
-      setError(err?.response?.data?.message || 'Invalid email or password');
+      if (err.isNetworkError) {
+        setError('Network issue — check your connection and try again.');
+      } else if (err.status === 423) {
+        // Account locked (too many failed attempts)
+        setError(err?.response?.data?.message || 'Account temporarily locked. Try again later.');
+      } else if (err.status === 403 && err?.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        // Account exists but email not yet verified — offer to go verify
+        const unverifiedEmail = err?.response?.data?.data?.email || email;
+        setError(`Email not verified. Please check your inbox for a code.`);
+        // Small delay so user sees the message, then navigate
+        setTimeout(() => navigate(`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`), 1800);
+      } else if (err.status === 401) {
+        setError('Invalid email or password.');
+      } else if (err.status === 400) {
+        // Validation error from Zod — first field error or outer message
+        const first = err?.response?.data?.errors?.[0]?.message;
+        setError(first || err?.response?.data?.message || 'Please check your details and try again.');
+      } else if (err.status >= 500) {
+        setError('Something went wrong on our end — please try again in a moment.');
+      } else {
+        setError(err?.response?.data?.message || 'Login failed — please try again.');
+      }
     } finally { setLoading(false); }
   };
 
@@ -48,6 +75,12 @@ export default function Login() {
           ))}
         </div>
 
+        {sessionMsg && !error && (
+          <div className="auth-error" style={{ background: '#FFFBEB', borderColor: 'rgba(245,158,11,0.3)', color: '#92400E' }}>
+            ⏰ {sessionMsg}
+          </div>
+        )}
+
         {error && (
           <div className="auth-error">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="7" r="6.5" stroke="currentColor" strokeWidth="1" fill="none"/><path d="M7 4v4M7 9.5v.5"/></svg>
@@ -63,7 +96,7 @@ export default function Login() {
           <div className="field">
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
               <label className="label" style={{ margin:0 }}>Password</label>
-              <a href="#" className="auth-forgot">Forgot password?</a>
+              <Link to="/forgot-password" className="auth-forgot">Forgot password?</Link>
             </div>
             <div className="pw-wrap">
               <input type={showPw?'text':'password'} className="input" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />

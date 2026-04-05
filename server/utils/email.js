@@ -60,3 +60,68 @@ export const sendPaymentReceipt = ({ email, firstName }, order, reference) =>
 
 export const sendDriverAssignment = ({ email, firstName }, order) =>
   send({ to: email, subject: `New Delivery Job — ${order.waybillNumber}`, html: wrap(`<div class="badge">New Job</div><h2>Hi ${firstName}, you have a new delivery!</h2><div class="row"><span class="rl">Waybill</span><span class="rv">${order.waybillNumber}</span></div><div class="row"><span class="rl">From</span><span class="rv">${order.originCity}${order.senderAddress ? ' — ' + order.senderAddress : ''}</span></div><div class="row"><span class="rl">Deliver to</span><span class="rv">${order.destinationCity} — ${order.receiverAddress}</span></div><div class="row"><span class="rl">Receiver</span><span class="rv">${order.receiverName} · ${order.receiverPhone}</span></div><div class="row"><span class="rl">Weight</span><span class="rv">${order.weight}kg</span></div><div class="row"><span class="rl">Service</span><span class="rv">${order.serviceType}</span></div><a href="${process.env.FRONTEND_URL}/driver/active" class="btn">Open Driver Hub</a>`, 'New Job') });
+
+// ── OTP: email verification ──────────────────────────────
+// ⚠️  NOTE: `otp` is NEVER logged in the send() function above — it goes
+//    straight to the email body. In dev (no SMTP), we log it below ONLY
+//    so developers can test without configuring a real mail server.
+export const sendOtpVerification = ({ email, firstName, otp }) => {
+  // DEV MODE ONLY — remove/guard this log if you add SMTP in staging
+  if (!process.env.SMTP_USER) {
+    console.log(`\n[OTP-DEV] ──────────────────────────────────────`);
+    console.log(`  To:      ${email}`);
+    console.log(`  Purpose: Email Verification`);
+    console.log(`  OTP:     ${otp}  (valid 10 min)`);
+    console.log(`────────────────────────────────────────────────\n`);
+    return Promise.resolve();
+  }
+  return send({
+    to:      email,
+    subject: `🔐 ${otp} — Verify your JMove account`,
+    html: wrap(`
+      <h2>Hi ${firstName}, verify your email</h2>
+      <p>Enter the code below to activate your JMove Logistics account.</p>
+      <div style="margin:28px auto;text-align:center;">
+        <div style="display:inline-block;background:#F4F4F4;border:2px dashed #D0D0D0;border-radius:12px;padding:20px 36px;">
+          <span style="font-size:40px;font-weight:900;letter-spacing:10px;color:#0F1923;font-family:monospace;">${otp}</span>
+        </div>
+      </div>
+      <div class="row"><span class="rl">Expires in</span><span class="rv">10 minutes</span></div>
+      <p style="margin-top:20px;font-size:12px;color:#888;">
+        This code is single-use. If you did not create a JMove account, you can safely ignore this email.
+        Do not share this code with anyone.
+      </p>
+    `, 'Verify Your Email'),
+  });
+};
+
+// ── OTP: password reset ──────────────────────────────────
+export const sendPasswordResetOtp = ({ email, firstName, otp }) => {
+  if (!process.env.SMTP_USER) {
+    console.log(`\n[OTP-DEV] ──────────────────────────────────────`);
+    console.log(`  To:      ${email}`);
+    console.log(`  Purpose: Password Reset`);
+    console.log(`  OTP:     ${otp}  (valid 10 min)`);
+    console.log(`────────────────────────────────────────────────\n`);
+    return Promise.resolve();
+  }
+  return send({
+    to:      email,
+    subject: `🔑 ${otp} — JMove password reset code`,
+    html: wrap(`
+      <h2>Hi ${firstName}, reset your password</h2>
+      <p>Use the code below to reset your JMove Logistics password.</p>
+      <div style="margin:28px auto;text-align:center;">
+        <div style="display:inline-block;background:#F4F4F4;border:2px dashed #D0D0D0;border-radius:12px;padding:20px 36px;">
+          <span style="font-size:40px;font-weight:900;letter-spacing:10px;color:#0F1923;font-family:monospace;">${otp}</span>
+        </div>
+      </div>
+      <div class="row"><span class="rl">Expires in</span><span class="rv">10 minutes</span></div>
+      <p style="margin-top:20px;font-size:12px;color:#888;">
+        If you did not request a password reset, your account is safe — ignore this email.
+        Your password will NOT change unless you use this code.
+        Do not share this code with anyone.
+      </p>
+    `, 'Password Reset'),
+  });
+};
