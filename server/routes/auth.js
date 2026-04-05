@@ -151,13 +151,9 @@ router.post('/refresh', async (req, res, next) => {
     if (!refreshToken || typeof refreshToken !== 'string' || refreshToken.length > 200)
       return res.status(400).json({ success: false, message: 'Refresh token required' });
 
-    // Find candidate users (can't look up directly since it's hashed)
-    // We use a time-limited search — the user must have a non-null refreshToken
-    // In production with Redis: store token → userId mapping for O(1) lookup
-    const user = await User.findOne({ refreshToken: { $ne: null } });
-
-    // We do a linear scan among active users — acceptable because refresh is rare
-    // In production: use Redis with token → userId mapping
+    // Linear scan among active users with non-null refreshToken.
+    // Can't do direct lookup because the token is bcrypt-hashed in DB.
+    // Acceptable at low scale; in production use Redis (token → userId) for O(1).
     const users = await User.find({ refreshToken: { $ne: null }, isActive: true }).select('+refreshToken').limit(200);
     let matchedUser = null;
     for (const u of users) {

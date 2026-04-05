@@ -129,7 +129,9 @@ router.get('/earnings', authenticate, authorize('driver'), async (req, res, next
 });
 
 // ── GET /api/drivers/:id ─────────────────────────────────
-router.get('/:id', authenticate, validate(driverSchemas.idParam, 'params'), async (req, res, next) => {
+// Restricted to admin — customers and drivers have no business
+// fetching arbitrary driver profiles (exposes plate, license, employeeId, phone).
+router.get('/:id', authenticate, authorize('admin'), validate(driverSchemas.idParam, 'params'), async (req, res, next) => {
   try {
     const driver = await DriverProfile.findById(req.params.id)
       .populate('userId', 'firstName lastName email phone').lean();

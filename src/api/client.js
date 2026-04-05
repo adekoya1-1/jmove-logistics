@@ -161,6 +161,11 @@ const api = {
   getTokens,
   saveTokens,
   clearTokens,
+
+  // Exposed so AuthProvider can proactively refresh when there is a valid
+  // refreshToken in localStorage but no access token (e.g. new tab opened
+  // after the previous tab was closed — sessionStorage is wiped on tab close).
+  refreshSession: doRefresh,
 };
 
 // ── Named API helpers ────────────────────────────────────

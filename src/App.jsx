@@ -8,19 +8,69 @@ export const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
 function AuthProvider({ children }) {
-  const stored    = api.getTokens();
-  const [user,    setUser]    = useState(stored.user || null);
-  const [loading, setLoading] = useState(!!stored.accessToken && !stored.user);
+  // ── SECURITY: Never trust the user object cached in localStorage.
+  //
+  //    Previous approach: initialise user from localStorage, skip backend
+  //    validation when an access token was also present.
+  //    Attack: attacker writes { role: 'admin' } to jmove_auth in localStorage
+  //    + any string to sessionStorage accessToken → RequireAuth let them
+  //    straight through to all admin routes.
+  //
+  //    Fix: always start with user = null and ALWAYS validate with the backend
+  //    before showing any protected content.  We only skip validation when
+  //    there is genuinely nothing in storage (fresh visitor, or after logout).
+  // ────────────────────────────────────────────────────────────────────────
+  const { accessToken, refreshToken } = api.getTokens();
+  const hasSession = !!(accessToken || refreshToken);
+
+  const [user,    setUser]    = useState(null);          // never seeded from storage
+  const [loading, setLoading] = useState(hasSession);    // spinner only when we have tokens to validate
 
   useEffect(() => {
-    if (stored.accessToken && !stored.user) {
-      import('./api/client.js').then(({ authAPI }) =>
-        authAPI.profile()
-          .then(r => { setUser(r.data); api.saveTokens({ user: r.data }); })
-          .catch(() => { api.clearTokens(); setUser(null); })
-          .finally(() => setLoading(false))
-      );
+    if (!hasSession) {
+      // No tokens at all — clear any stale user data that might be in storage
+      // and render immediately (no spinner needed).
+      api.clearTokens();
+      setLoading(false);
+      return;
     }
+
+    let cancelled = false; // cleanup for strict-mode double-invoke
+
+    const validateSession = async () => {
+      try {
+        const { authAPI } = await import('./api/client.js');
+
+        // Case: access token missing (e.g. new tab — sessionStorage wiped) but
+        //       refresh token present in localStorage.  Refresh first so that
+        //       the profile call below has a valid Bearer token to send.
+        const current = api.getTokens();
+        if (!current.accessToken && current.refreshToken) {
+          await api.refreshSession();   // updates accessToken in memory + sessionStorage
+        }
+
+        // This call goes through fetchWithAuth which will:
+        //   a) attach the (possibly just-refreshed) access token
+        //   b) handle TOKEN_EXPIRED by rotating once more if needed
+        //   c) throw on any other auth failure
+        const r = await authAPI.profile();
+        if (!cancelled) {
+          setUser(r.data);
+          api.saveTokens({ user: r.data });
+        }
+      } catch {
+        // Token invalid, expired beyond refresh, or account deactivated —
+        // wipe everything and force the user to log in again.
+        api.clearTokens();
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    validateSession();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = (userData, tokens) => {

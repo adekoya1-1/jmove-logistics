@@ -31,7 +31,9 @@ export const authenticate = async (req, res, next) => {
     }
 
     // Validate token structure
-    if (!decoded.userId || !decoded.role || !decoded.tokenVersion === undefined)
+    // NOTE: was `!decoded.tokenVersion === undefined` — operator precedence bug (always false).
+    // Fixed to `decoded.tokenVersion === undefined` which correctly catches missing field.
+    if (!decoded.userId || !decoded.role || decoded.tokenVersion === undefined)
       return res.status(401).json({ success: false, message: 'Malformed token' });
 
     const user = await User.findById(decoded.userId)
