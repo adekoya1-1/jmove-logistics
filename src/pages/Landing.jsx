@@ -146,9 +146,12 @@ export default function Landing() {
                 Book a Shipment
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M7.5 1l5.5 6-5.5 6V9H1V5h6.5V1z"/></svg>
               </Link>
-              <a href="#tracking" className="hero-cta-ghost">
+              
+                <Link to="/track" className="hero-cta-ghost">
                 Track a Shipment →
-              </a>
+                </Link>
+                
+              
             </div>
             <div className="hero-trust">
               <div className="trust-item">
@@ -252,37 +255,6 @@ export default function Landing() {
               </p>
               <span className="service-link coming-soon-link">Notify me →</span>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Track section ── */}
-      <section className="track-section" id="tracking">
-        <div className="track-inner">
-          <div className="track-content">
-            <p className="section-eyebrow light">Track Your Shipment</p>
-            <h2 className="track-title">Where is your goods right now?</h2>
-            <p className="track-sub">
-              Enter your waybill number for instant real-time updates — no account needed.
-            </p>
-            <TrackForm />
-            <p className="track-hint">
-              Have an account? <Link to="/dashboard" style={{color:'var(--gold-dark)'}}>Sign in for full history</Link>
-            </p>
-          </div>
-          <div className="track-visual">
-            {['Booking Confirmed','Driver Assigned','Goods Picked Up','In Transit','Out for Delivery','Delivered'].map((step, i) => (
-              <div key={step} className={`track-step ${i < 5 ? 'done' : ''}`}>
-                <div className="ts-dot">
-                  {i < 5
-                    ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
-                    : <div className="ts-pulse" />
-                  }
-                </div>
-                {i < 5 && <div className="ts-line" />}
-                <span className="ts-label">{step}</span>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -421,23 +393,23 @@ export default function Landing() {
               <p className="footer-col-title">Company</p>
               <a href="#about" className="footer-link">About Us</a>
               <a href="#why-us" className="footer-link">Why JMove</a>
-              <a href="#" className="footer-link">Careers</a>
-              <a href="#" className="footer-link">Contact Us</a>
+              <Link to="/careers" className="footer-link">Careers</Link>
+              <Link to="/contact" className="footer-link">Contact Us</Link>
             </div>
             <div className="footer-col">
               <p className="footer-col-title">Customer</p>
-              <a href="#tracking" className="footer-link">Track Shipment</a>
+              <Link to="/track" className="footer-link">Track Shipment</Link>
               <Link to="/register" className="footer-link">Book a Shipment</Link>
               <Link to="/login" className="footer-link">Sign In</Link>
-              <a href="#" className="footer-link">Help & Support</a>
+              <Link to="/help" className="footer-link">Help & Support</Link>
             </div>
           </div>
         </div>
         <div className="footer-bottom">
           <p>© {new Date().getFullYear()} JMove Logistics Ltd. All rights reserved.</p>
           <div className="footer-bottom-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
+            <Link to="/privacy-policy">Privacy Policy</Link>
+            <Link to="/terms">Terms of Service</Link>
           </div>
         </div>
       </footer>

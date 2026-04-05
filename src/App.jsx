@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, createContext, useContext } from 'react';
 import './App.css';
 import api from './api/client.js';
@@ -93,6 +93,13 @@ function AuthProvider({ children }) {
   return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
 }
 
+// ── Scroll to top on every navigation ────────────────────────────────────────
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 // ── Route guards ──────────────────────────────────────────────────────────────
 function RequireAuth({ children, roles }) {
   const { user } = useAuth();
@@ -112,6 +119,11 @@ import VerifyEmail       from './pages/VerifyEmail.jsx';
 import ForgotPassword    from './pages/ForgotPassword.jsx';
 import PaymentVerify     from './pages/PaymentVerify.jsx';
 import TrackOrder        from './pages/TrackOrder.jsx';
+import ContactUs         from './pages/ContactUs.jsx';
+import HelpSupport       from './pages/HelpSupport.jsx';
+import Careers           from './pages/Careers.jsx';
+import PrivacyPolicy     from './pages/PrivacyPolicy.jsx';
+import TermsOfService    from './pages/TermsOfService.jsx';
 
 import AdminLayout       from './components/admin/AdminLayout.jsx';
 import AdminDashboard    from './pages/admin/AdminDashboard.jsx';
@@ -140,6 +152,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* Public */}
           <Route path="/"                 element={<Landing />} />
@@ -149,6 +162,11 @@ export default function App() {
           <Route path="/forgot-password"  element={<ForgotPassword />} />
           <Route path="/track"            element={<TrackOrder />} />
           <Route path="/payment/verify"   element={<PaymentVerify />} />
+          <Route path="/contact"          element={<ContactUs />} />
+          <Route path="/help"             element={<HelpSupport />} />
+          <Route path="/careers"          element={<Careers />} />
+          <Route path="/privacy-policy"   element={<PrivacyPolicy />} />
+          <Route path="/terms"            element={<TermsOfService />} />
 
           {/* Admin */}
           <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminLayout /></RequireAuth>}>
