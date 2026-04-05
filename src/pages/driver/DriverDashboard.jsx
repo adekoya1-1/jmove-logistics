@@ -11,7 +11,7 @@ export default function DriverDashboard() {
   const [order,    setOrder]    = useState(null);
   const [driverStatus, setDriverStatus] = useState('offline');
   const [statusLoading, setStatusLoading] = useState(false);
-  const [gpsActive, setGpsActive] = useState(false);
+  const [gpsActive, setGpsActive] = useState(false); // read-only indicator
   const socketRef  = useRef(null);
   const watchRef   = useRef(null);
 
@@ -23,7 +23,7 @@ export default function DriverDashboard() {
     driversAPI.activeOrder().then(r => setOrder(r.data)).catch(console.error);
   }, []);
 
-  // Socket
+  // Socket — connect then immediately start GPS
   useEffect(() => {
     const tokens = JSON.parse(localStorage.getItem('jmove_auth') || '{}');
     if (!tokens.accessToken) return;
@@ -32,12 +32,16 @@ export default function DriverDashboard() {
         auth: { token: tokens.accessToken }, transports: ['websocket', 'polling'],
       });
       socketRef.current = socket;
+      startGPS(); // GPS always on
     }).catch(console.error);
-    return () => { socketRef.current?.disconnect(); stopGPS(); };
+    return () => {
+      socketRef.current?.disconnect();
+      if (watchRef.current) navigator.geolocation.clearWatch(watchRef.current);
+    };
   }, []);
 
   const startGPS = () => {
-    if (!navigator.geolocation || gpsActive) return;
+    if (!navigator.geolocation || watchRef.current) return;
     setGpsActive(true);
     watchRef.current = navigator.geolocation.watchPosition(
       ({ coords }) => {
@@ -50,14 +54,9 @@ export default function DriverDashboard() {
     );
   };
 
-  const stopGPS = () => {
-    if (watchRef.current) navigator.geolocation.clearWatch(watchRef.current);
-    setGpsActive(false);
-  };
-
-  const toggleGPS = () => gpsActive ? stopGPS() : startGPS();
-
   const cycleStatus = async () => {
+    // Block status change while an active delivery is ongoing
+    if (order) return;
     const next = { offline:'available', available:'offline', busy:'available' };
     const newStatus = next[driverStatus] || 'offline';
     setStatusLoading(true);
@@ -68,6 +67,8 @@ export default function DriverDashboard() {
     } catch (e) { console.error(e); }
     finally { setStatusLoading(false); }
   };
+
+  const hasActiveDelivery = !!order;
 
   const dp      = profile?.driverProfile;
   const verified = dp?.isVerified;
@@ -100,18 +101,26 @@ export default function DriverDashboard() {
           </div>
         </div>
         <div className="driver-status-right">
-          <button className={`gps-btn ${gpsActive ? 'active' : ''}`} onClick={toggleGPS}>
-            <span className={gpsActive ? 'gps-pulse' : ''} />
-            {gpsActive ? '📡 GPS On' : '📡 GPS Off'}
-          </button>
-          <button
-            className="status-toggle-btn"
-            style={{ background:sc.bg, color:sc.color, borderColor:sc.color+'40' }}
-            onClick={cycleStatus}
-            disabled={statusLoading}
-          >
-            {statusLoading ? <span className="spinner spinner-sm" /> : `● ${sc.label}`}
-          </button>
+          <div className="gps-btn active" title="GPS tracking is always active">
+            <span className="gps-pulse" />
+            📡 GPS Active
+          </div>
+          <div className="status-btn-wrap">
+            <button
+              className="status-toggle-btn"
+              style={{ background:sc.bg, color:sc.color, borderColor:sc.color+'40',
+                opacity: hasActiveDelivery ? 0.55 : 1,
+                cursor:  hasActiveDelivery ? 'not-allowed' : 'pointer' }}
+              onClick={cycleStatus}
+              disabled={statusLoading || hasActiveDelivery}
+              title={hasActiveDelivery ? 'Complete your current delivery before changing status' : ''}
+            >
+              {statusLoading ? <span className="spinner spinner-sm" /> : `● ${sc.label}`}
+            </button>
+            {hasActiveDelivery && (
+              <p className="status-locked-hint">🔒 Complete delivery first</p>
+            )}
+          </div>
         </div>
       </div>
 

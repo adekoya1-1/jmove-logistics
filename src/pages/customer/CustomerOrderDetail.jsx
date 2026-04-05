@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ordersAPI, paymentsAPI } from '../../api/client.js';
+import { ordersAPI, paymentsAPI, reviewsAPI } from '../../api/client.js';
 import { format } from 'date-fns';
 import './CustomerOrderDetail.css';
 
@@ -27,6 +27,11 @@ export default function CustomerOrderDetail() {
   const [loading,    setLoading]    = useState(true);
   const [driverPos,  setDriverPos]  = useState(null);
   const [payLoading, setPayLoading] = useState(false);
+  const [review,     setReview]     = useState(null);
+  const [myRating,   setMyRating]   = useState(0);
+  const [myComment,  setMyComment]  = useState('');
+  const [ratingBusy, setRatingBusy] = useState(false);
+  const [ratingDone, setRatingDone] = useState(false);
   const mapRef       = useRef(null);
   const mapObj       = useRef(null);
   const driverMarker = useRef(null);
@@ -38,6 +43,29 @@ export default function CustomerOrderDetail() {
     .finally(() => setLoading(false));
 
   useEffect(() => { load(); }, [id]);
+
+  // Load existing review
+  useEffect(() => {
+    reviewsAPI.forOrder(id)
+      .then(r => { if (r.data) { setReview(r.data); setMyRating(r.data.rating); setMyComment(r.data.comment || ''); }})
+      .catch(() => {});
+  }, [id]);
+
+  const handlePrintInvoice = () => {
+    window.print();
+  };
+
+  const handleSubmitRating = async () => {
+    if (!myRating) return;
+    setRatingBusy(true);
+    try {
+      const r = await reviewsAPI.submit({ orderId: id, rating: myRating, comment: myComment });
+      setReview(r.data);
+      setRatingDone(true);
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Could not submit rating. Try again.');
+    } finally { setRatingBusy(false); }
+  };
 
   // Live socket for in-transit orders
   useEffect(() => {
@@ -96,9 +124,16 @@ export default function CustomerOrderDetail() {
             &nbsp;· Booked {format(new Date(order.createdAt), 'MMM d, yyyy')}
           </p>
         </div>
-        <span className={`badge ${BADGE[order.status]}`} style={{ fontSize:13, padding:'5px 14px', textTransform:'capitalize' }}>
-          {order.status?.replace(/_/g, ' ')}
-        </span>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          {order.paymentStatus === 'paid' && (
+            <button className="btn-ghost" onClick={handlePrintInvoice} title="Print / Download Receipt" style={{ fontSize:12 }}>
+              🖨 Receipt
+            </button>
+          )}
+          <span className={`badge ${BADGE[order.status]}`} style={{ fontSize:13, padding:'5px 14px', textTransform:'capitalize' }}>
+            {order.status?.replace(/_/g, ' ')}
+          </span>
+        </div>
       </div>
 
       {/* Payment banner */}
@@ -256,6 +291,53 @@ export default function CustomerOrderDetail() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Rating card — only for delivered orders */}
+        {order.status === 'delivered' && order.driverId && (
+          <div className="card track-info-card" style={{ gridColumn:'1/-1' }}>
+            <p className="ti-title">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="var(--amber)"><path d="M6.5 1l1.6 3.3 3.6.5-2.6 2.6.6 3.6-3.2-1.7-3.2 1.7.6-3.6L1.3 4.8l3.6-.5z"/></svg>
+              Rate This Delivery
+            </p>
+            {review || ratingDone ? (
+              <div className="rating-done">
+                <span style={{ fontSize:28 }}>{'★'.repeat(myRating)}{'☆'.repeat(5 - myRating)}</span>
+                <p style={{ fontSize:13, fontWeight:600, color:'var(--green)', marginTop:6 }}>Thank you for your feedback!</p>
+                {myComment && <p style={{ fontSize:12, color:'var(--text-muted)', marginTop:4, fontStyle:'italic' }}>"{myComment}"</p>}
+              </div>
+            ) : (
+              <div className="rating-form">
+                <p style={{ fontSize:13, color:'var(--text-muted)', marginBottom:12 }}>How was your delivery experience?</p>
+                <div className="star-row">
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} className={`star-btn ${myRating >= n ? 'active' : ''}`} onClick={() => setMyRating(n)}>★</button>
+                  ))}
+                  {myRating > 0 && (
+                    <span className="rating-label">
+                      {['','Poor','Fair','Good','Very Good','Excellent'][myRating]}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  className="input"
+                  placeholder="Leave an optional comment..."
+                  value={myComment}
+                  onChange={e => setMyComment(e.target.value)}
+                  rows={2}
+                  style={{ resize:'none', marginTop:10, fontSize:13 }}
+                />
+                <button
+                  className="btn-primary"
+                  style={{ marginTop:10, fontSize:13 }}
+                  onClick={handleSubmitRating}
+                  disabled={!myRating || ratingBusy}
+                >
+                  {ratingBusy ? <span className="spinner spinner-sm" style={{ borderTopColor:'white' }} /> : 'Submit Rating'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -59,6 +59,7 @@ import Landing           from './pages/Landing.jsx';
 import Login             from './pages/Login.jsx';
 import Register          from './pages/Register.jsx';
 import PaymentVerify     from './pages/PaymentVerify.jsx';
+import TrackOrder        from './pages/TrackOrder.jsx';
 
 import AdminLayout       from './components/admin/AdminLayout.jsx';
 import AdminDashboard    from './pages/admin/AdminDashboard.jsx';
@@ -92,6 +93,7 @@ export default function App() {
           <Route path="/"        element={<Landing />} />
           <Route path="/login"   element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/track"   element={<TrackOrder />} />
           <Route path="/payment/verify" element={<PaymentVerify />} />
 
           {/* Admin */}

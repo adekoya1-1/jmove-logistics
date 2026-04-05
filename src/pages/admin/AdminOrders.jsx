@@ -99,7 +99,7 @@ export default function AdminOrders() {
                     <td className="td-sub">{format(new Date(o.createdAt), 'MMM d, HH:mm')}</td>
                     <td>
                       <div className="td-actions">
-                        {o.status === 'pending' && o.paymentStatus === 'paid' && (
+                        {o.status === 'booked' && (
                           <button className="assign-btn" onClick={() => openAssign(o._id)}>Assign</button>
                         )}
                         <Link to={`/admin/orders/${o._id}`} className="btn-ghost" style={{ padding:'5px 8px', fontSize:13 }}>→</Link>

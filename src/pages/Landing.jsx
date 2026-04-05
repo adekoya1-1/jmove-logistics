@@ -15,7 +15,7 @@ function MobileNav() {
           {/* Desktop links */}
           <div className="nav-links nav-links-desktop">
             <a href="#services" className="nav-item">Services</a>
-            <a href="#tracking" className="nav-item">Track Shipment</a>
+            <Link to="/track"   className="nav-item">Track Shipment</Link>
             <a href="#about"    className="nav-item">About Us</a>
             <a href="#why-us"   className="nav-item">Why JMove</a>
             <Link to="/login"    className="nav-signin">Sign In</Link>
@@ -34,7 +34,7 @@ function MobileNav() {
       {open && (
         <div className="nav-drawer">
           <a href="#services" className="nav-drawer-item" onClick={close}>Services</a>
-          <a href="#tracking" className="nav-drawer-item" onClick={close}>Track Shipment</a>
+          <Link to="/track" className="nav-drawer-item" onClick={close}>Track Shipment</Link>
           <a href="#about"    className="nav-drawer-item" onClick={close}>About Us</a>
           <a href="#why-us"   className="nav-drawer-item" onClick={close}>Why JMove</a>
           <div className="nav-drawer-actions">
@@ -101,6 +101,9 @@ function TrackForm() {
               &nbsp;· {new Date(result.statusHistory.at(-1)?.changedAt).toLocaleDateString()}
             </div>
           )}
+          <Link to={`/track?waybill=${result.waybillNumber}`} style={{ display:'inline-block', marginTop:10, fontSize:12, color:'rgba(255,255,255,0.7)', textDecoration:'underline' }}>
+            View full tracking details →
+          </Link>
         </div>
       )}
     </div>

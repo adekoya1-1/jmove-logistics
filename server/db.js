@@ -21,7 +21,26 @@ const userSchema = new mongoose.Schema({
   isActive:  { type: Boolean, default: true },
   emailVerified: { type: Boolean, default: false },
   lastLogin: { type: Date },
-  refreshToken: { type: String },
+  refreshToken: { type: String },   // stored as bcrypt hash
+
+  // ── Brute-force lockout ─────────────────────────────────
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil:     { type: Date, default: null },
+
+  // ── Token invalidation version ──────────────────────────
+  // Increment on password change to invalidate all existing JWTs
+  tokenVersion:  { type: Number, default: 0 },
+
+  // Staff / admin fields
+  staffCategory: {
+    type: String,
+    enum: ['super_admin', 'operations', 'dispatch', 'finance', 'support', 'supervisor'],
+    default: null,
+  },
+  permissions: [{
+    type: String,
+    enum: ['orders', 'drivers', 'payments', 'analytics', 'map', 'staff'],
+  }],
 }, { timestamps: true });
 
 // Driver profile schema
@@ -151,11 +170,34 @@ const notificationSchema = new mongoose.Schema({
   relatedOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
 }, { timestamps: true });
 
+// Review / Rating schema  (customer rates a delivered order)
+const reviewSchema = new mongoose.Schema({
+  orderId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Order',         required: true, unique: true },
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User',          required: true },
+  driverId:   { type: mongoose.Schema.Types.ObjectId, ref: 'DriverProfile', required: true },
+  rating:     { type: Number, required: true, min: 1, max: 5 },
+  comment:    { type: String, maxlength: 500 },
+}, { timestamps: true });
+
+// Driver earning record — one per delivered order
+const driverEarningSchema = new mongoose.Schema({
+  driverId:     { type: mongoose.Schema.Types.ObjectId, ref: 'DriverProfile', required: true },
+  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Order',         required: true, unique: true },
+  waybillNumber:{ type: String },
+  orderAmount:  { type: Number, required: true },   // total order value
+  commission:   { type: Number, required: true },   // driver's cut (15%)
+  earnedAt:     { type: Date, default: Date.now },
+  originCity:   { type: String },
+  destinationCity: { type: String },
+}, { timestamps: true });
+
 export const User           = mongoose.model('User', userSchema);
 export const DriverProfile  = mongoose.model('DriverProfile', driverProfileSchema);
 export const Order          = mongoose.model('Order', orderSchema);
 export const Payment        = mongoose.model('Payment', paymentSchema);
 export const TrackingEvent  = mongoose.model('TrackingEvent', trackingEventSchema);
 export const Notification   = mongoose.model('Notification', notificationSchema);
+export const Review         = mongoose.model('Review', reviewSchema);
+export const DriverEarning  = mongoose.model('DriverEarning', driverEarningSchema);
 
 export default connectDB;

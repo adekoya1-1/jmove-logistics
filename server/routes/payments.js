@@ -1,35 +1,97 @@
+/**
+ * ─────────────────────────────────────────────────────────
+ *  PAYMENTS ROUTE — HARDENED
+ *
+ *  Fixes:
+ *  1. CRITICAL: Webhook HMAC was computed over JSON.stringify(Buffer)
+ *     which always produces the wrong hash. Fixed to pass raw Buffer.
+ *  2. Idempotency: prevent double-initialization for same order
+ *  3. Amount verification: backend re-checks expected amount vs paid
+ *  4. Webhook: atomic update with $set to prevent race conditions
+ *  5. Zod validation on all inputs
+ *  6. No frontend-trusted payment confirmation
+ * ─────────────────────────────────────────────────────────
+ */
 import { Router } from 'express';
 import axios from 'axios';
 import crypto from 'crypto';
 import { Order, Payment, User } from '../db.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { validate, paymentSchemas } from '../middleware/validate.js';
 import { sendPaymentReceipt } from '../utils/email.js';
 
 const router = Router();
-const PAYSTACK = 'https://api.paystack.co';
-const headers  = () => ({ Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`, 'Content-Type': 'application/json' });
 
-// POST /api/payments/initialize
-router.post('/initialize', authenticate, authorize('customer'), async (req, res, next) => {
+const PAYSTACK = 'https://api.paystack.co';
+const psHeaders = () => ({
+  Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+  'Content-Type': 'application/json',
+});
+
+// ── Verify Paystack key is configured ─────────────────────
+if (!process.env.PAYSTACK_SECRET_KEY) {
+  console.warn('[Payments] ⚠️  PAYSTACK_SECRET_KEY not set — payment routes will fail');
+}
+
+// ── POST /api/payments/initialize ───────────────────────
+router.post('/initialize', authenticate, authorize('customer'),
+  validate(paymentSchemas.initialize), async (req, res, next) => {
   try {
     const { orderId } = req.body;
     const order = await Order.findOne({ _id: orderId, customerId: req.user._id });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-    if (order.paymentStatus === 'paid') return res.status(400).json({ success: false, message: 'Already paid' });
+    if (order.paymentStatus === 'paid')
+      return res.status(400).json({ success: false, message: 'Order is already paid' });
+    if (order.paymentMethod !== 'online')
+      return res.status(400).json({ success: false, message: 'This order does not require online payment' });
+    if (['cancelled', 'returned'].includes(order.status))
+      return res.status(400).json({ success: false, message: 'Cannot pay for a cancelled or returned order' });
 
-    const reference = `JMV-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    // Idempotency: if a pending payment with a reference already exists, reuse it
+    const existingPayment = await Payment.findOne({ orderId: order._id, status: 'pending', paystackReference: { $ne: null } });
+    if (existingPayment?.paystackReference) {
+      // Re-fetch from Paystack to check if it was completed
+      try {
+        const { data } = await axios.get(`${PAYSTACK}/transaction/verify/${existingPayment.paystackReference}`, { headers: psHeaders() });
+        if (data.data?.status === 'success') {
+          // Payment completed but not recorded — fix the record
+          await Payment.findByIdAndUpdate(existingPayment._id, { status: 'paid', paidAt: new Date() });
+          await Order.findByIdAndUpdate(orderId, { paymentStatus: 'paid' });
+          return res.json({ success: true, message: 'Payment already completed', data: { alreadyPaid: true } });
+        }
+        // Return existing authorization URL to let user complete it
+        if (data.data?.authorization_url) {
+          return res.json({ success: true, data: { authorization_url: data.data.authorization_url, reference: existingPayment.paystackReference } });
+        }
+      } catch { /* ignore — fall through to create new */ }
+    }
+
+    // Create new reference — use crypto random, NOT Date.now() (predictable)
+    const reference = `JMV-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 
     const { data } = await axios.post(`${PAYSTACK}/transaction/initialize`, {
-      email:     req.user.email,
-      amount:    Math.round(order.totalAmount * 100),
+      email:    req.user.email,
+      amount:   Math.round(order.totalAmount * 100),  // kobo
       reference,
-      metadata:  { order_id: String(order._id), order_number: order.waybillNumber, customer_name: `${req.user.firstName} ${req.user.lastName}` },
+      currency: 'NGN',
+      metadata: {
+        order_id:      String(order._id),
+        order_number:  order.waybillNumber,
+        customer_name: `${req.user.firstName} ${req.user.lastName}`,
+        // DO NOT include amount in metadata — always use Paystack's amount
+      },
       callback_url: `${process.env.FRONTEND_URL}/payment/verify?reference=${reference}`,
-    }, { headers: headers() });
+    }, { headers: psHeaders() });
 
-    if (!data.status) return res.status(400).json({ success: false, message: 'Payment init failed' });
+    if (!data.status)
+      return res.status(400).json({ success: false, message: 'Payment initialization failed' });
 
-    await Payment.findOneAndUpdate({ orderId: order._id }, { paystackReference: reference }, { upsert: true });
+    // Upsert payment record with new reference
+    await Payment.findOneAndUpdate(
+      { orderId: order._id },
+      { paystackReference: reference, status: 'pending', customerId: req.user._id, amount: order.totalAmount },
+      { upsert: true, new: true }
+    );
     await Order.findByIdAndUpdate(orderId, { paystackReference: reference });
 
     res.json({ success: true, data: { authorization_url: data.data.authorization_url, reference, access_code: data.data.access_code } });
@@ -39,13 +101,13 @@ router.post('/initialize', authenticate, authorize('customer'), async (req, res,
   }
 });
 
-// GET /api/payments/verify
-router.get('/verify', authenticate, async (req, res, next) => {
+// ── GET /api/payments/verify ────────────────────────────
+router.get('/verify', authenticate, validate(paymentSchemas.verify, 'query'), async (req, res, next) => {
   try {
     const { reference } = req.query;
-    if (!reference) return res.status(400).json({ success: false, message: 'Reference required' });
 
-    const { data } = await axios.get(`${PAYSTACK}/transaction/verify/${reference}`, { headers: headers() });
+    const { data } = await axios.get(`${PAYSTACK}/transaction/verify/${reference}`, { headers: psHeaders() });
+
     if (!data.status || data.data.status !== 'success')
       return res.status(400).json({ success: false, message: 'Payment not successful' });
 
@@ -56,6 +118,20 @@ router.get('/verify', authenticate, async (req, res, next) => {
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
+    // CRITICAL: verify the amount matches what we expect
+    // tx.amount is in kobo
+    const paidKobo     = tx.amount;
+    const expectedKobo = Math.round(order.totalAmount * 100);
+    if (Math.abs(paidKobo - expectedKobo) > 100) {  // allow ±1 Naira tolerance for rounding
+      console.error(`[Payments] Amount mismatch! Order ${order.waybillNumber}: expected ${expectedKobo} kobo, got ${paidKobo} kobo`);
+      return res.status(400).json({ success: false, message: 'Payment amount mismatch. Contact support.' });
+    }
+
+    // Idempotent update
+    if (order.paymentStatus === 'paid') {
+      return res.json({ success: true, message: 'Payment already verified', data: { orderId, amount: tx.amount / 100, reference } });
+    }
+
     await Payment.findOneAndUpdate(
       { orderId },
       { status: 'paid', paystackTransactionId: String(tx.id), paidAt: new Date(), metadata: tx },
@@ -63,45 +139,104 @@ router.get('/verify', authenticate, async (req, res, next) => {
     );
     await Order.findByIdAndUpdate(orderId, { paymentStatus: 'paid' });
 
+    // Notify admin via socket
     const io = req.app.get('io');
     io?.to('admin:room').emit('payment:received', { orderId, reference, amount: tx.amount / 100 });
 
+    // Send receipt email
     if (order.customerId) {
       const customer = await User.findById(order.customerId);
-      if (customer) {
-        sendPaymentReceipt({ email: customer.email, firstName: customer.firstName }, order, reference).catch(console.error);
-      }
+      if (customer) sendPaymentReceipt({ email: customer.email, firstName: customer.firstName }, order, reference).catch(console.error);
     } else if (order.senderEmail) {
       sendPaymentReceipt({ email: order.senderEmail, firstName: order.senderName.split(' ')[0] }, order, reference).catch(console.error);
     }
 
     res.json({ success: true, message: 'Payment verified', data: { orderId, amount: tx.amount / 100, reference } });
   } catch (e) {
-    if (e.response?.data) return next(Object.assign(new Error(e.response.data.message || 'Verify failed'), { statusCode: 400 }));
+    if (e.response?.data) return next(Object.assign(new Error(e.response.data.message || 'Verification failed'), { statusCode: 400 }));
     next(e);
   }
 });
 
-// POST /api/payments/webhook
+// ── POST /api/payments/webhook ──────────────────────────
+// CRITICAL FIX: req.body is a raw Buffer here (express.raw middleware)
+// The original code did JSON.stringify(req.body) which stringifies the Buffer
+// object → { "type": "Buffer", "data": [...] } — NOT the raw bytes.
+// This means the HMAC never matched and ALL webhooks were silently rejected.
 router.post('/webhook', async (req, res, next) => {
   try {
-    const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY).update(JSON.stringify(req.body)).digest('hex');
-    if (hash !== req.headers['x-paystack-signature']) return res.status(401).send('Invalid signature');
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      return res.status(500).json({ success: false, message: 'Webhook not configured' });
+    }
 
-    const event = req.body;
+    // req.body is a Buffer — pass it directly to createHmac
+    const rawBody  = req.body;
+    if (!Buffer.isBuffer(rawBody)) {
+      console.error('[Webhook] Expected raw Buffer but got:', typeof rawBody);
+      return res.status(400).send('Invalid body');
+    }
+
+    const signature = req.headers['x-paystack-signature'];
+    if (!signature) return res.status(401).send('Missing signature');
+
+    const hash = crypto
+      .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+      .update(rawBody)           // ← raw Buffer, NOT JSON.stringify
+      .digest('hex');
+
+    // Constant-time comparison to prevent timing attacks
+    const sigBuffer  = Buffer.from(signature, 'hex');
+    const hashBuffer = Buffer.from(hash, 'hex');
+    if (sigBuffer.length !== hashBuffer.length || !crypto.timingSafeEqual(sigBuffer, hashBuffer)) {
+      console.warn('[Webhook] Invalid Paystack signature — possible forgery attempt');
+      return res.status(401).send('Invalid signature');
+    }
+
+    // Parse the verified body
+    let event;
+    try { event = JSON.parse(rawBody.toString('utf8')); }
+    catch { return res.status(400).send('Invalid JSON'); }
+
+    // Handle events
     if (event.event === 'charge.success') {
-      const { reference, metadata } = event.data;
+      const { reference, metadata, amount } = event.data;
       const orderId = metadata?.order_id;
+
       if (orderId) {
-        await Payment.findOneAndUpdate({ paystackReference: reference }, { status: 'paid', paidAt: new Date() });
-        await Order.findByIdAndUpdate(orderId, { paymentStatus: 'paid' });
+        const order = await Order.findById(orderId);
+        if (order && order.paymentStatus !== 'paid') {
+          // Verify amount matches
+          const expectedKobo = Math.round((order.totalAmount || 0) * 100);
+          if (Math.abs(amount - expectedKobo) > 100) {
+            console.error(`[Webhook] Amount mismatch for order ${orderId}`);
+            return res.sendStatus(200);  // still 200 to Paystack
+          }
+
+          await Payment.findOneAndUpdate(
+            { paystackReference: reference },
+            { status: 'paid', paidAt: new Date() },
+            { upsert: false }
+          );
+          await Order.findByIdAndUpdate(orderId, { paymentStatus: 'paid' });
+
+          const io = req.app.get('io');
+          io?.to('admin:room').emit('payment:received', { orderId, reference, amount: amount / 100 });
+          console.log(`[Webhook] Payment confirmed for order ${orderId}, ref: ${reference}`);
+        }
       }
     }
+
+    // Always respond 200 quickly — Paystack retries on non-200
     res.sendStatus(200);
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error('[Webhook] Error:', e.message);
+    // Still 200 to prevent Paystack retries on server errors
+    res.sendStatus(200);
+    next(e);
+  }
 });
 
-// GET /api/payments/history
+// ── GET /api/payments/history ───────────────────────────
 router.get('/history', authenticate, async (req, res, next) => {
   try {
     const filter = req.user.role === 'admin' ? {} : { customerId: req.user._id };
@@ -109,17 +244,25 @@ router.get('/history', authenticate, async (req, res, next) => {
       .populate('orderId', 'waybillNumber totalAmount originCity destinationCity')
       .populate('customerId', 'firstName lastName email')
       .sort({ createdAt: -1 })
-      .limit(50);
-    res.json({ success: true, data: payments });
+      .limit(50)
+      .lean();
+
+    // Strip sensitive metadata from non-admin response
+    const safe = req.user.role === 'admin'
+      ? payments
+      : payments.map(({ metadata, ...p }) => p);
+
+    res.json({ success: true, data: safe });
   } catch (e) { next(e); }
 });
 
-// GET /api/payments/stats
-router.get('/stats', authenticate, authorize('admin'), async (req, res, next) => {
+// ── GET /api/payments/stats ─────────────────────────────
+router.get('/stats', authenticate, authorize('admin'),
+  validate(paymentSchemas.statsQuery, 'query'), async (req, res, next) => {
   try {
-    const { period = '30d' } = req.query;
-    const days   = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 }[period] || 30;
-    const since  = new Date(Date.now() - days * 86400000);
+    const { period } = req.query;
+    const days  = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 }[period] || 30;
+    const since = new Date(Date.now() - days * 86400000);
 
     const [summary, daily] = await Promise.all([
       Payment.aggregate([

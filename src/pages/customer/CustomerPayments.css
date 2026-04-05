@@ -1,12 +1,50 @@
-.customer-payments { display:flex; flex-direction:column; gap:18px; }
-.pay-total-card { padding:20px 24px; display:flex; align-items:center; gap:16px; }
-.ptc-icon  { width:44px; height:44px; border-radius:var(--radius); background:var(--green-light); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
-.ptc-label { font-size:12px; color:var(--text-muted); font-weight:600; }
-.ptc-value { font-size:26px; font-weight:700; color:var(--green); letter-spacing:-0.02em; }
-.pay-row   { display:flex; align-items:center; gap:14px; padding:13px 22px; border-bottom:1px solid var(--border); }
-.pay-row:last-child { border-bottom:none; }
-.pay-row-icon { width:34px; height:34px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.pay-row-num  { font-family:var(--font-mono); font-size:13px; font-weight:600; }
-.pay-row-addr { font-size:12px; color:var(--text-faint); }
-.pay-row-amt  { font-weight:700; font-size:14px; color:var(--text); }
-.pay-row-date { font-size:11px; color:var(--text-faint); margin-top:2px; }
+/* ─────────────────────────────────────────────
+   CUSTOMER PAYMENTS
+───────────────────────────────────────────── */
+.customer-payments { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Total card ── */
+.pay-total-card {
+  padding: 22px 26px; display: flex; align-items: center; gap: 18px;
+  border-top: 3px solid var(--green);
+}
+.ptc-icon {
+  width: 52px; height: 52px; border-radius: var(--radius-lg);
+  background: var(--green-light); display: flex; align-items: center;
+  justify-content: center; font-size: 22px; flex-shrink: 0;
+  border: 1.5px solid rgba(13,122,62,0.15);
+}
+.ptc-label {
+  font-size: 11px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px;
+}
+.ptc-value {
+  font-size: 28px; font-weight: 800; color: var(--green);
+  letter-spacing: -0.03em; line-height: 1;
+}
+
+/* ── Payment rows inside card ── */
+.pay-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 22px; border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.pay-row:last-child { border-bottom: none; }
+.pay-row:hover { background: var(--bg-elevated); }
+
+/* Icon */
+.pay-row-icon {
+  width: 38px; height: 38px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0; font-weight: 700;
+}
+.pay-row-icon.paid    { background: var(--green-light); color: var(--green); border: 1px solid rgba(13,122,62,0.15); }
+.pay-row-icon.pending { background: var(--amber-light); color: var(--amber); border: 1px solid rgba(180,83,9,0.15); }
+
+/* Text */
+.pay-row-num  { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--brand); }
+.pay-row-addr { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+
+/* Amount + date */
+.pay-row-amt  { font-weight: 700; font-size: 14px; color: var(--text); }
+.pay-row-date { font-size: 11px; color: var(--text-faint); margin-top: 2px; }

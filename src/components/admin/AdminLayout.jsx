@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../App.jsx';
+import NotificationBell from '../shared/NotificationBell.jsx';
 import './AdminLayout.css';
 
 const nav = [
@@ -10,8 +11,8 @@ const nav = [
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6M5 8h6M5 11h4"/></svg> },
   { to: '/admin/drivers',   label: 'Drivers',
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a3 3 0 100 6 3 3 0 000-6zM2 14a6 6 0 0112 0H2z"/></svg> },
-  { to: '/admin/users',     label: 'Users',
-    icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5 1a2.5 2.5 0 100 5 2.5 2.5 0 000-5zm6 1a2 2 0 100 4 2 2 0 000-4zM1 13a4 4 0 018 0H1zm8.5-1a5.5 5.5 0 014.5 2.35V14H9.5v-.65c0-.46-.06-.9-.17-1.35z"/></svg> },
+  { to: '/admin/users',     label: 'Staff',
+    icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a3 3 0 100 6 3 3 0 000-6zM4 14a4 4 0 018 0H4zm7-8.5a.5.5 0 01.5-.5H13v-1.5a.5.5 0 011 0V5h1.5a.5.5 0 010 1H14v1.5a.5.5 0 01-1 0V6h-1.5a.5.5 0 01-.5-.5z"/></svg> },
   { to: '/admin/map',       label: 'Live Map',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6c0 3.5 4.5 8.5 4.5 8.5S12.5 9.5 12.5 6c0-2.5-2-4.5-4.5-4.5z"/><circle cx="8" cy="6" r="1.5"/></svg> },
   { to: '/admin/analytics', label: 'Analytics',
@@ -75,9 +76,7 @@ export default function AdminLayout() {
             {new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
           </span>
           <div className="topbar-right">
-            <button className="topbar-badge" title="Notifications">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M7 1a1 1 0 00-1 1v.5A4 4 0 003 6.5v2L2 10h10l-1-1.5v-2A4 4 0 008 2.5V2a1 1 0 00-1-1zM5.5 11a1.5 1.5 0 003 0h-3z"/></svg>
-            </button>
+            <NotificationBell />
             <div className="topbar-avatar">{user?.firstName?.[0]}{user?.lastName?.[0]}</div>
           </div>
         </header>

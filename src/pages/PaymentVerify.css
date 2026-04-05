@@ -1,97 +1,98 @@
+/* ─────────────────────────────────────────────
+   PAYMENT VERIFY PAGE
+───────────────────────────────────────────── */
 .verify-page {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   padding: 20px;
   background: var(--bg);
 }
 
 .verify-card {
-  width: 100%;
-  max-width: 440px;
-  background: var(--bg-white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
+  width: 100%; max-width: 460px;
+  background: var(--bg-white); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); box-shadow: var(--shadow-xl);
   overflow: hidden;
-  border-top: 4px solid var(--brand);
 }
 
+/* ── Top nav bar ── */
+.verify-nav {
+  background: var(--brand); padding: 14px 24px;
+  display: flex; align-items: center;
+}
+.verify-logo { display: flex; align-items: center; gap: 10px; }
+.verify-logo-mark {
+  width: 30px; height: 30px; background: rgba(255,255,255,0.2);
+  border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+}
+.verify-logo-mark svg { width: 17px; height: 17px; }
+.verify-logo-name { font-size: 16px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.01em; }
+
+/* ── Top accent stripe ── */
+.verify-stripe { height: 4px; background: var(--brand); }
+
+/* ── Body ── */
 .verify-body {
-  padding: 52px 36px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 10px;
-}
-
-.verify-body h2 {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.01em;
-}
-
-.verify-body p {
-  font-size: 14px;
-  color: var(--text-muted);
-  max-width: 300px;
-  line-height: 1.6;
+  padding: 52px 36px 36px;
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center; gap: 12px;
 }
 
 .verify-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin-bottom: 8px;
+  width: 76px; height: 76px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px; margin-bottom: 6px;
+}
+.verify-icon.success { background: var(--green-light); border: 3px solid rgba(13,122,62,0.15); }
+.verify-icon.failed  { background: var(--red-light);   border: 3px solid rgba(212,5,17,0.15);  }
+.verify-icon.loading { background: var(--bg-elevated); border: 3px solid var(--border); }
+
+.verify-body h2 {
+  font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.02em;
+}
+.verify-body p {
+  font-size: 14px; color: var(--text-muted);
+  max-width: 300px; line-height: 1.65;
 }
 
-.verify-icon.success { background: var(--green-light); }
-.verify-icon.failed  { background: var(--red-light); }
-.verify-icon.loading { background: var(--bg-elevated); }
-
-/* ── Nav ── */
-.verify-nav {
-  background: #FF7A00;
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-}
-.verify-logo { display: flex; align-items: center; gap: 9px; }
-.verify-logo-mark {
-  width: 28px; height: 28px; background: var(--brand);
-  border-radius: 6px; display: flex; align-items: center; justify-content: center;
-}
-.verify-logo-mark svg { width: 16px; height: 16px; }
-.verify-logo-name { font-size: 16px; font-weight: 700; color: #FFFFFF; }
-
-/* ── Ref badge ── */
+/* ── Reference badge ── */
 .verify-ref {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 10px;
   background: var(--bg-elevated); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 10px 16px; margin: 8px 0;
-  width: 100%;
+  border-radius: var(--radius); padding: 11px 16px; margin: 8px 0; width: 100%;
 }
-.verify-ref-label { font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.07em; }
-.verify-ref-val   { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--brand); margin-left: auto; }
+.verify-ref-label {
+  font-size: 11px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.verify-ref-val {
+  font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+  color: var(--brand); margin-left: auto;
+}
+
+/* ── Amount display ── */
+.verify-amount {
+  font-size: 32px; font-weight: 800; color: var(--green);
+  letter-spacing: -0.03em; line-height: 1;
+}
 
 /* ── Actions ── */
 .verify-actions {
-  display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 8px;
+  display: flex; flex-direction: column; gap: 10px;
+  width: 100%; margin-top: 10px;
 }
 .verify-btn { width: 100%; justify-content: center; }
 
 /* ── Footer ── */
 .verify-footer {
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 14px 24px;
-  border-top: 1px solid var(--border);
+  padding: 14px 24px; border-top: 1px solid var(--border);
   font-size: 12px; color: var(--text-faint);
   background: var(--bg-elevated);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .verify-body { padding: 36px 24px 28px; }
+  .verify-body h2 { font-size: 19px; }
 }

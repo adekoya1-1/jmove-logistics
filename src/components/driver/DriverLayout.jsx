@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../App.jsx';
+import NotificationBell from '../shared/NotificationBell.jsx';
 import '../admin/AdminLayout.css';
 
 const nav = [
@@ -59,6 +60,7 @@ export default function DriverLayout() {
           <button className="menu-btn" onClick={() => setOpen(true)}>☰</button>
           <span className="topbar-date">Driver Hub</span>
           <div className="topbar-right">
+            <NotificationBell />
             <div className="topbar-avatar">{user?.firstName?.[0]}{user?.lastName?.[0]}</div>
           </div>
         </header>

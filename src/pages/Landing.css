@@ -213,7 +213,7 @@
    SHARED SECTION STYLES
 ══════════════════════════════ */
 .section-inner { max-width: 1280px; margin: 0 auto; padding: 0 20px; }
-.section-header { text-align: center; margin-bottom: 48px; }
+.section-header { text-align: center; margin-bottom: 52px; }
 .section-eyebrow {
   font-size: 11px; font-weight: 800; color: var(--brand);
   text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px;

@@ -1,31 +1,88 @@
-.admin-drivers { display:flex; flex-direction:column; gap:18px; }
-.drivers-grid  { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-.driver-card   { padding:20px; display:flex; flex-direction:column; gap:14px; }
-.driver-top    { display:flex; align-items:center; gap:10px; }
-.driver-avatar { width:40px; height:40px; border-radius:var(--radius); background:var(--brand-dim); color:var(--brand); font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:1.5px solid var(--brand-border); }
-.driver-name   { font-size:14px; font-weight:700; }
-.driver-email  { font-size:12px; color:var(--text-faint); margin-top:1px; }
-.driver-info   { flex:1; min-width:0; overflow:hidden; }
-.driver-info p { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.driver-stats  { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.ds-item       { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 11px; }
-.ds-lbl        { font-size:10px; color:var(--text-faint); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; }
-.ds-val        { font-size:14px; font-weight:700; margin-top:2px; color:var(--text); }
-.verify-btn {
-  padding:9px; border-radius:var(--radius-sm); font-size:12px; font-weight:700;
-  border:1.5px solid var(--brand-border); background:var(--brand-dim); color:var(--brand);
-  cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:6px;
-  text-transform:uppercase; letter-spacing:0.04em;
+/* ─────────────────────────────────────────────
+   ADMIN DRIVERS
+───────────────────────────────────────────── */
+.admin-drivers { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Drivers grid ── */
+.drivers-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
 }
-.verify-btn:hover    { background:rgba(212,5,17,0.15); }
-.verify-btn.verified { background:var(--green-light); color:var(--green); border-color:rgba(13,122,62,0.2); }
-.verify-btn.verified:hover { background:var(--red-light); color:var(--red); border-color:var(--brand-border); }
-@media (max-width:1000px) { .drivers-grid { grid-template-columns:1fr 1fr; } }
-@media (max-width:580px)  { .drivers-grid { grid-template-columns:1fr; } }
+.driver-card {
+  padding: 20px; display: flex; flex-direction: column; gap: 14px;
+  overflow: hidden; border-top: 3px solid transparent;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.driver-card:hover {
+  border-top-color: var(--brand);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.driver-top    { display: flex; align-items: center; gap: 12px; }
+.driver-avatar {
+  width: 44px; height: 44px; border-radius: var(--radius);
+  background: var(--brand-dim); color: var(--brand);
+  font-weight: 800; font-size: 15px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border: 2px solid var(--brand-border);
+}
+.driver-name  { font-size: 14px; font-weight: 700; color: var(--text); }
+.driver-email { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.driver-info  { flex: 1; min-width: 0; overflow: hidden; }
+.driver-info p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Stats mini grid ── */
+.driver-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.ds-item {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+}
+.ds-lbl {
+  font-size: 10px; color: var(--text-faint); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px;
+}
+.ds-val { font-size: 15px; font-weight: 700; color: var(--text); }
+
+/* ── Verify button ── */
+.verify-btn {
+  width: 100%; padding: 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700;
+  border: 1.5px solid var(--brand-border); background: var(--brand-dim); color: var(--brand);
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--font);
+}
+.verify-btn:hover { background: rgba(255,122,0,0.18); }
+.verify-btn.verified {
+  background: var(--green-light); color: var(--green);
+  border-color: rgba(13,122,62,0.2);
+}
+.verify-btn.verified:hover { background: var(--red-light); color: var(--red); border-color: var(--brand-border); }
+
+/* ── Card footer ── */
+.driver-card-footer {
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 12px; border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
+
+/* ── Employee ID badge ── */
+.driver-empid {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 7px 11px;
+}
+.driver-empid-label {
+  font-size: 10px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.driver-empid-val {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text);
+}
 
 /* ── Create Driver Modal ── */
-.create-driver-modal { max-width: 640px; }
-
+.create-driver-modal { max-width: 640px !important; }
 .cd-form    { display: flex; flex-direction: column; gap: 14px; }
 .cd-section-label {
   font-size: 11px; font-weight: 700; color: var(--brand);
@@ -33,44 +90,35 @@
   padding-bottom: 4px; border-bottom: 2px solid var(--brand);
   display: inline-block;
 }
-.cd-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cd-row     { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .cd-divider { height: 1px; background: var(--border); margin: 4px 0; }
 .cd-error {
   background: var(--red-light); border: 1px solid var(--brand-border);
   color: var(--red); font-size: 13px; padding: 10px 14px;
-  border-radius: var(--radius); margin-bottom: 4px;
+  border-radius: var(--radius); font-weight: 500;
 }
-.cd-pw-hint { font-size: 10px; color: var(--text-faint); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.cd-pw-hint {
+  font-size: 10px; color: var(--text-faint);
+  font-weight: 400; text-transform: none; letter-spacing: 0;
+}
 .cd-notice {
   display: flex; align-items: flex-start; gap: 8px;
   background: var(--green-light); border: 1px solid rgba(13,122,62,0.15);
-  border-radius: var(--radius); padding: 10px 13px;
+  border-radius: var(--radius); padding: 11px 14px;
   font-size: 12px; color: var(--text-muted); line-height: 1.55;
 }
 .cd-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
 
-/* ── Driver card footer ── */
-.driver-card-footer {
-  display: flex; align-items: center; gap: 8px;
-  padding-top: 12px; border-top: 1px solid var(--border);
-}
-
-/* ── Employee ID badge ── */
-.driver-empid {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--bg-elevated); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 6px 10px;
-}
-.driver-empid-label { font-size: 10px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }
-.driver-empid-val   { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text); }
-
-/* ── pw-wrap (needed in modal context) ── */
+/* ── pw-wrap (modal context) ── */
 .pw-wrap { position: relative; }
 .pw-wrap .input { padding-right: 44px; }
 .pw-toggle {
   position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
   background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px;
-  color: var(--text-faint);
+  color: var(--text-faint); transition: color 0.12s;
 }
+.pw-toggle:hover { color: var(--text-muted); }
 
-@media (max-width: 560px) { .cd-row { grid-template-columns: 1fr; } }
+/* ── Responsive ── */
+@media (max-width: 1000px) { .drivers-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 580px)  { .drivers-grid { grid-template-columns: 1fr; } .cd-row { grid-template-columns: 1fr; } }

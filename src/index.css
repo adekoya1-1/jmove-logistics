@@ -202,17 +202,22 @@ select.input option { background: var(--bg-white); color: var(--text); }
   font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
   text-transform: uppercase; white-space: nowrap;
 }
-.badge-pending    { background: var(--amber-light); color: var(--amber);  }
-.badge-assigned   { background: var(--blue-light);  color: var(--blue);   }
-.badge-picked_up  { background: var(--purple-light);color: var(--purple); }
-.badge-in_transit { background: var(--cyan-light);  color: var(--cyan);   }
-.badge-delivered  { background: var(--green-light); color: var(--green);  }
-.badge-cancelled  { background: #F3F4F6;             color: #6B7280;       }
-.badge-paid       { background: var(--green-light); color: var(--green);  }
-.badge-failed     { background: var(--red-light);   color: var(--red);    }
-.badge-available  { background: var(--green-light); color: var(--green);  }
-.badge-busy       { background: var(--amber-light); color: var(--amber);  }
-.badge-offline    { background: #F3F4F6;             color: #9CA3AF;       }
+.badge-pending          { background: var(--amber-light);  color: var(--amber);   }
+.badge-booked           { background: var(--amber-light);  color: var(--amber);   }
+.badge-assigned         { background: var(--blue-light);   color: var(--blue);    }
+.badge-picked_up        { background: var(--purple-light); color: var(--purple);  }
+.badge-in_transit       { background: var(--cyan-light);   color: var(--cyan);    }
+.badge-out_for_delivery { background: var(--cyan-light);   color: var(--cyan);    }
+.badge-delivered        { background: var(--green-light);  color: var(--green);   }
+.badge-cancelled        { background: #F3F4F6;              color: #6B7280;        }
+.badge-returned         { background: #F3F4F6;              color: #6B7280;        }
+.badge-paid             { background: var(--green-light);  color: var(--green);   }
+.badge-failed           { background: var(--red-light);    color: var(--red);     }
+.badge-available        { background: var(--green-light);  color: var(--green);   }
+.badge-busy             { background: var(--amber-light);  color: var(--amber);   }
+.badge-offline          { background: #F3F4F6;              color: #9CA3AF;        }
+.badge-active           { background: var(--green-light);  color: var(--green);   }
+.badge-inactive         { background: #F3F4F6;              color: #9CA3AF;        }
 
 /* ═══════════════════════════════════════════
    SPINNER
@@ -351,6 +356,45 @@ tbody tr:hover td { background: var(--bg-elevated); }
   font-size: 13px; color: var(--text-faint);
 }
 .page-btns { display: flex; gap: 6px; }
+
+/* ═══════════════════════════════════════════
+   NOTICE / INFO BANNERS
+═══════════════════════════════════════════ */
+.notice-info {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--blue-light); border: 1px solid rgba(29,78,216,0.15);
+  border-radius: var(--radius); padding: 12px 14px;
+  font-size: 13px; color: var(--text-muted); line-height: 1.55;
+}
+.notice-warn {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--amber-light); border: 1px solid rgba(180,83,9,0.2);
+  border-radius: var(--radius); padding: 12px 14px;
+  font-size: 13px; color: var(--amber); font-weight: 500; line-height: 1.55;
+}
+.notice-success {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--green-light); border: 1px solid rgba(13,122,62,0.15);
+  border-radius: var(--radius); padding: 12px 14px;
+  font-size: 13px; color: var(--green); font-weight: 500; line-height: 1.55;
+}
+.notice-error {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--red-light); border: 1px solid rgba(212,5,17,0.15);
+  border-radius: var(--radius); padding: 12px 14px;
+  font-size: 13px; color: var(--red); font-weight: 500; line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════════
+   CARD HEADER PATTERN
+═══════════════════════════════════════════ */
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 20px; border-bottom: 1px solid var(--border);
+}
+.card-header h3 {
+  font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.01em;
+}
 
 /* ── Global mobile overrides ── */
 @media (max-width: 768px) {

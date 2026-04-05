@@ -14,38 +14,49 @@ async function seed() {
 
   const users = [
     {
-      email:       'admin@jmovelogistics.com',
-      password:    await hashPw('Admin@123'),
-      firstName:   'JMove',
-      lastName:    'Admin',
-      role:        'admin',
-      isActive:    true,
+      email:         'admin@jmovelogistics.com',
+      password:      await hashPw('Admin@123'),
+      firstName:     'JMove',
+      lastName:      'Admin',
+      role:          'admin',
+      isActive:      true,
       emailVerified: true,
+      // ── New security fields ──
+      staffCategory: 'super_admin',
+      permissions:   ['orders','drivers','payments','analytics','map','staff'],
+      tokenVersion:  0,
+      loginAttempts: 0,
+      lockUntil:     null,
     },
     {
-      email:       'customer@jmovelogistics.com',
-      password:    await hashPw('Customer@123'),
-      firstName:   'John',
-      lastName:    'Doe',
-      phone:       '+2348012345678',
-      role:        'customer',
-      isActive:    true,
+      email:         'customer@jmovelogistics.com',
+      password:      await hashPw('Customer@123'),
+      firstName:     'John',
+      lastName:      'Doe',
+      phone:         '+2348012345678',
+      role:          'customer',
+      isActive:      true,
       emailVerified: true,
+      tokenVersion:  0,
+      loginAttempts: 0,
+      lockUntil:     null,
     },
     {
-      email:       'driver@jmovelogistics.com',
-      password:    await hashPw('Driver@123'),
-      firstName:   'James',
-      lastName:    'Okafor',
-      phone:       '+2348098765432',
-      role:        'driver',
-      isActive:    true,
+      email:         'driver@jmovelogistics.com',
+      password:      await hashPw('Driver@123'),
+      firstName:     'James',
+      lastName:      'Okafor',
+      phone:         '+2348098765432',
+      role:          'driver',
+      isActive:      true,
       emailVerified: true,
+      tokenVersion:  0,
+      loginAttempts: 0,
+      lockUntil:     null,
     },
   ];
 
   for (const userData of users) {
-    // Delete existing user + driver profile to ensure clean re-seed
     const existing = await User.findOne({ email: userData.email });
     if (existing) {
       await DriverProfile.deleteOne({ userId: existing._id });
@@ -53,24 +64,22 @@ async function seed() {
       console.log(`  ♻  Replaced existing: ${userData.email}`);
     }
 
-    // Create fresh — .save() fires schema transforms (lowercase email, etc.)
     const user = new User(userData);
     await user.save();
     console.log(`  ✅ Created: ${userData.email} (${userData.role})`);
 
-    // Create driver profile for driver account
     if (userData.role === 'driver') {
       await new DriverProfile({
-        userId:      user._id,
-        vehicleType: 'van',
-        vehiclePlate:'LAS-123AB',
-        vehicleModel:'Toyota HiAce',
+        userId:       user._id,
+        vehicleType:  'van',
+        vehiclePlate: 'LAS-123AB',
+        vehicleModel: 'Toyota HiAce',
         licenseNumber:'DRV-2024-001',
-        employeeId:  'EMP-001',
-        status:      'available',
-        currentLat:  6.5244,
-        currentLng:  3.3792,
-        isVerified:  true,
+        employeeId:   'EMP-001',
+        status:       'available',
+        currentLat:   6.5244,
+        currentLng:   3.3792,
+        isVerified:   true,
       }).save();
       console.log(`  🚗 Driver profile created`);
     }
