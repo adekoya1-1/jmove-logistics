@@ -136,6 +136,21 @@
 .sa-val { font-size: 38px; font-weight: 800; color: var(--brand); letter-spacing: -0.02em; }
 .sa-lbl { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 5px; }
 
+/* ── Vehicle type tag (quote step) ── */
+.pricing-vehicle-tag {
+  display: flex; align-items: center; gap: 8px;
+  background: #f0f4ff; border: 1px solid #c5cae9;
+  border-radius: 8px; padding: 10px 14px;
+  margin-bottom: 14px; font-size: 13px; font-weight: 600;
+  color: #3949ab;
+}
+.pvt-cap  { font-weight: 400; color: #5c6bc0; font-size: 12px; }
+.pvt-badge {
+  margin-left: auto; background: #3949ab; color: white;
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+  font-weight: 700; letter-spacing: 0.3px;
+}
+
 /* ── Step CTA buttons ── */
 .step-cta { width: 100%; margin-top: 22px; padding: 13px; font-size: 15px; }
 .step-cta-row { display: flex; gap: 10px; margin-top: 22px; }

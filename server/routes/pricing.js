@@ -52,7 +52,7 @@ router.post('/calculate', validate(orderSchemas.calcPrice), async (req, res, nex
 router.get('/admin/full', authenticate, authorize('admin'), async (req, res, next) => {
   try {
     const [zones, truckTypes, rules] = await Promise.all([
-      Zone.find().sort({ zoneNumber: 1 }).lean(),
+      Zone.find().sort({ sortOrder: 1 }).lean(),
       TruckType.find().sort({ sortOrder: 1, capacityTons: 1 }).lean(),
       PricingRule.find()
         .populate('fromZoneId',      'name states')
@@ -78,31 +78,48 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
       });
     }
 
+    // 7 Nigerian geopolitical zones + FCT as standalone
     const DEFAULT_ZONES = [
-      { name: 'South West', states: ['lagos','ogun','oyo','osun','ondo','ekiti'], sortOrder: 0 },
-      { name: 'South East', states: ['enugu','anambra','ebonyi','imo','abia'], sortOrder: 1 },
-      { name: 'South South', states: ['rivers','delta','akwa_ibom','cross_river','bayelsa','edo'], sortOrder: 2 },
-      { name: 'North Central', states: ['kogi','kwara','plateau','niger','benue','nasarawa','fct'], sortOrder: 3 },
-      { name: 'North East', states: ['borno','adamawa','yobe','taraba','bauchi','gombe'], sortOrder: 4 },
-      { name: 'North West', states: ['kano','kaduna','katsina','jigawa','kebbi','sokoto','zamfara'], sortOrder: 5 },
+      { name: 'South West',    states: ['lagos','ogun','oyo','osun','ondo','ekiti'],                         sortOrder: 0 },
+      { name: 'FCT',           states: ['fct'],                                                              sortOrder: 1 },
+      { name: 'South East',    states: ['enugu','anambra','ebonyi','imo','abia'],                            sortOrder: 2 },
+      { name: 'South South',   states: ['rivers','delta','akwa_ibom','cross_river','bayelsa','edo'],         sortOrder: 3 },
+      { name: 'North Central', states: ['kogi','kwara','plateau','niger','benue','nasarawa'],                sortOrder: 4 },
+      { name: 'North East',    states: ['borno','adamawa','yobe','taraba','bauchi','gombe'],                 sortOrder: 5 },
+      { name: 'North West',    states: ['kano','kaduna','katsina','jigawa','kebbi','sokoto','zamfara'],      sortOrder: 6 },
     ];
     const DEFAULT_TRUCKS = [
-      { name: 'Small Van',    description: 'Up to 1 ton — parcels, documents, electronics', capacityTons: 1,  icon: '🚐', sortOrder: 0 },
-      { name: '2-Ton Truck',  description: 'Furniture, appliances, medium commercial goods',  capacityTons: 2,  icon: '🚛', sortOrder: 1 },
-      { name: '5-Ton Truck',  description: 'Large commercial loads, full house or office moves', capacityTons: 5, icon: '🚚', sortOrder: 2 },
-      { name: '10-Ton Truck', description: 'Heavy industrial goods and bulk freight',          capacityTons: 10, icon: '🏗️', sortOrder: 3 },
+      { name: 'Small Van',    description: 'Up to 1 ton — parcels, documents, electronics',          capacityTons: 1,  icon: '🚐', sortOrder: 0 },
+      { name: '2-Ton Truck',  description: 'Furniture, appliances, medium commercial goods',          capacityTons: 2,  icon: '🚛', sortOrder: 1 },
+      { name: '5-Ton Truck',  description: 'Large commercial loads, full house or office moves',      capacityTons: 5,  icon: '🚚', sortOrder: 2 },
+      { name: '10-Ton Truck', description: 'Heavy industrial goods and bulk freight',                 capacityTons: 10, icon: '🏗️', sortOrder: 3 },
     ];
 
     const zones      = await Zone.insertMany(DEFAULT_ZONES);
     const truckTypes = await TruckType.insertMany(DEFAULT_TRUCKS);
 
+    // Realistic Nigerian logistics pricing matrix (₦)
+    // Multipliers per truck type: ×1, ×2, ×3.5, ×6
+    const TRUCK_MUL = [1, 2, 3.5, 6];
+    // Base rates (₦) per origin→dest zone pair (indexed by zone sortOrder)
+    // Same-zone intra-delivery is discounted; far north/east routes are premium
+    const BASE_RATES = [
+      [15000, 25000, 30000, 35000, 40000, 55000, 55000],  // SW →
+      [25000, 15000, 30000, 35000, 25000, 50000, 45000],  // FCT →
+      [30000, 30000, 15000, 25000, 40000, 50000, 60000],  // SE →
+      [35000, 35000, 25000, 15000, 45000, 55000, 65000],  // SS →
+      [40000, 25000, 40000, 45000, 15000, 40000, 35000],  // NC →
+      [55000, 50000, 50000, 55000, 40000, 15000, 30000],  // NE →
+      [55000, 45000, 60000, 65000, 35000, 30000, 15000],  // NW →
+    ];
+
     const rules = [];
     for (let o = 0; o < zones.length; o++) {
       for (let d = 0; d < zones.length; d++) {
         for (let t = 0; t < truckTypes.length; t++) {
-           let base = 5000 + (t * 5000); 
-           if (o !== d) base += 20000;
-           rules.push({ fromZoneId: zones[o]._id, toZoneId: zones[d]._id, truckTypeId: truckTypes[t]._id, price: base });
+          const base  = BASE_RATES[o][d];
+          const price = Math.round(base * TRUCK_MUL[t] / 1000) * 1000; // round to nearest ₦1000
+          rules.push({ fromZoneId: zones[o]._id, toZoneId: zones[d]._id, truckTypeId: truckTypes[t]._id, price });
         }
       }
     }

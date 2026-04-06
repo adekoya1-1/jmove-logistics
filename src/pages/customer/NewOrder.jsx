@@ -271,6 +271,15 @@ export default function NewOrder() {
               <div className="qr-eta">⏱ {pricing.estimatedDelivery}</div>
             </div>
 
+            {pricing.truckType && (
+              <div className="pricing-vehicle-tag">
+                <span>{pricing.truckType.icon}</span>
+                <span>{pricing.truckType.name}</span>
+                <span className="pvt-cap">{pricing.truckType.capacityTons}t capacity</span>
+                {pricing.isDynamic && <span className="pvt-badge">Zone Pricing</span>}
+              </div>
+            )}
+
             <div className="pricing-box">
               {[
                 { label:'Base Rate',           val: pricing.basePrice },

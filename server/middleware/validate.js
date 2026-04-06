@@ -24,7 +24,7 @@ const phone = z.string()
 
 const cityKey = z.string()
   .min(2).max(30)
-  .regex(/^[a-z]+$/, 'City must be lowercase letters only');
+  .regex(/^[a-z_]+$/, 'State key must be lowercase letters and underscores only');
 
 const nigerianAmount = z.number().min(0).max(100_000_000);
 

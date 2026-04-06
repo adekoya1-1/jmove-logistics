@@ -29,7 +29,7 @@ async function loadConfig() {
   if (_cache && Date.now() - _cacheTime < CACHE_TTL_MS) return _cache;
 
   const [zones, truckTypes, rules] = await Promise.all([
-    Zone.find({ isActive: true }).sort({ zoneNumber: 1 }).lean(),
+    Zone.find({ isActive: true }).sort({ sortOrder: 1 }).lean(),
     TruckType.find({ isActive: true }).sort({ sortOrder: 1, capacityTons: 1 }).lean(),
     PricingRule.find({ isActive: true })
       .populate('fromZoneId',  'name states')
