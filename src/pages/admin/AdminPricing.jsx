@@ -94,7 +94,7 @@ function ZoneForm({ initial, onSave, onCancel, saving }) {
     <form className="ap-form" onSubmit={submit}>
       <div className="ap-form-row">
         <div className="ap-field">
-          <label className="ap-label">Zone Name *</label>
+          <label className="ap-label">Direction Name *</label>
           <input className="ap-input" value={form.name} onChange={set('name')} placeholder="e.g. South West" required />
         </div>
         <div className="ap-field ap-field--sm">
@@ -113,7 +113,7 @@ function ZoneForm({ initial, onSave, onCancel, saving }) {
       <div className="ap-form-actions">
         <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
         <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? <span className="spinner spinner-sm" /> : initial ? 'Save Changes' : 'Create Zone'}
+          {saving ? <span className="spinner spinner-sm" /> : initial ? 'Save Changes' : 'Create Direction'}
         </button>
       </div>
     </form>
@@ -180,7 +180,7 @@ function RuleForm({ originZone, destZone, truckType, rule, onSave, onDelete, onC
     <form className="ap-form" onSubmit={submit}>
       <div className="ap-rule-context">
         <div className="ap-rule-ctx-item">
-          <span className="ap-rule-ctx-label">Route</span>
+          <span className="ap-rule-ctx-label">Direction Route</span>
           <span className="ap-rule-ctx-val">{originZone.name} → {destZone.name}</span>
         </div>
         <span className="ap-rule-ctx-sep">×</span>
@@ -192,7 +192,7 @@ function RuleForm({ originZone, destZone, truckType, rule, onSave, onDelete, onC
       <div className="ap-field">
         <label className="ap-label">Price (₦) *</label>
         <input className="ap-input" type="number" min="0" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g. 25000" required />
-        <p className="ap-field-hint">Flat rate for this origin → destination zone route with this vehicle type.</p>
+        <p className="ap-field-hint">Flat rate for this origin → destination direction with this vehicle type.</p>
       </div>
       <div className="ap-form-actions">
         {rule && <button type="button" className="ap-delete-rule-btn" onClick={onDelete} disabled={saving}>Remove Rule</button>}
@@ -359,19 +359,19 @@ export default function AdminPricing() {
   const saveZone = async fd => {
     setSaving(true);
     try {
-      if (modal.mode === 'edit') { await pricingAPI.updateZone(modal.data._id, fd); flash('Zone updated'); }
-      else                       { await pricingAPI.createZone(fd); flash('Zone created'); }
+      if (modal.mode === 'edit') { await pricingAPI.updateZone(modal.data._id, fd); flash('Direction updated'); }
+      else                       { await pricingAPI.createZone(fd); flash('Direction created'); }
       setModal(null); await loadData();
-    } catch (e) { setError(e?.response?.data?.message || 'Failed to save zone'); }
+    } catch (e) { setError(e?.response?.data?.message || 'Failed to save direction'); }
     finally { setSaving(false); }
   };
 
   const deleteZone = async id => {
-    if (!window.confirm('Deactivate this zone? Linked pricing rules will be preserved.')) return;
+    if (!window.confirm('Deactivate this direction? Linked pricing rules will be preserved.')) return;
     setSaving(true);
     try {
       const r = await pricingAPI.deleteZone(id);
-      flash(r.message || 'Zone removed'); await loadData();
+      flash(r.message || 'Direction removed'); await loadData();
     } catch (e) { setError(e?.response?.data?.message || 'Failed'); }
     finally { setSaving(false); }
   };
@@ -450,11 +450,11 @@ export default function AdminPricing() {
         }
       }
       await Promise.all(ops);
-      flash(`${NIGERIAN_STATES.find(s => s.key === stateKey)?.name || stateKey} zone updated`);
+      flash(`${NIGERIAN_STATES.find(s => s.key === stateKey)?.name || stateKey} direction updated`);
       setDirtyStates(p => { const n = { ...p }; delete n[stateKey]; return n; });
       setStateEdits(p =>  { const n = { ...p }; delete n[stateKey]; return n; });
       await loadData();
-    } catch (e) { setError(e?.response?.data?.message || 'Failed to update state zone'); }
+    } catch (e) { setError(e?.response?.data?.message || 'Failed to update state direction'); }
     finally { setSavingStates(false); }
   };
 
@@ -469,11 +469,11 @@ export default function AdminPricing() {
 
   // ── Seed defaults ─────────────────────────────────────────────────────
   const handleSeed = async () => {
-    if (!window.confirm('Create default Nigerian zones, vehicle types, and a starter pricing matrix?')) return;
+    if (!window.confirm('Create the 7 Nigerian compass directions, vehicle types, and a full pricing matrix?')) return;
     setSeeding(true); setError('');
     try {
       const r = await pricingAPI.seedDefaults();
-      flash(`✅ ${r.data.zones} zones, ${r.data.truckTypes} truck types, ${r.data.rules} rules created.`);
+      flash(`✅ ${r.data.zones} directions, ${r.data.truckTypes} truck types, ${r.data.rules} pricing rules created.`);
       await loadData();
     } catch (e) { setError(e?.response?.data?.message || 'Failed to seed defaults'); }
     finally { setSeeding(false); }
@@ -494,11 +494,11 @@ export default function AdminPricing() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Pricing Management</h1>
-          <p className="page-subtitle">Zone-based pricing — Origin zone → Destination zone → Vehicle type</p>
+          <p className="page-subtitle">Direction-based pricing — Origin direction → Destination direction → Vehicle type</p>
         </div>
         {data.zones.length === 0 && (
           <button className="btn-primary" onClick={handleSeed} disabled={seeding}>
-            {seeding ? <span className="spinner spinner-sm" /> : '⚡ Initialise Default Pricing'}
+            {seeding ? <span className="spinner spinner-sm" /> : '⚡ Initialise Compass Directions'}
           </button>
         )}
       </div>
@@ -508,10 +508,10 @@ export default function AdminPricing() {
         <span className="ap-status-dot" />
         <span>
           {isDynamic
-            ? `Dynamic pricing active — ${configuredCells} rules covering ${sortedZones.length} zones × ${sortedTrucks.length} vehicle types`
+            ? `Direction-based pricing active — ${configuredCells} rules covering ${sortedZones.length} directions × ${sortedTrucks.length} vehicle types`
             : isPartial
             ? `Partial config — ${configuredCells} of ${totalCells} cells configured. Unconfigured routes fall back to weight-based pricing.`
-            : 'No dynamic pricing yet — all bookings use the built-in weight-based pricing engine.'}
+            : 'No direction pricing configured yet — all bookings use the built-in weight-based pricing engine.'}
         </span>
       </div>
 
@@ -522,7 +522,7 @@ export default function AdminPricing() {
       {/* Stats */}
       <div className="ap-stats-row">
         {[
-          { label: 'Zones',          val: sortedZones.length,      icon: '🗺️' },
+          { label: 'Directions',      val: sortedZones.length,      icon: '🧭' },
           { label: 'Vehicle Types',  val: sortedTrucks.length,     icon: '🚛' },
           { label: 'Price Rules',    val: data.rules.length,       icon: '💰' },
           { label: 'Coverage',       val: totalCells > 0 ? `${Math.round(configuredCells / totalCells * 100)}%` : '—', icon: '📊' },
@@ -540,11 +540,11 @@ export default function AdminPricing() {
       {/* Tab bar */}
       <div className="ap-tabs">
         {[
-          { id: 'quickset',   label: 'Zone Quick-Set'       },
-          { id: 'matrix',     label: 'Pricing Matrix'       },
-          { id: 'states',     label: `States (${NIGERIAN_STATES.length})` },
-          { id: 'zones',      label: `Zones (${sortedZones.length})` },
-          { id: 'truckTypes', label: `Vehicle Types (${sortedTrucks.length})` },
+          { id: 'quickset',   label: 'Direction Quick-Set'                        },
+          { id: 'matrix',     label: 'Pricing Matrix'                             },
+          { id: 'states',     label: `States (${NIGERIAN_STATES.length})`         },
+          { id: 'zones',      label: `Directions (${sortedZones.length})`         },
+          { id: 'truckTypes', label: `Vehicle Types (${sortedTrucks.length})`     },
         ].map(t => (
           <button key={t.id} className={`ap-tab${tab === t.id ? ' ap-tab--active' : ''}`} onClick={() => setTab(t.id)}>
             {t.label}
@@ -559,8 +559,8 @@ export default function AdminPricing() {
         <div className="fade-in">
           <div className="qs-header-row">
             <div>
-              <h3 className="qs-section-title">Zone Quick-Set</h3>
-              <p className="qs-section-sub">Set the price for all routes FROM each zone at once. Select a vehicle type, then enter prices.</p>
+              <h3 className="qs-section-title">Direction Quick-Set</h3>
+              <p className="qs-section-sub">Set the same delivery fee for all routes FROM each compass direction at once. Select a vehicle type, then enter prices.</p>
             </div>
           </div>
 
@@ -587,9 +587,9 @@ export default function AdminPricing() {
             </div>
           ) : sortedZones.length === 0 ? (
             <div className="empty-state card">
-              <div className="empty-icon">💰</div>
-              <h3>No zones configured</h3>
-              <p>Click "Initialise Default Pricing" above to seed Nigerian zones, vehicle types, and a starter matrix.</p>
+              <div className="empty-icon">🧭</div>
+              <h3>No directions configured</h3>
+              <p>Click "Initialise Compass Directions" above to seed the 7 Nigerian compass directions, vehicle types, and a starter pricing matrix.</p>
             </div>
           ) : (
             <div className="qs-grid">
@@ -621,14 +621,14 @@ export default function AdminPricing() {
             </div>
           ) : sortedZones.length === 0 || sortedTrucks.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">💰</div>
+              <div className="empty-icon">🧭</div>
               <h3>No pricing configured yet</h3>
-              <p>Use "Zone Quick-Set" tab or click "Initialise Default Pricing" to get started.</p>
+              <p>Use the "Direction Quick-Set" tab or click "Initialise Compass Directions" to get started.</p>
             </div>
           ) : (
             <>
               <div className="ap-matrix-toolbar">
-                <p className="ap-matrix-legend">Click any cell to set or edit the price for that Origin → Destination route.</p>
+                <p className="ap-matrix-legend">Click any cell to set or edit the price for that Origin Direction → Destination Direction route.</p>
                 <select className="ap-input ap-truck-select" value={matrixTruck} onChange={e => setMatrixTruck(e.target.value)}>
                   {sortedTrucks.map(tt => <option key={tt._id} value={tt._id}>{tt.icon} {tt.name} ({tt.capacityTons}t)</option>)}
                 </select>
@@ -637,7 +637,7 @@ export default function AdminPricing() {
                 <table className="ap-matrix-table">
                   <thead>
                     <tr>
-                      <th className="ap-matrix-corner">Origin ↓ / Dest →</th>
+                      <th className="ap-matrix-corner">Origin Direction ↓ / Dest →</th>
                       {sortedZones.map((z, i) => (
                         <th key={z._id} className="ap-matrix-th">
                           <span className="ap-mth-dot" style={{ background: zoneColor(i) }} />
@@ -663,7 +663,7 @@ export default function AdminPricing() {
                               key={toZ._id}
                               className={`ap-matrix-cell${rule ? ' ap-cell--set' : ' ap-cell--empty'}${dead ? ' ap-cell--inactive' : ''}`}
                               onClick={() => !dead && tt && setModal({ type: 'rule', originZone: fromZ, destZone: toZ, truckType: tt, rule: rule || null })}
-                              title={dead ? 'Zone or vehicle inactive' : rule ? `₦${fmt(rule.price)}` : 'Click to set price'}
+                              title={dead ? 'Direction or vehicle inactive' : rule ? `₦${fmt(rule.price)}` : 'Click to set price'}
                             >
                               {rule ? <span className="ap-cell-price">₦{fmt(rule.price)}</span>
                                     : dead ? <span className="ap-cell-dash">—</span>
@@ -693,8 +693,8 @@ export default function AdminPricing() {
         <div className="fade-in">
           <div className="qs-header-row">
             <div>
-              <h3 className="qs-section-title">State-by-Zone Assignments</h3>
-              <p className="qs-section-sub">Edit individual state zone assignments. Changes are highlighted — click Save All or save individually.</p>
+              <h3 className="qs-section-title">State-by-Direction Assignments</h3>
+              <p className="qs-section-sub">Edit individual state direction assignments. Changes are highlighted in blue — click Save All or save individually.</p>
             </div>
             {Object.keys(dirtyStates).filter(k => dirtyStates[k]).length > 0 && (
               <button className="btn-primary" onClick={saveAllStates} disabled={savingStates}>
@@ -726,7 +726,7 @@ export default function AdminPricing() {
                 <thead>
                   <tr>
                     <th>State</th>
-                    <th>Zone</th>
+                    <th>Direction</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -788,9 +788,9 @@ export default function AdminPricing() {
       {tab === 'zones' && (
         <div className="card fade-in">
           <div className="ap-list-header">
-            <p className="ap-list-title">Geographic Zones</p>
+            <p className="ap-list-title">Compass Directions</p>
             <button className="btn-primary ap-add-btn" onClick={() => setModal({ type: 'zone', mode: 'create', data: null })}>
-              + Add Zone
+              + Add Direction
             </button>
           </div>
           {loading ? (
@@ -799,15 +799,15 @@ export default function AdminPricing() {
             </div>
           ) : sortedZones.length === 0 ? (
             <div className="empty-state" style={{ padding: '32px 0' }}>
-              <div className="empty-icon">🗺️</div>
-              <h3>No zones defined</h3>
-              <p>Create geopolitical zones to enable zone-based pricing</p>
+              <div className="empty-icon">🧭</div>
+              <h3>No directions defined</h3>
+              <p>Create compass directions (e.g. South West, North East) to enable direction-based pricing</p>
             </div>
           ) : (
             <div className="table-wrap">
               <table>
                 <thead>
-                  <tr><th>Zone</th><th>States</th><th>Rules</th><th>Status</th><th>Actions</th></tr>
+                  <tr><th>Direction</th><th>States</th><th>Rules</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                   {sortedZones.map((zone, idx) => {
@@ -927,7 +927,7 @@ export default function AdminPricing() {
 
       {/* ── Modals ──────────────────────────────────────────────────────── */}
       {modal?.type === 'zone' && (
-        <Modal title={modal.mode === 'edit' ? `Edit Zone: ${modal.data.name}` : 'New Zone'} onClose={() => setModal(null)}>
+        <Modal title={modal.mode === 'edit' ? `Edit Direction: ${modal.data.name}` : 'New Compass Direction'} onClose={() => setModal(null)}>
           <ZoneForm initial={modal.data} onSave={saveZone} onCancel={() => setModal(null)} saving={saving} />
         </Modal>
       )}

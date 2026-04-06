@@ -74,11 +74,11 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
     if (existingZones > 0 || existingTrucks > 0) {
       return res.status(409).json({
         success: false,
-        message: 'Pricing config already exists. Clear existing zones and truck types before re-seeding.',
+        message: 'Pricing config already exists. Clear existing directions and truck types before re-seeding.',
       });
     }
 
-    // 7 Nigerian geopolitical zones + FCT as standalone
+    // 7 Nigerian compass directions (6 geopolitical + FCT as standalone)
     const DEFAULT_ZONES = [
       { name: 'South West',    states: ['lagos','ogun','oyo','osun','ondo','ekiti'],                         sortOrder: 0 },
       { name: 'FCT',           states: ['fct'],                                                              sortOrder: 1 },
@@ -128,7 +128,7 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
 
     res.json({
       success: true,
-      message: 'Default pricing initialised successfully',
+      message: 'Default compass directions and pricing initialised successfully',
       data: { zones: zones.length, truckTypes: truckTypes.length, rules: rules.length },
     });
   } catch (e) { next(e); }
