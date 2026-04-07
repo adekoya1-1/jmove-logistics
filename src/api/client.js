@@ -239,6 +239,11 @@ export const authAPI = {
   forgotPassword:  (email)  => api.post('/auth/forgot-password', { email }),
   verifyResetOtp:  (d)      => api.post('/auth/verify-reset-otp', d),
   resetPassword:   (d)      => api.post('/auth/reset-password', d),
+  // Saved addresses
+  listAddresses:   ()             => api.get('/auth/addresses'),
+  addAddress:      (d)            => api.post('/auth/addresses', d),
+  updateAddress:   (id, d)        => api.put(`/auth/addresses/${encodeURIComponent(id)}`, d),
+  deleteAddress:   (id)           => api.delete(`/auth/addresses/${encodeURIComponent(id)}`),
 };
 
 export const ordersAPI = {
@@ -350,6 +355,19 @@ export const settingsAPI = {
 export const logsAPI = {
   list:  (p)  => api.get(`/logs?${new URLSearchParams(p || {})}`),
   stats: ()   => api.get('/logs/stats'),
+};
+
+export const supportAPI = {
+  // Customer
+  create:  (d)      => api.post('/support', d),
+  list:    (p)      => api.get(`/support?${new URLSearchParams(p || {})}`),
+  get:     (id)     => api.get(`/support/${encodeURIComponent(id)}`),
+  reply:   (id, d)  => api.post(`/support/${encodeURIComponent(id)}/reply`, d),
+  close:   (id)     => api.put(`/support/${encodeURIComponent(id)}/close`),
+  // Admin
+  adminList:   (p)       => api.get(`/support/admin/all?${new URLSearchParams(p || {})}`),
+  adminStatus: (id, d)   => api.put(`/support/admin/${encodeURIComponent(id)}/status`, d),
+  adminReply:  (id, d)   => api.post(`/support/admin/${encodeURIComponent(id)}/reply`, d),
 };
 
 export default api;

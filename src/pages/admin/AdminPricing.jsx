@@ -109,10 +109,10 @@ function MatrixCell({ rule, fromDir, toDir, truckType, onSaved }) {
     setSaving(true);
     try {
       await pricingAPI.upsertRule({
-        fromZoneId:  fromDir._id,
-        toZoneId:    toDir._id,
-        truckTypeId: truckType._id,
-        price:       num,
+        fromDirection: fromDir,
+        toDirection:   toDir,
+        truckTypeId:   truckType._id,
+        price:         num,
       });
       await onSaved();
     } catch (err) {
@@ -175,7 +175,7 @@ function MatrixCell({ rule, fromDir, toDir, truckType, onSaved }) {
 // ══════════════════════════════════════════════════════════════════════════
 export default function AdminPricing() {
   const [tab,      setTab]     = useState('matrix');
-  const [data,     setData]    = useState({ zones: [], truckTypes: [], rules: [] });
+  const [data,     setData]    = useState({ directions: [], truckTypes: [], rules: [], states: [] });
   const [truckIdx, setTruckIdx] = useState(0);
   const [loading,  setLoading] = useState(true);
   const [saving,   setSaving]  = useState(false);
@@ -199,17 +199,17 @@ export default function AdminPricing() {
   const flash = msg => { setSuccess(msg); setTimeout(() => setSuccess(''), 3500); };
 
   // Sorted lists
-  const sortedDirs   = [...data.zones].sort((a, b) => a.sortOrder - b.sortOrder);
-  const sortedTrucks = [...data.truckTypes].sort(
+  const sortedDirs   = data.directions || [];
+  const sortedTrucks = [...(data.truckTypes || [])].sort(
     (a, b) => (a.sortOrder - b.sortOrder) || (a.capacityTons - b.capacityTons)
   );
   const activeTruck = sortedTrucks[truckIdx] || sortedTrucks[0];
 
   // Helper: find rule for a cell
-  const getRule = (fromId, toId, truckId) =>
+  const getRule = (fromDir, toDir, truckId) =>
     data.rules.find(r =>
-      (r.fromZoneId?._id  || r.fromZoneId )?.toString() === fromId.toString() &&
-      (r.toZoneId?._id    || r.toZoneId   )?.toString() === toId.toString()   &&
+      r.fromDirection === fromDir &&
+      r.toDirection   === toDir   &&
       (r.truckTypeId?._id || r.truckTypeId)?.toString() === truckId.toString()
     );
 
@@ -217,7 +217,7 @@ export default function AdminPricing() {
   const totalCells = sortedDirs.length * sortedDirs.length;
   const filledCells = activeTruck
     ? sortedDirs.reduce((n, from) =>
-        n + sortedDirs.filter(to => getRule(from._id, to._id, activeTruck._id)).length, 0)
+        n + sortedDirs.filter(to => getRule(from, to, activeTruck._id)).length, 0)
     : 0;
   const allFilled = totalCells > 0 && filledCells === totalCells;
 
@@ -371,7 +371,7 @@ export default function AdminPricing() {
                     <p className="ap-coverage-warn">
                       ⚠&nbsp;
                       {totalCells - filledCells} cell{totalCells - filledCells !== 1 ? 's' : ''} not
-                      set for this vehicle type — missing routes fall back to weight-based pricing.
+                      set for this vehicle type — missing combinations will result in an error during quote calculations.
                     </p>
                   )}
                 </div>
@@ -401,24 +401,24 @@ export default function AdminPricing() {
                         <span className="ap-corner-to">Destination</span>
                       </th>
                       {sortedDirs.map((d, i) => (
-                        <th key={d._id} className="ap-matrix-th">
+                        <th key={d} className="ap-matrix-th">
                           <span className="ap-mth-dot" style={{ background: dirColor(i) }} />
-                          {d.name}
+                          {d}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {sortedDirs.map((fromDir, fi) => (
-                      <tr key={fromDir._id}>
+                      <tr key={fromDir}>
                         <td className="ap-matrix-zone-cell">
                           <span className="ap-mth-dot" style={{ background: dirColor(fi) }} />
-                          {fromDir.name}
+                          {fromDir}
                         </td>
                         {sortedDirs.map(toDir => (
                           <MatrixCell
-                            key={`${fromDir._id}-${toDir._id}`}
-                            rule={activeTruck ? getRule(fromDir._id, toDir._id, activeTruck._id) : null}
+                            key={`${fromDir}-${toDir}`}
+                            rule={activeTruck ? getRule(fromDir, toDir, activeTruck._id) : null}
                             fromDir={fromDir}
                             toDir={toDir}
                             truckType={activeTruck}

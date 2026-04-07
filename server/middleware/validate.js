@@ -152,11 +152,7 @@ export const orderSchemas = {
   calcPrice: z.object({
     originCity:      cityKey,
     destinationCity: cityKey,
-    weight:          z.coerce.number().min(0.1).max(5000),
-    serviceType:     z.enum(['standard', 'express', 'sameday']).optional(),
-    isFragile:       z.coerce.boolean().optional(),
-    declaredValue:   z.coerce.number().min(0).optional(),
-    truckTypeId:     objectId.optional(),
+    truckTypeId:     objectId,
   }),
 
   addNote: z.object({
@@ -322,21 +318,6 @@ export const otpSchemas = {
 
 // ── Pricing ─────────────────────────────────────────────
 export const pricingSchemas = {
-  createZone: z.object({
-    name:        z.string().min(1).max(100).trim(),
-    description: z.string().max(200).trim().optional().default(''),
-    states:      z.array(z.string().toLowerCase().trim()).optional().default([]),
-    sortOrder:   z.coerce.number().int().min(0).optional().default(0),
-  }),
-
-  updateZone: z.object({
-    name:        z.string().min(1).max(100).trim().optional(),
-    description: z.string().max(200).trim().optional(),
-    states:      z.array(z.string().toLowerCase().trim()).optional(),
-    isActive:    z.boolean().optional(),
-    sortOrder:   z.coerce.number().int().min(0).optional(),
-  }),
-
   createTruckType: z.object({
     name:         z.string().min(1).max(100).trim(),
     description:  z.string().max(200).trim().optional().default(''),
@@ -355,10 +336,10 @@ export const pricingSchemas = {
   }),
 
   upsertRule: z.object({
-    fromZoneId:  z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid origin zone ID' }),
-    toZoneId:    z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid destination zone ID' }),
-    truckTypeId: z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid truck type ID' }),
-    price:       z.coerce.number().min(0).max(100_000_000),
+    fromDirection: z.enum(['North West', 'North East', 'North Central', 'South West', 'South East', 'South South']),
+    toDirection:   z.enum(['North West', 'North East', 'North Central', 'South West', 'South East', 'South South']),
+    truckTypeId:   z.string().refine(v => mongoose.Types.ObjectId.isValid(v), { message: 'Invalid truck type ID' }),
+    price:         z.coerce.number().min(0).max(100_000_000),
   }),
 
   updateRule: z.object({

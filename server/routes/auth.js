@@ -33,7 +33,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { User, DriverProfile, OtpToken } from '../db.js';
+import { User, DriverProfile, OtpToken, SavedAddress } from '../db.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate, authSchemas, otpSchemas } from '../middleware/validate.js';
 import {
@@ -559,6 +559,80 @@ router.put('/profile', authenticate, validate(authSchemas.updateProfile), async 
       { new: true }
     ).select('-password -refreshToken');
     res.json({ success: true, data: user });
+  } catch (e) { next(e); }
+});
+
+// ── GET /api/auth/addresses ──────────────────────────────
+// Returns all saved addresses for the authenticated user
+router.get('/addresses', authenticate, async (req, res, next) => {
+  try {
+    const addresses = await SavedAddress.find({ userId: req.user._id }).sort({ isDefault: -1, createdAt: -1 });
+    res.json({ success: true, data: addresses });
+  } catch (e) { next(e); }
+});
+
+// ── POST /api/auth/addresses ─────────────────────────────
+router.post('/addresses', authenticate, async (req, res, next) => {
+  try {
+    const { label, address, city, contactName, contactPhone, isDefault } = req.body;
+    if (!label?.trim()) return res.status(400).json({ success: false, message: 'Label is required' });
+    if (!address?.trim()) return res.status(400).json({ success: false, message: 'Address is required' });
+    if (!city?.trim())    return res.status(400).json({ success: false, message: 'City is required' });
+
+    // Enforce max 10 saved addresses
+    const count = await SavedAddress.countDocuments({ userId: req.user._id });
+    if (count >= 10)
+      return res.status(400).json({ success: false, message: 'Maximum 10 saved addresses allowed' });
+
+    // If setting as default, clear other defaults first
+    if (isDefault) {
+      await SavedAddress.updateMany({ userId: req.user._id }, { isDefault: false });
+    }
+
+    const saved = await SavedAddress.create({
+      userId: req.user._id,
+      label:  label.trim(),
+      address: address.trim(),
+      city:   city.trim(),
+      contactName:  contactName?.trim() || '',
+      contactPhone: contactPhone?.trim() || '',
+      isDefault: !!isDefault,
+    });
+
+    res.status(201).json({ success: true, data: saved });
+  } catch (e) { next(e); }
+});
+
+// ── PUT /api/auth/addresses/:id ──────────────────────────
+router.put('/addresses/:id', authenticate, async (req, res, next) => {
+  try {
+    const { label, address, city, contactName, contactPhone, isDefault } = req.body;
+    const existing = await SavedAddress.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!existing) return res.status(404).json({ success: false, message: 'Address not found' });
+
+    if (isDefault) {
+      await SavedAddress.updateMany({ userId: req.user._id }, { isDefault: false });
+    }
+
+    if (label?.trim())        existing.label        = label.trim();
+    if (address?.trim())      existing.address      = address.trim();
+    if (city?.trim())         existing.city         = city.trim();
+    if (contactName !== undefined)  existing.contactName  = contactName?.trim() || '';
+    if (contactPhone !== undefined) existing.contactPhone = contactPhone?.trim() || '';
+    if (isDefault !== undefined)    existing.isDefault    = !!isDefault;
+    await existing.save();
+
+    res.json({ success: true, data: existing });
+  } catch (e) { next(e); }
+});
+
+// ── DELETE /api/auth/addresses/:id ──────────────────────
+router.delete('/addresses/:id', authenticate, async (req, res, next) => {
+  try {
+    const result = await SavedAddress.deleteOne({ _id: req.params.id, userId: req.user._id });
+    if (result.deletedCount === 0)
+      return res.status(404).json({ success: false, message: 'Address not found' });
+    res.json({ success: true, message: 'Address deleted' });
   } catch (e) { next(e); }
 });
 

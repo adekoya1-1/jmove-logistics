@@ -70,10 +70,9 @@ export default function NewOrder() {
     setError(''); setLoading(true);
     try {
       const r = await ordersAPI.calcPrice({
-        originCity: form.originCity, destinationCity: form.destinationCity,
-        weight: +form.weight, serviceType: form.serviceType,
-        isFragile: form.isFragile, declaredValue: +form.declaredValue || 0,
-        truckTypeId: form.truckTypeId || undefined,
+        originCity: form.originCity, 
+        destinationCity: form.destinationCity,
+        truckTypeId: form.truckTypeId,
       });
       setPricing(r.data); setStep(3);
     } catch (e) { setError(e?.response?.data?.message || 'Failed to calculate price'); }
@@ -207,7 +206,7 @@ export default function NewOrder() {
                 <input type="checkbox" checked={form.isFragile} onChange={set('isFragile')} />
                 <div>
                   <p className="fragile-label">⚠ Fragile — Handle with care</p>
-                  <p className="fragile-sub">Extra surcharge of ₦1,000 applies</p>
+                  <p className="fragile-sub">Please ensure proper packaging</p>
                 </div>
               </label>
 
@@ -281,18 +280,10 @@ export default function NewOrder() {
             )}
 
             <div className="pricing-box">
-              {[
-                { label:'Base Rate',           val: pricing.basePrice },
-                { label:'Weight Surcharge',    val: pricing.weightSurcharge,   hide: !pricing.weightSurcharge },
-                { label:'Service Surcharge',   val: pricing.serviceSurcharge,  hide: !pricing.serviceSurcharge },
-                { label:'Fragile Handling',    val: pricing.fragileSurcharge,  hide: !pricing.fragileSurcharge },
-                { label:'Insurance Fee',       val: pricing.insuranceFee,      hide: !pricing.insuranceFee },
-              ].filter(r => !r.hide).map(r => (
-                <div key={r.label} className="pricing-row">
-                  <span className="pr-label">{r.label}</span>
-                  <span className="pr-val">₦{fmt(r.val)}</span>
-                </div>
-              ))}
+              <div className="pricing-row" style={{ borderBottom: '1px solid var(--border)' }}>
+                <span className="pr-label">Fixed Route Price</span>
+                <span className="pr-val">₦{fmt(pricing.basePrice)}</span>
+              </div>
               <div className="pricing-total">
                 <span>Total Shipping Cost</span>
                 <span className="pt-total">₦{fmt(pricing.totalAmount)}</span>

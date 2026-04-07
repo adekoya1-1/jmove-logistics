@@ -1,22 +1,15 @@
 /**
  * ─────────────────────────────────────────────────────────────────────────────
- *  DYNAMIC PRICING SERVICE
+ *  DYNAMIC PRICING SERVICE (Direction-Based Matrix)
  *
  *  Architecture:
- *  1. Loads Zone + TruckType + PricingRule config from MongoDB (cached 60s)
- *  2. If a matching rule exists for the route zone + truck type → dynamic price
- *  3. Falls back to the static pricing engine (utils/pricing.js) when:
- *     - No truck type selected
- *     - No DB config seeded
- *     - DB is unavailable
- *     - No rule for the zone+truckType pair
- *
- *  The returned object is shape-compatible with the static calcPrice output,
- *  adding: isDynamic (bool), truckType (null | {_id, name, capacityTons})
+ *  1. Loads State + TruckType + Pricing config from MongoDB (cached)
+ *  2. Map pickup and delivery states to their directions
+ *  3. Lookup the exact pricing rule in the Matrix
+ *  4. Return the flat price
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import { Zone, TruckType, PricingRule } from '../db.js';
-import { calcPrice as staticCalcPrice, ZONES as STATIC_ZONES } from '../utils/pricing.js';
+import { State, TruckType, Pricing } from '../db.js';
 
 // ── In-memory cache (60s TTL) ─────────────────────────────────────────────
 let _cache     = null;
@@ -28,124 +21,83 @@ export const invalidateCache = () => { _cache = null; _cacheTime = 0; };
 async function loadConfig() {
   if (_cache && Date.now() - _cacheTime < CACHE_TTL_MS) return _cache;
 
-  const [zones, truckTypes, rules] = await Promise.all([
-    Zone.find({ isActive: true }).sort({ sortOrder: 1 }).lean(),
+  const [states, truckTypes, rules] = await Promise.all([
+    State.find({ isActive: true }).lean(),
     TruckType.find({ isActive: true }).sort({ sortOrder: 1, capacityTons: 1 }).lean(),
-    PricingRule.find({ isActive: true })
-      .populate('fromZoneId',  'name states')
-      .populate('toZoneId',    'name states')
-      .populate('truckTypeId', 'name capacityTons icon')
-      .lean(),
+    Pricing.find({ isActive: true }).populate('truckTypeId', 'name capacityTons icon').lean(),
   ]);
 
-  _cache     = { zones, truckTypes, rules };
+  _cache     = { states, truckTypes, rules };
   _cacheTime = Date.now();
   return _cache;
 }
-
-// ── Map city/state key → zone (DB first, no fallback for dynamic) ───────────
-const getStateZone = (stateKey, dbZones) => {
-  return dbZones.find(z => z.states?.includes(stateKey.toLowerCase()));
-};
-
-const SERVICE_SURCHARGES = { standard: 0, express: 2000, sameday: 3000 };
 
 // ── Main exported calculator ──────────────────────────────────────────────
 export const calcDynamicPrice = async ({
   originCity,
   destinationCity,
-  weight,
-  serviceType   = 'standard',
-  isFragile     = false,
-  declaredValue = 0,
-  truckTypeId   = null,
+  truckTypeId,
 }) => {
-  // Base/fallback — always computed so we can fall through safely
-  const staticResult = staticCalcPrice({
-    originCity, destinationCity, weight, serviceType, isFragile, declaredValue,
-  });
-
-  // No truck type → weight-based static pricing
-  if (!truckTypeId) {
-    return { ...staticResult, isDynamic: false, truckType: null };
+  if (!truckTypeId || !originCity || !destinationCity) {
+    throw new Error('originCity, destinationCity, and truckTypeId are required to calculate price');
   }
 
   let config;
   try {
     config = await loadConfig();
   } catch (err) {
-    console.error('[PricingService] DB unavailable, using static:', err.message);
-    return { ...staticResult, isDynamic: false, truckType: null };
+    console.error('[PricingService] DB unavailable:', err.message);
+    throw new Error('Pricing service temporarily unavailable');
   }
 
-  const { zones, truckTypes, rules } = config;
-
-  // Not enough DB config → fall back
-  if (!zones.length || !truckTypes.length || !rules.length) {
-    return { ...staticResult, isDynamic: false, truckType: null };
-  }
+  const { states, truckTypes, rules } = config;
 
   // Resolve the truck type object
   const truckType = truckTypes.find(tt => tt._id.toString() === truckTypeId.toString());
   if (!truckType) {
-    return { ...staticResult, isDynamic: false, truckType: null };
+    throw new Error('Selected vehicle type is invalid or inactive');
   }
 
-  const originZoneObj = getStateZone(originCity, zones);
-  const destZoneObj   = getStateZone(destinationCity, zones);
+  // Find State objects to resolve direction
+  const originState = states.find(s => s.name === originCity || s.name.toLowerCase() === originCity.toLowerCase() || s.name.toLowerCase().includes(originCity.toLowerCase()));
+  const destState   = states.find(s => s.name === destinationCity || s.name.toLowerCase() === destinationCity.toLowerCase() || s.name.toLowerCase().includes(destinationCity.toLowerCase()));
 
-  if (!originZoneObj || !destZoneObj) {
-    return { ...staticResult, isDynamic: false, truckType };
-  }
+  if (!originState) throw new Error(`Invalid pickup location: ${originCity}`);
+  if (!destState) throw new Error(`Invalid destination location: ${destinationCity}`);
+
+  const fromDirection = originState.direction;
+  const toDirection = destState.direction;
 
   const rule = rules.find(r =>
-    r.fromZoneId?._id?.toString()  === originZoneObj._id.toString() &&
-    r.toZoneId?._id?.toString()    === destZoneObj._id.toString() &&
-    r.truckTypeId?._id?.toString() === truckType._id.toString()
+    r.fromDirection === fromDirection &&
+    r.toDirection === toDirection &&
+    (r.truckTypeId?._id?.toString() === truckType._id.toString() || r.truckTypeId?.toString() === truckType._id.toString())
   );
 
   if (!rule) {
-    return { ...staticResult, isDynamic: false, truckType };
+    throw new Error(`Pricing not configured for ${fromDirection} to ${toDirection} using ${truckType.name}`);
   }
 
-  // ── Build dynamic price ──────────────────────────────────────────────────
-  const basePrice        = rule.price;
-  const serviceSurcharge = SERVICE_SURCHARGES[serviceType] || 0;
-  const fragileSurcharge = isFragile ? 1000 : 0;
-  const insuranceFee     = declaredValue > 0
-    ? Math.max(Math.round(declaredValue * 0.015), 500)
-    : 0;
-  const totalAmount = basePrice + serviceSurcharge + fragileSurcharge + insuranceFee;
-
+  const basePrice = rule.price;
   const sameCityRoute = originCity.toLowerCase() === destinationCity.toLowerCase();
   const deliveryType  = sameCityRoute ? 'intrastate' : 'interstate';
 
-  const deliveryDays = deliveryType === 'intrastate'
-    ? (serviceType === 'sameday' ? 'Same day' : '1–2 hours')
-    : serviceType === 'express'
-      ? '24–48 hours'
-      : `3–5 business days`;
+  // Delivery days estimate simplified
+  const deliveryDays = deliveryType === 'intrastate' ? '1–2 business days' : '3–5 business days';
 
   return {
     deliveryType,
-    originCity:        STATIC_ZONES[originCity]?.name    || originCity,
-    destinationCity:   STATIC_ZONES[destinationCity]?.name || destinationCity,
-    serviceType,
+    fromDirection,
+    toDirection,
+    originCity: originState.name,
+    destinationCity: destState.name,
     estimatedDelivery: deliveryDays,
     basePrice,
-    weightSurcharge:   0,      // truck type replaces weight-based surcharge
-    serviceSurcharge,
-    fragileSurcharge,
-    insuranceFee,
-    totalAmount,
-    isDynamic:   true,
-    truckType:   { _id: truckType._id, name: truckType.name, capacityTons: truckType.capacityTons, icon: truckType.icon },
+    totalAmount: basePrice, // Absolute flat price
+    isDynamic: true,
+    truckType: { _id: truckType._id, name: truckType.name, capacityTons: truckType.capacityTons, icon: truckType.icon },
     breakdown: {
-      baseRate:         basePrice,
-      weightSurcharge:  0,
-      serviceSurcharge,
-      fragileSurcharge,
-      insuranceFee,
+      baseRate: basePrice,
     },
   };
 };
@@ -154,8 +106,8 @@ export const calcDynamicPrice = async ({
 export const getPublicConfig = async () => {
   const config = await loadConfig();
   return {
-    zones:             config.zones,
+    states:            config.states,
     truckTypes:        config.truckTypes,
-    hasDynamicPricing: config.zones.length > 0 && config.truckTypes.length > 0 && config.rules.length > 0,
+    hasDynamicPricing: config.states.length > 0 && config.truckTypes.length > 0 && config.rules.length > 0,
   };
 };

@@ -23,6 +23,7 @@ import pricingRoutes  from './routes/pricing.js';
 import fleetRoutes    from './routes/fleet.js';
 import settingsRoutes from './routes/settings.js';
 import logsRoutes     from './routes/logs.js';
+import supportRoutes  from './routes/support.js';
 import socketHandler  from './utils/socketHandler.js';
 
 import { noSqlSanitize, xssSanitize, hppProtect } from './middleware/sanitize.js';
@@ -204,6 +205,7 @@ app.use('/api/pricing',  pricingRoutes);
 app.use('/api/fleet',    fleetRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/logs',     logsRoutes);
+app.use('/api/support',  supportRoutes);
 
 // ── Health check ────────────────────────────────────────
 app.get('/api/health', (_, res) => res.json({

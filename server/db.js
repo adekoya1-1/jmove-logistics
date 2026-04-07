@@ -195,13 +195,15 @@ const driverEarningSchema = new mongoose.Schema({
   destinationCity: { type: String },
 }, { timestamps: true });
 
-// ── Zone — admin-configurable geographic regions ────────────────────────────
-const zoneSchema = new mongoose.Schema({
-  name:        { type: String, required: true, trim: true },
-  description: { type: String, trim: true, default: '' },
-  states:      [{ type: String, lowercase: true, trim: true }],
+// ── State — predefined mapping of state to direction ────────────────────────────
+const stateSchema = new mongoose.Schema({
+  name:        { type: String, required: true, trim: true, unique: true },
+  direction:   { 
+    type: String, 
+    required: true, 
+    enum: ['North West', 'North East', 'North Central', 'South West', 'South East', 'South South'],
+  },
   isActive:    { type: Boolean, default: true },
-  sortOrder:   { type: Number, default: 0 },
 }, { timestamps: true });
 
 // ── Truck Type — vehicle capacity tiers for pricing ───────────────────────
@@ -214,15 +216,23 @@ const truckTypeSchema = new mongoose.Schema({
   isActive:     { type: Boolean, default: true },
 }, { timestamps: true });
 
-// ── Pricing Rule — price for origin zone → dest zone × truck type ────────
-const pricingRuleSchema = new mongoose.Schema({
-  fromZoneId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Zone',      required: true },
-  toZoneId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Zone',      required: true },
-  truckTypeId: { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', required: true },
-  price:       { type: Number, required: true, min: 0 },
-  isActive:    { type: Boolean, default: true },
+// ── Pricing — price for origin direction → dest direction × truck type ────────
+const pricingSchema = new mongoose.Schema({
+  fromDirection: { 
+    type: String, 
+    required: true,
+    enum: ['North West', 'North East', 'North Central', 'South West', 'South East', 'South South']
+  },
+  toDirection:   { 
+    type: String, 
+    required: true,
+    enum: ['North West', 'North East', 'North Central', 'South West', 'South East', 'South South']
+  },
+  truckTypeId:   { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', required: true },
+  price:         { type: Number, required: true, min: 0 },
+  isActive:      { type: Boolean, default: true },
 }, { timestamps: true });
-pricingRuleSchema.index({ fromZoneId: 1, toZoneId: 1, truckTypeId: 1 }, { unique: true });
+pricingSchema.index({ fromDirection: 1, toDirection: 1, truckTypeId: 1 }, { unique: true });
 
 // ── OTP Token — for email verification and password reset ──────────────────
 // Security design:
@@ -308,6 +318,47 @@ auditLogSchema.index({ userId: 1, createdAt: -1 });
 auditLogSchema.index({ entity: 1, entityId: 1 });
 auditLogSchema.index({ severity: 1, createdAt: -1 });
 
+// ── SavedAddress — Customer address book ────────────────────────────────────
+const savedAddressSchema = new mongoose.Schema({
+  userId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  label:     { type: String, required: true, trim: true },   // e.g. "Home", "Office"
+  address:   { type: String, required: true, trim: true },   // full street address
+  city:      { type: String, required: true, trim: true },   // city name matching available cities
+  contactName:  { type: String, trim: true, default: '' },
+  contactPhone: { type: String, trim: true, default: '' },
+  isDefault: { type: Boolean, default: false },
+}, { timestamps: true });
+
+savedAddressSchema.index({ userId: 1 });
+
+// ── SupportTicket — Customer issue reporting ─────────────────────────────────
+const supportTicketSchema = new mongoose.Schema({
+  ticketNumber: { type: String, required: true, unique: true },  // e.g. TKT-20240318-0001
+  customerId:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null },
+  subject:      { type: String, required: true, trim: true, maxlength: 200 },
+  category:     {
+    type: String,
+    enum: ['delivery_issue', 'payment_issue', 'damaged_goods', 'missing_package', 'driver_complaint', 'billing', 'other'],
+    default: 'other',
+  },
+  priority:     { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
+  status:       { type: String, enum: ['open', 'in_progress', 'resolved', 'closed'], default: 'open' },
+  messages: [{
+    senderId:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    senderRole: { type: String, enum: ['customer', 'admin', 'support'], required: true },
+    body:      { type: String, required: true, maxlength: 2000 },
+    sentAt:    { type: Date, default: Date.now },
+  }],
+  resolvedAt: { type: Date, default: null },
+  closedAt:   { type: Date, default: null },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+}, { timestamps: true });
+
+supportTicketSchema.index({ customerId: 1, createdAt: -1 });
+supportTicketSchema.index({ status: 1, createdAt: -1 });
+supportTicketSchema.index({ ticketNumber: 1 });
+
 export const User           = mongoose.model('User',          userSchema);
 export const DriverProfile  = mongoose.model('DriverProfile', driverProfileSchema);
 export const Order          = mongoose.model('Order',         orderSchema);
@@ -317,11 +368,13 @@ export const Notification   = mongoose.model('Notification',  notificationSchema
 export const Review         = mongoose.model('Review',        reviewSchema);
 export const DriverEarning  = mongoose.model('DriverEarning', driverEarningSchema);
 export const OtpToken       = mongoose.model('OtpToken',      otpTokenSchema);
-export const Zone           = mongoose.model('Zone',          zoneSchema);
+export const State          = mongoose.model('State',         stateSchema);
 export const TruckType      = mongoose.model('TruckType',     truckTypeSchema);
-export const PricingRule    = mongoose.model('PricingRule',   pricingRuleSchema);
+export const Pricing        = mongoose.model('Pricing',       pricingSchema);
 export const Vehicle        = mongoose.model('Vehicle',       vehicleSchema);
 export const SystemSetting  = mongoose.model('SystemSetting', systemSettingSchema);
 export const AuditLog       = mongoose.model('AuditLog',      auditLogSchema);
+export const SavedAddress   = mongoose.model('SavedAddress',  savedAddressSchema);
+export const SupportTicket  = mongoose.model('SupportTicket', supportTicketSchema);
 
 export default connectDB;

@@ -91,21 +91,50 @@
 .qr-badge { margin-left: auto; background: var(--blue-light); color: var(--blue); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
 .qr-eta   { font-size: 12px; color: var(--text-muted); font-weight: 500; }
 
-/* ── Pricing box ── */
-.pricing-box { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+/* ── Pricing box (Premium Edition) ── */
+.pricing-box {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05), inset 0 0 0 1px rgba(255,255,255,0.5);
+  border-radius: calc(var(--radius-lg) + 4px);
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+}
+.pricing-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px -5px rgba(230,81,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.8);
+}
 .pricing-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 13px 18px; border-bottom: 1px solid var(--border); font-size: 14px;
+  padding: 16px 20px; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 14px;
 }
-.pricing-row:last-of-type { border-bottom: none; }
-.pr-label { color: var(--text-muted); }
-.pr-val   { font-weight: 600; color: var(--text); }
+.pr-label { color: var(--text-muted); font-weight: 600; }
+.pr-val   { font-weight: 800; color: var(--text); font-size: 15px; }
+
 .pricing-total {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 18px; background: var(--navy);
+  padding: 24px 20px;
+  background: linear-gradient(135deg, var(--navy), #0f172a);
+  position: relative; overflow: hidden;
 }
-.pricing-total span:first-child { font-weight: 700; font-size: 15px; color: rgba(255,255,255,0.7); }
-.pt-total { font-size: 32px; font-weight: 800; color: var(--brand); letter-spacing: -0.02em; }
+.pricing-total::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at top right, rgba(230,81,0,0.2) 0%, transparent 60%);
+  opacity: 0.8; pointer-events: none;
+}
+.pricing-total span:first-child { 
+  font-weight: 800; font-size: 15px; color: rgba(255,255,255,0.85); z-index: 1; letter-spacing: 0.5px; text-transform: uppercase;
+}
+.pt-total { 
+  font-size: 34px; font-weight: 900; 
+  color: #fff; text-shadow: 0 2px 10px rgba(230,81,0,0.4);
+  letter-spacing: -1px; z-index: 1;
+  background: linear-gradient(to right, #ffffff, #ffcc80);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 /* ── Payment method grid ── */
 .payment-method-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
@@ -138,17 +167,23 @@
 
 /* ── Vehicle type tag (quote step) ── */
 .pricing-vehicle-tag {
-  display: flex; align-items: center; gap: 8px;
-  background: #f0f4ff; border: 1px solid #c5cae9;
-  border-radius: 8px; padding: 10px 14px;
-  margin-bottom: 14px; font-size: 13px; font-weight: 600;
-  color: #3949ab;
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, rgba(57, 73, 171, 0.05), rgba(57, 73, 171, 0.02));
+  border: 1px solid rgba(57, 73, 171, 0.15);
+  border-radius: 12px; padding: 12px 16px;
+  margin-bottom: 16px; font-size: 14px; font-weight: 700;
+  color: #283593;
+  box-shadow: 0 4px 12px rgba(57, 73, 171, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.pvt-cap  { font-weight: 400; color: #5c6bc0; font-size: 12px; }
+.pricing-vehicle-tag:hover {
+  transform: translateY(-2px); box-shadow: 0 6px 16px rgba(57, 73, 171, 0.06);
+}
+.pvt-cap { font-weight: 600; color: #5c6bc0; font-size: 13px; background: white; padding: 2px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 .pvt-badge {
-  margin-left: auto; background: #3949ab; color: white;
-  font-size: 10px; padding: 2px 8px; border-radius: 20px;
-  font-weight: 700; letter-spacing: 0.3px;
+  margin-left: auto; background: linear-gradient(135deg, #3949ab, #1a237e); color: white;
+  font-size: 11px; padding: 4px 12px; border-radius: 20px;
+  font-weight: 800; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(57,73,171,0.4);
 }
 
 /* ── Step CTA buttons ── */
