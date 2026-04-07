@@ -1,0 +1,107 @@
+.admin-fleet { padding: 0; }
+
+/* Stats */
+.fleet-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.fleet-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.fsc-icon { font-size: 22px; flex-shrink: 0; }
+.fsc-val  { font-size: 22px; font-weight: 800; line-height: 1; }
+.fsc-lbl  { font-size: 11px; color: var(--text-faint); margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Toolbar */
+.fleet-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* Table cells */
+.fleet-vehicle-cell { display: flex; align-items: center; gap: 10px; }
+.fleet-type-icon    { font-size: 22px; flex-shrink: 0; }
+.fleet-plate  { font-size: 14px; font-weight: 700; font-family: var(--font-mono, monospace); color: var(--text); }
+.fleet-model  { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.fleet-cap    { font-size: 11px; color: var(--text-faint); }
+
+.fleet-driver-name  { font-size: 13px; font-weight: 600; }
+.fleet-driver-phone { font-size: 11px; color: var(--text-faint); margin-top: 1px; }
+.fleet-unassigned   { font-size: 12px; color: var(--text-faint); font-style: italic; }
+
+/* Expiry dates */
+.fleet-date         { font-size: 12px; white-space: nowrap; }
+.fleet-date--ok     { color: var(--text-faint); }
+.fleet-date--expiring { color: #d97706; font-weight: 600; }
+.fleet-date--expired  { color: var(--red, #e53e3e); font-weight: 700; }
+
+/* Status badge */
+.fleet-status--active      { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.fleet-status--maintenance { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+.fleet-status--retired     { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
+
+/* Fleet form modal */
+.fleet-modal { max-width: 600px; max-height: 90vh; overflow-y: auto; }
+
+.fleet-form { display: flex; flex-direction: column; gap: 14px; }
+.fleet-form-section {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-faint);
+  padding-top: 4px;
+}
+.fleet-form-section--spaced { margin-top: 8px; }
+
+.fleet-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 520px) { .fleet-form-row { grid-template-columns: 1fr; } }
+
+.fleet-textarea { resize: vertical; min-height: 60px; }
+
+.fleet-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* Assign helpers */
+.assign-current {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+.assign-divider {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 12px;
+  position: relative;
+}
+.assign-divider::before,
+.assign-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: var(--border);
+}
+.assign-divider::before { left: 0; }
+.assign-divider::after  { right: 0; }

@@ -18,6 +18,7 @@ import { validate, validateAll, orderSchemas } from '../middleware/validate.js';
 import { calcDynamicPrice } from '../services/pricingService.js';
 import { getCityList } from '../utils/pricing.js';
 import { sendOrderConfirmation, sendOrderUpdate, sendDriverAssignment } from '../utils/email.js';
+import { logAction } from '../utils/auditLog.js';
 
 const router = Router();
 
@@ -285,6 +286,9 @@ router.put('/:id/assign', authenticate, authorize('admin'),
     io?.to(`order:${order._id}`).emit('order:assigned', { orderId: order._id, status: 'assigned' });
     io?.to('admin:room').emit('order:assigned', { orderId: order._id });
 
+    await logAction(req, 'order.driver_assigned', 'Order', order._id,
+      { waybill: order.waybillNumber, driverId, driverName: `${driver.userId.firstName} ${driver.userId.lastName}` });
+
     res.json({ success: true, message: 'Driver assigned' });
   } catch (e) { next(e); }
 });
@@ -343,9 +347,29 @@ router.put('/:id/status', authenticate, authorize('driver'),
     order.statusHistory.push({ fromStatus: prev, toStatus: status, changedBy: req.user._id, note, location });
     await order.save();
 
+    // Notify customer for key milestones (picked_up, in_transit, out_for_delivery)
+    if (order.customerId && ['picked_up','in_transit','out_for_delivery'].includes(status)) {
+      const msgMap = {
+        picked_up:        `Your shipment ${order.waybillNumber} has been picked up and is on the way.`,
+        in_transit:       `Your shipment ${order.waybillNumber} is now in transit.`,
+        out_for_delivery: `Your shipment ${order.waybillNumber} is out for delivery — expect it soon!`,
+      };
+      await Notification.create({
+        userId: order.customerId,
+        title:  status === 'out_for_delivery' ? 'Out for Delivery!' : 'Shipment Update',
+        message: msgMap[status],
+        type: 'info', relatedOrderId: order._id,
+      }).catch(() => {});
+      const io = req.app.get('io');
+      io?.to(`user:${order.customerId}`).emit('notification:new', { title: 'Shipment Update', message: msgMap[status] });
+    }
+
     if (order.senderEmail) {
       sendOrderUpdate({ email: order.senderEmail, firstName: order.senderName.split(' ')[0] }, order).catch(console.error);
     }
+
+    await logAction(req, 'order.status_changed', 'Order', order._id,
+      { waybill: order.waybillNumber, from: prev, to: status, note });
 
     const io = req.app.get('io');
     io?.to(`order:${order._id}`).emit('order:statusUpdate', { orderId: order._id, status });

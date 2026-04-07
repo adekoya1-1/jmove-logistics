@@ -135,6 +135,10 @@ import AdminMap          from './pages/admin/AdminMap.jsx';
 import AdminAnalytics    from './pages/admin/AdminAnalytics.jsx';
 import AdminPayments     from './pages/admin/AdminPayments.jsx';
 import AdminPricing      from './pages/admin/AdminPricing.jsx';
+import AdminCustomers    from './pages/admin/AdminCustomers.jsx';
+import AdminFleet        from './pages/admin/AdminFleet.jsx';
+import AdminSettings     from './pages/admin/AdminSettings.jsx';
+import AdminLogs         from './pages/admin/AdminLogs.jsx';
 
 import CustomerLayout    from './components/customer/CustomerLayout.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
@@ -171,15 +175,19 @@ export default function App() {
 
           {/* Admin */}
           <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminLayout /></RequireAuth>}>
-            <Route index         element={<AdminDashboard />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="orders/:id" element={<AdminOrderDetail />} />
-            <Route path="drivers"    element={<AdminDrivers />} />
-            <Route path="users"      element={<AdminUsers />} />
-            <Route path="map"        element={<AdminMap />} />
-            <Route path="analytics"  element={<AdminAnalytics />} />
-            <Route path="payments"   element={<AdminPayments />} />
-            <Route path="pricing"    element={<AdminPricing />} />
+            <Route index              element={<AdminDashboard />} />
+            <Route path="orders"      element={<AdminOrders />} />
+            <Route path="orders/:id"  element={<AdminOrderDetail />} />
+            <Route path="drivers"     element={<AdminDrivers />} />
+            <Route path="users"       element={<AdminUsers />} />
+            <Route path="customers"   element={<AdminCustomers />} />
+            <Route path="map"         element={<AdminMap />} />
+            <Route path="analytics"   element={<AdminAnalytics />} />
+            <Route path="payments"    element={<AdminPayments />} />
+            <Route path="pricing"     element={<AdminPricing />} />
+            <Route path="fleet"       element={<AdminFleet />} />
+            <Route path="settings"    element={<AdminSettings />} />
+            <Route path="logs"        element={<AdminLogs />} />
           </Route>
 
           {/* Customer */}

@@ -249,17 +249,79 @@ otpTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 // Fast lookup: always query by email + purpose together
 otpTokenSchema.index({ email: 1, purpose: 1 });
 
-export const User           = mongoose.model('User', userSchema);
+// ── Vehicle — Fleet Management ──────────────────────────────────────────────
+const vehicleSchema = new mongoose.Schema({
+  plateNumber:  { type: String, required: true, unique: true, uppercase: true, trim: true },
+  make:         { type: String, required: true, trim: true },   // e.g. Toyota
+  model:        { type: String, required: true, trim: true },   // e.g. HiAce
+  year:         { type: Number, required: true },
+  color:        { type: String, trim: true, default: '' },
+  vehicleType:  { type: String, enum: ['bike','car','van','truck'], required: true },
+  capacityTons: { type: Number, default: 0 },
+  assignedDriverId: { type: mongoose.Schema.Types.ObjectId, ref: 'DriverProfile', default: null },
+  status:       { type: String, enum: ['active','maintenance','retired'], default: 'active' },
+  // Compliance dates
+  insuranceExpiry:      { type: Date, default: null },
+  roadworthinessExpiry: { type: Date, default: null },
+  lastServiceDate:      { type: Date, default: null },
+  nextServiceDate:      { type: Date, default: null },
+  mileage:      { type: Number, default: 0 },
+  notes:        { type: String, default: '' },
+  isActive:     { type: Boolean, default: true },
+}, { timestamps: true });
+
+vehicleSchema.index({ status: 1 });
+vehicleSchema.index({ vehicleType: 1 });
+vehicleSchema.index({ assignedDriverId: 1 });
+
+// ── SystemSetting — Platform Configuration ──────────────────────────────────
+const systemSettingSchema = new mongoose.Schema({
+  key:          { type: String, required: true, unique: true, trim: true },
+  value:        { type: mongoose.Schema.Types.Mixed, required: true },
+  label:        { type: String, trim: true, default: '' },
+  description:  { type: String, trim: true, default: '' },
+  category:     {
+    type: String,
+    enum: ['general','pricing','notifications','operations'],
+    default: 'general',
+  },
+  isPublic:     { type: Boolean, default: false },
+  valueType:    { type: String, enum: ['string','number','boolean','json'], default: 'string' },
+  updatedBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+}, { timestamps: true });
+
+// ── AuditLog — Admin Activity Trail ─────────────────────────────────────────
+// Every admin write action creates an immutable record here.
+// Used for compliance audits, security investigations, and accountability.
+const auditLogSchema = new mongoose.Schema({
+  userId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  action:    { type: String, required: true },  // e.g. 'order.status_changed'
+  entity:    { type: String, default: null },   // 'Order' | 'User' | 'Driver' | 'Vehicle' …
+  entityId:  { type: mongoose.Schema.Types.ObjectId, default: null },
+  details:   { type: mongoose.Schema.Types.Mixed, default: {} },
+  ip:        { type: String, default: '' },
+  severity:  { type: String, enum: ['info','warning','critical'], default: 'info' },
+}, { timestamps: true });
+
+auditLogSchema.index({ createdAt: -1 });
+auditLogSchema.index({ userId: 1, createdAt: -1 });
+auditLogSchema.index({ entity: 1, entityId: 1 });
+auditLogSchema.index({ severity: 1, createdAt: -1 });
+
+export const User           = mongoose.model('User',          userSchema);
 export const DriverProfile  = mongoose.model('DriverProfile', driverProfileSchema);
-export const Order          = mongoose.model('Order', orderSchema);
-export const Payment        = mongoose.model('Payment', paymentSchema);
+export const Order          = mongoose.model('Order',         orderSchema);
+export const Payment        = mongoose.model('Payment',       paymentSchema);
 export const TrackingEvent  = mongoose.model('TrackingEvent', trackingEventSchema);
-export const Notification   = mongoose.model('Notification', notificationSchema);
-export const Review         = mongoose.model('Review', reviewSchema);
+export const Notification   = mongoose.model('Notification',  notificationSchema);
+export const Review         = mongoose.model('Review',        reviewSchema);
 export const DriverEarning  = mongoose.model('DriverEarning', driverEarningSchema);
-export const OtpToken       = mongoose.model('OtpToken', otpTokenSchema);
-export const Zone         = mongoose.model('Zone', zoneSchema);
-export const TruckType    = mongoose.model('TruckType', truckTypeSchema);
-export const PricingRule  = mongoose.model('PricingRule', pricingRuleSchema);
+export const OtpToken       = mongoose.model('OtpToken',      otpTokenSchema);
+export const Zone           = mongoose.model('Zone',          zoneSchema);
+export const TruckType      = mongoose.model('TruckType',     truckTypeSchema);
+export const PricingRule    = mongoose.model('PricingRule',   pricingRuleSchema);
+export const Vehicle        = mongoose.model('Vehicle',       vehicleSchema);
+export const SystemSetting  = mongoose.model('SystemSetting', systemSettingSchema);
+export const AuditLog       = mongoose.model('AuditLog',      auditLogSchema);
 
 export default connectDB;

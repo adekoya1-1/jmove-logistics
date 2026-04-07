@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { User, Order, DriverProfile, Payment, Notification } from '../db.js';
 import { authenticate, authorize, requirePermission } from '../middleware/auth.js';
 import { validate, staffSchemas } from '../middleware/validate.js';
+import { logAction } from '../utils/auditLog.js';
 
 const router = Router();
 
@@ -51,6 +52,9 @@ router.post('/admin/staff', authenticate, authorize('admin'), requirePermission(
       emailVerified: true, isActive: true, tokenVersion: 0,
     });
 
+    await logAction(req, 'staff.created', 'User', user._id,
+      { email, firstName, lastName, staffCategory, permissions: finalPerms });
+
     res.status(201).json({
       success: true,
       message: `Staff account created for ${firstName} ${lastName}`,
@@ -80,6 +84,10 @@ router.put('/staff/:id/permissions', authenticate, authorize('admin'), requirePe
       permissions: cleanPerms,
       ...(staffCategory && { staffCategory }),
     });
+
+    await logAction(req, 'staff.permissions_updated', 'User', target._id,
+      { staffCategory, permissions: cleanPerms }, 'warning');
+
     res.json({ success: true, message: 'Permissions updated' });
   } catch (e) { next(e); }
 });
@@ -221,6 +229,10 @@ router.put('/:id/toggle-status', authenticate, authorize('admin'), async (req, r
     // Invalidate all tokens when deactivating
     if (!user.isActive) { user.refreshToken = null; user.tokenVersion = (user.tokenVersion || 0) + 1; }
     await user.save();
+
+    await logAction(req, user.isActive ? 'user.activated' : 'user.deactivated', 'User', user._id,
+      { email: user.email, role: user.role }, user.isActive ? 'info' : 'warning');
+
     res.json({ success: true, message: `User ${user.isActive ? 'activated' : 'deactivated'}`, data: { isActive: user.isActive } });
   } catch (e) { next(e); }
 });

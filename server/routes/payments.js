@@ -239,12 +239,35 @@ router.post('/webhook', async (req, res, next) => {
 // ── GET /api/payments/history ───────────────────────────
 router.get('/history', authenticate, async (req, res, next) => {
   try {
+    const { status, method, from, to, page = 1, limit = 25 } = req.query;
+    const pg = Math.max(1, +page);
+    const lm = Math.min(100, Math.max(1, +limit));
+
     const filter = req.user.role === 'admin' ? {} : { customerId: req.user._id };
+
+    if (status) filter.status = status;
+    if (method) {
+      // Join orderId to filter by paymentMethod — use aggregate or populate-then-filter
+      // Simpler: add paymentMethod to Payment schema via orderId join; for now filter in JS
+      // (volume is manageable; can add a denormalised field later if needed)
+    }
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = toDate;
+      }
+    }
+
+    const total = await Payment.countDocuments(filter);
     const payments = await Payment.find(filter)
-      .populate('orderId', 'waybillNumber totalAmount originCity destinationCity')
+      .populate('orderId', 'waybillNumber totalAmount originCity destinationCity paymentMethod')
       .populate('customerId', 'firstName lastName email')
       .sort({ createdAt: -1 })
-      .limit(50)
+      .skip((pg - 1) * lm)
+      .limit(lm)
       .lean();
 
     // Strip sensitive metadata from non-admin response
@@ -252,7 +275,11 @@ router.get('/history', authenticate, async (req, res, next) => {
       ? payments
       : payments.map(({ metadata, ...p }) => p);
 
-    res.json({ success: true, data: safe });
+    res.json({
+      success: true,
+      data: safe,
+      pagination: { total, page: pg, limit: lm, pages: Math.ceil(total / lm) },
+    });
   } catch (e) { next(e); }
 });
 

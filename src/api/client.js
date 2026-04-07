@@ -270,7 +270,7 @@ export const driversAPI = {
 export const paymentsAPI = {
   initialize: (orderId)   => api.post('/payments/initialize', { orderId }),
   verify:     (reference) => api.get(`/payments/verify?reference=${encodeURIComponent(reference)}`),
-  history:    ()          => api.get('/payments/history'),
+  history:    (p)         => api.get(`/payments/history?${new URLSearchParams(p || {})}`),
   stats:      (p)         => api.get(`/payments/stats?period=${encodeURIComponent(p || '30d')}`),
 };
 
@@ -327,6 +327,29 @@ export const earningsAPI = {
 export const notificationsAPI = {
   list:     ()    => api.get('/users/notifications'),
   markRead: (id)  => api.put(`/users/notifications/${encodeURIComponent(id)}/read`),
+};
+
+export const fleetAPI = {
+  list:     (p)       => api.get(`/fleet?${new URLSearchParams(p || {})}`),
+  stats:    ()        => api.get('/fleet/stats'),
+  get:      (id)      => api.get(`/fleet/${encodeURIComponent(id)}`),
+  create:   (d)       => api.post('/fleet', d),
+  update:   (id, d)   => api.put(`/fleet/${encodeURIComponent(id)}`, d),
+  assign:   (id, driverId) => api.put(`/fleet/${encodeURIComponent(id)}/assign`, { driverId }),
+  unassign: (id)      => api.put(`/fleet/${encodeURIComponent(id)}/assign`, { driverId: null }),
+  retire:   (id)      => api.delete(`/fleet/${encodeURIComponent(id)}`),
+};
+
+export const settingsAPI = {
+  list:   ()        => api.get('/settings'),
+  public: ()        => api.get('/settings/public'),
+  update: (key, value) => api.put(`/settings/${encodeURIComponent(key)}`, { value }),
+  seed:   ()        => api.post('/settings/seed'),
+};
+
+export const logsAPI = {
+  list:  (p)  => api.get(`/logs?${new URLSearchParams(p || {})}`),
+  stats: ()   => api.get('/logs/stats'),
 };
 
 export default api;
