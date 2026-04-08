@@ -199,6 +199,27 @@
 .step-cta-row .btn-secondary { flex-shrink: 0; }
 .step-cta-row .step-cta     { flex: 1; margin-top: 0; }
 
+/* ── Saved address picker ── */
+.saved-addr-quick {
+  margin-bottom: 20px; padding: 16px; 
+  background: var(--bg-elevated); border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+}
+.addr-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.addr-pill {
+  background: white; border: 1px solid var(--border);
+  padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03); transition: all 0.2s;
+}
+.addr-pill:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
+.pill-label { font-size: 12px; font-weight: 700; color: var(--text); }
+.pill-actions { display: flex; gap: 6px; }
+.pill-actions button {
+  background: none; border: none; font-size: 11px; font-weight: 700;
+  color: var(--brand); cursor: pointer; padding: 2px 5px; border-radius: 4px;
+}
+.pill-actions button:hover { background: var(--brand-dim); }
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .new-order        { max-width: 100%; }

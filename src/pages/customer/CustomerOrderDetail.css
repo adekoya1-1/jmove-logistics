@@ -138,6 +138,12 @@
 }
 .rating-done span { font-size: 32px; color: var(--amber); letter-spacing: 3px; }
 
+/* ── Map ── */
+.leaflet-container {
+  border-radius: var(--radius-lg);
+  z-index: 1;
+}
+
 /* ── Print / Invoice ── */
 @media print {
   .btn-ghost, .btn-primary, .pay-banner, .track-progress,

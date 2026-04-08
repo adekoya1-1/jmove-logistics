@@ -37,6 +37,10 @@ export const calcDynamicPrice = async ({
   originCity,
   destinationCity,
   truckTypeId,
+  weight = 0,
+  serviceType = 'standard',
+  isFragile = false,
+  declaredValue = 0,
 }) => {
   if (!truckTypeId || !originCity || !destinationCity) {
     throw new Error('originCity, destinationCity, and truckTypeId are required to calculate price');
@@ -86,8 +90,22 @@ export const calcDynamicPrice = async ({
   const sameCityRoute = originCity.toLowerCase() === destinationCity.toLowerCase();
   const deliveryType  = sameCityRoute ? 'intrastate' : 'interstate';
 
+  // ── Surcharge Logic ───────────────────────────────────────────────────────
+  const serviceSurcharge = 
+    serviceType === 'express' ? 2000 : 
+    serviceType === 'sameday' ? 3000 : 0;
+
+  // Weight surcharge: e.g. 200 per kg above 50kg for standard vehicle
+  // or use truck capacity as a factor. For now, simple weight logic:
+  const weightSurcharge = Math.max(0, (weight - 50)) * 100; 
+
+  const fragileSurcharge = isFragile ? Math.round(basePrice * 0.1) : 0;
+  const insuranceFee     = declaredValue > 0 ? Math.round(declaredValue * 0.01) : 0;
+
+  const totalAmount = basePrice + serviceSurcharge + weightSurcharge + fragileSurcharge + insuranceFee;
+
   // Delivery days estimate simplified
-  const deliveryDays = deliveryType === 'intrastate' ? '1–2 business days' : '3–5 business days';
+  const deliveryDays = deliveryType === 'intrastate' ? '1–2 hours' : '3–5 days';
 
   return {
     deliveryType,
@@ -97,11 +115,19 @@ export const calcDynamicPrice = async ({
     destinationCity: destState.name,
     estimatedDelivery: deliveryDays,
     basePrice,
-    totalAmount: basePrice, // Absolute flat price
+    serviceSurcharge,
+    weightSurcharge,
+    fragileSurcharge,
+    insuranceFee,
+    totalAmount,
     isDynamic: true,
     truckType: { _id: truckType._id, name: truckType.name, capacityTons: truckType.capacityTons, icon: truckType.icon },
     breakdown: {
       baseRate: basePrice,
+      serviceAddon: serviceSurcharge,
+      weightAddon: weightSurcharge,
+      fragileAddon: fragileSurcharge,
+      insuranceAddon: insuranceFee,
     },
   };
 };

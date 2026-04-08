@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ordersAPI, paymentsAPI, pricingAPI } from '../../api/client.js';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ordersAPI, paymentsAPI, pricingAPI, authAPI } from '../../api/client.js';
 import { useAuth } from '../../App.jsx';
 import './NewOrder.css';
 
@@ -27,10 +26,14 @@ const PAYMENT_METHODS = [
 
 export default function NewOrder() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { search } = useLocation();
+  const searchParams = new URLSearchParams(search);
+  const rebookId = searchParams.get('rebook');
+
   const [step,     setStep]    = useState(1);
   const [loading,  setLoading] = useState(false);
   const [cities,   setCities]  = useState([]);
+  const [savedAddresses, setSavedAddresses] = useState([]);
   const [pricing,  setPricing] = useState(null);
   const [pricingConfig, setPricingConfig] = useState(null);
   const [orderId,  setOrderId] = useState(null);
@@ -60,7 +63,33 @@ export default function NewOrder() {
   useEffect(() => {
     ordersAPI.cities().then(r => setCities(r.data)).catch(console.error);
     pricingAPI.config().then(r => setPricingConfig(r.data)).catch(console.error);
-  }, []);
+    authAPI.listAddresses().then(r => setSavedAddresses(r.data || [])).catch(() => {});
+
+    if (rebookId) {
+      setLoading(true);
+      ordersAPI.get(rebookId).then(r => {
+        const o = r.data.order;
+        setForm(f => ({
+          ...f,
+          senderName: o.senderName, senderPhone: o.senderPhone, senderEmail: o.senderEmail, senderAddress: o.senderAddress,
+          receiverName: o.receiverName, receiverPhone: o.receiverPhone, receiverEmail: o.receiverEmail, receiverAddress: o.receiverAddress,
+          originCity: o.originCity, destinationCity: o.destinationCity,
+          description: o.description, weight: String(o.weight), quantity: String(o.quantity),
+          category: o.category, isFragile: o.isFragile,
+          declaredValue: String(o.declaredValue || ''),
+          serviceType: o.serviceType, truckTypeId: o.truckTypeId?._id || o.truckTypeId || '',
+        }));
+      }).catch(() => setError('Could not load shipment details to rebook')).finally(() => setLoading(false));
+    }
+  }, [rebookId]);
+
+  const handlePickAddress = (type, addr) => {
+    if (type === 'origin') {
+      setForm(f => ({ ...f, senderAddress: addr.address, originCity: addr.city }));
+    } else {
+      setForm(f => ({ ...f, receiverAddress: addr.address, destinationCity: addr.city, receiverName: addr.contactName || f.receiverName, receiverPhone: addr.contactPhone || f.receiverPhone }));
+    }
+  };
 
   const set = k => e => setForm(f => ({
     ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value
@@ -73,6 +102,10 @@ export default function NewOrder() {
         originCity: form.originCity, 
         destinationCity: form.destinationCity,
         truckTypeId: form.truckTypeId,
+        weight: +form.weight,
+        serviceType: form.serviceType,
+        isFragile: form.isFragile,
+        declaredValue: +form.declaredValue || 0,
       });
       setPricing(r.data); setStep(3);
     } catch (e) { setError(e?.response?.data?.error || e?.response?.data?.message || 'Failed to calculate price'); }
@@ -143,6 +176,24 @@ export default function NewOrder() {
           <div className="order-step fade-in">
             <h2 className="step-title">Sender & Receiver Details</h2>
             <div className="order-fields">
+
+              {/* Saved Addresses Quick Pick */}
+              {savedAddresses.length > 0 && (
+                <div className="saved-addr-quick">
+                  <p className="ti-lbl" style={{ marginBottom: 8 }}>Quick Pick from Saved Addresses</p>
+                  <div className="addr-pills">
+                    {savedAddresses.map(a => (
+                      <div key={a._id} className="addr-pill">
+                        <span className="pill-label">{a.label}</span>
+                        <div className="pill-actions">
+                          <button onClick={() => handlePickAddress('origin', a)}>As Pickup</button>
+                          <button onClick={() => handlePickAddress('dest', a)}>As Delivery</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="od-section">Sender Information</div>
               <div className="field-row">
@@ -274,9 +325,21 @@ export default function NewOrder() {
             <h2 className="step-title">Price Quote</h2>
 
             <div className="quote-route">
-              <div className="qr-city"><span className="qr-dot origin" />{pricing.originCity}</div>
+              <div className="qr-city">
+                <span className="qr-dot origin" />
+                <div>
+                  <p>{pricing.originCity}</p>
+                  <span style={{fontSize:10,color:'var(--text-faint)'}}>{pricing.fromDirection}</span>
+                </div>
+              </div>
               <div className="qr-arrow">→</div>
-              <div className="qr-city"><span className="qr-dot dest" />{pricing.destinationCity}</div>
+              <div className="qr-city">
+                <span className="qr-dot dest" />
+                <div>
+                  <p>{pricing.destinationCity}</p>
+                  <span style={{fontSize:10,color:'var(--text-faint)'}}>{pricing.toDirection}</span>
+                </div>
+              </div>
               <div className="qr-badge">{pricing.deliveryType === 'intrastate' ? 'Intrastate' : 'Interstate'}</div>
               <div className="qr-eta">⏱ {pricing.estimatedDelivery}</div>
             </div>
@@ -291,11 +354,35 @@ export default function NewOrder() {
             )}
 
             <div className="pricing-box">
-              <div className="pricing-row" style={{ borderBottom: '1px solid var(--border)' }}>
-                <span className="pr-label">Fixed Route Price</span>
+              <div className="pricing-row">
+                <span className="pr-label">Base Matrix Rate</span>
                 <span className="pr-val">₦{fmt(pricing.basePrice)}</span>
               </div>
-              <div className="pricing-total">
+              {pricing.serviceSurcharge > 0 && (
+                <div className="pricing-row">
+                  <span className="pr-label">{form.serviceType === 'express' ? 'Express Delivery' : 'Same Day'} Surcharge</span>
+                  <span className="pr-val">₦{fmt(pricing.serviceSurcharge)}</span>
+                </div>
+              )}
+              {pricing.weightSurcharge > 0 && (
+                <div className="pricing-row">
+                  <span className="pr-label">Extra Weight Surcharge</span>
+                  <span className="pr-val">₦{fmt(pricing.weightSurcharge)}</span>
+                </div>
+              )}
+              {pricing.fragileSurcharge > 0 && (
+                <div className="pricing-row">
+                  <span className="pr-label">Fragile Handling Fee</span>
+                  <span className="pr-val">₦{fmt(pricing.fragileSurcharge)}</span>
+                </div>
+              )}
+              {pricing.insuranceFee > 0 && (
+                <div className="pricing-row">
+                  <span className="pr-label">Insurance ({fmt(form.declaredValue)} Coverage)</span>
+                  <span className="pr-val">₦{fmt(pricing.insuranceFee)}</span>
+                </div>
+              )}
+              <div className="pricing-total" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
                 <span>Total Shipping Cost</span>
                 <span className="pt-total">₦{fmt(pricing.totalAmount)}</span>
               </div>

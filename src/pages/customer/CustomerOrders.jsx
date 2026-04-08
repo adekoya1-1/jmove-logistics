@@ -78,6 +78,11 @@ export default function CustomerOrders() {
                 <div className="or-right">
                   <p className="or-amount">₦{fmt(o.totalAmount)}</p>
                   <p className="or-date">{format(new Date(o.createdAt), 'MMM d')}</p>
+                  {o.status === 'delivered' && (
+                    <Link to={`/dashboard/new-order?rebook=${o._id}`} className="or-rebook" onClick={e => e.stopPropagation()}>
+                      Book Again
+                    </Link>
+                  )}
                 </div>
                 <span className="or-arrow">›</span>
               </Link>

@@ -153,6 +153,10 @@ export const orderSchemas = {
     originCity:      cityKey,
     destinationCity: cityKey,
     truckTypeId:     objectId,
+    weight:          z.coerce.number().min(0.1).max(5000).optional().default(1),
+    serviceType:     z.enum(['standard', 'express', 'sameday']).optional().default('standard'),
+    isFragile:       z.coerce.boolean().optional().default(false),
+    declaredValue:   z.coerce.number().min(0).max(100_000_000).optional().default(0),
   }),
 
   addNote: z.object({

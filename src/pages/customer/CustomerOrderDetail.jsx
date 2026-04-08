@@ -1,8 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ordersAPI, paymentsAPI, reviewsAPI } from '../../api/client.js';
 import { format } from 'date-fns';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import './CustomerOrderDetail.css';
+
+// Fix for default marker icons in Leaflet + Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
 
 const BADGE = {
   booked:'badge-pending', assigned:'badge-assigned', picked_up:'badge-picked_up',
@@ -22,6 +32,7 @@ const STEPS = [
 
 export default function CustomerOrderDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [order,      setOrder]      = useState(null);
   const [payment,    setPayment]    = useState(null);
   const [loading,    setLoading]    = useState(true);
@@ -55,16 +66,16 @@ export default function CustomerOrderDetail() {
     window.print();
   };
 
-  const handleSubmitRating = async () => {
-    if (!myRating) return;
-    setRatingBusy(true);
+  const handleCancelOrder = async () => {
+    if (!window.confirm('Are you sure you want to cancel this shipment? This cannot be undone.')) return;
+    setLoading(true);
     try {
-      const r = await reviewsAPI.submit({ orderId: id, rating: myRating, comment: myComment });
-      setReview(r.data);
-      setRatingDone(true);
+      await ordersAPI.cancel(id);
+      load();
     } catch (e) {
-      alert(e?.response?.data?.message || 'Could not submit rating. Try again.');
-    } finally { setRatingBusy(false); }
+      alert(e?.response?.data?.message || 'Failed to cancel order');
+      setLoading(false);
+    }
   };
 
   // Live socket for in-transit orders
@@ -136,6 +147,17 @@ export default function CustomerOrderDetail() {
         </div>
       </div>
 
+      <div style={{ display:'flex', gap: 10, marginBottom: 16 }}>
+        {order.status === 'booked' && (
+          <button className="btn-secondary" style={{ color:'var(--red)', borderColor:'var(--red)' }} onClick={handleCancelOrder}>
+            ✕ Cancel Shipment
+          </button>
+        )}
+        <Link to={`/dashboard/new-order?rebook=${id}`} className="btn-secondary">
+          🔄 Rebook Again
+        </Link>
+      </div>
+
       {/* Payment banner */}
       {needsPay && (
         <div className="pay-banner card">
@@ -176,6 +198,33 @@ export default function CustomerOrderDetail() {
 
       {/* Info grid */}
       <div className="track-info">
+        <div className="card track-info-card" style={{ gridColumn: '1/-1', padding: 0, overflow: 'hidden', height: 300, minHeight: 300 }}>
+          <MapContainer 
+            center={[9.0820, 8.6753]} // Center of Nigeria
+            zoom={6} 
+            style={{ height: '100%', width: '100%' }}
+            scrollWheelZoom={false}
+          >
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            {driverPos && (
+              <Marker position={[driverPos.lat, driverPos.lng]}>
+                <Popup>Driver is here</Popup>
+              </Marker>
+            )}
+            {/* If we had pickup/delivery coordinates, we'd place markers and a Polyline here */}
+            {order.pickupLat && order.pickupLng && (
+              <Marker position={[order.pickupLat, order.pickupLng]}>
+                <Popup>Pickup: {order.originCity}</Popup>
+              </Marker>
+            )}
+            {order.deliveryLat && order.deliveryLng && (
+              <Marker position={[order.deliveryLat, order.deliveryLng]}>
+                <Popup>Delivery: {order.destinationCity}</Popup>
+              </Marker>
+            )}
+          </MapContainer>
+        </div>
+
         {/* Route */}
         <div className="card track-info-card">
           <p className="ti-title">
