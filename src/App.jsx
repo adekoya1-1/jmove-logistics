@@ -153,6 +153,8 @@ import DriverDashboard   from './pages/driver/DriverDashboard.jsx';
 import DriverJobs        from './pages/driver/DriverJobs.jsx';
 import DriverActive      from './pages/driver/DriverActive.jsx';
 import DriverHistory     from './pages/driver/DriverHistory.jsx';
+import DriverProfile     from './pages/driver/DriverProfile.jsx';
+import DriverPerformance from './pages/driver/DriverPerformance.jsx';
 
 export default function App() {
   return (
@@ -207,6 +209,8 @@ export default function App() {
             <Route path="jobs"   element={<DriverJobs />} />
             <Route path="active" element={<DriverActive />} />
             <Route path="history" element={<DriverHistory />} />
+            <Route path="performance" element={<DriverPerformance />} />
+            <Route path="profile"     element={<DriverProfile />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -235,7 +235,18 @@ export default function DriverActive() {
             <p className="ar-label">PICKUP · {order.originCity}</p>
             <p className="ar-name">{order.senderName}</p>
             <p className="ar-addr">{order.senderAddress || order.originCity}</p>
-            <a href={`tel:${order.senderPhone}`} className="ar-call">📞 {order.senderPhone}</a>
+            <div style={{ display:'flex', gap:8, marginTop:6, flexWrap:'wrap' }}>
+              <a href={`tel:${order.senderPhone}`} className="ar-call">📞 {order.senderPhone}</a>
+              {order.senderAddress && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.senderAddress + ' ' + order.originCity)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="ar-call" style={{ background:'var(--blue-light,#eff6ff)', color:'var(--blue,#3b82f6)' }}
+                >
+                  🗺 Navigate
+                </a>
+              )}
+            </div>
           </div>
         </div>
         <div className="ar-line" />
@@ -245,7 +256,16 @@ export default function DriverActive() {
             <p className="ar-label">DELIVERY · {order.destinationCity}</p>
             <p className="ar-name">{order.receiverName}</p>
             <p className="ar-addr">{order.receiverAddress}</p>
-            <a href={`tel:${order.receiverPhone}`} className="ar-call">📞 {order.receiverPhone}</a>
+            <div style={{ display:'flex', gap:8, marginTop:6, flexWrap:'wrap' }}>
+              <a href={`tel:${order.receiverPhone}`} className="ar-call">📞 {order.receiverPhone}</a>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.receiverAddress + ' ' + order.destinationCity)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="ar-call" style={{ background:'#f0fdf4', color:'#16a34a' }}
+              >
+                🗺 Navigate
+              </a>
+            </div>
           </div>
         </div>
       </div>

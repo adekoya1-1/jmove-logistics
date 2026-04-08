@@ -9,9 +9,10 @@ export default function DriverDashboard() {
   const navigate         = useNavigate();
   const [profile,  setProfile]  = useState(null);
   const [order,    setOrder]    = useState(null);
+  const [stats,    setStats]    = useState(null);
   const [driverStatus, setDriverStatus] = useState('offline');
   const [statusLoading, setStatusLoading] = useState(false);
-  const [gpsActive, setGpsActive] = useState(false); // read-only indicator
+  const [gpsActive, setGpsActive] = useState(false);
   const socketRef  = useRef(null);
   const watchRef   = useRef(null);
 
@@ -21,6 +22,7 @@ export default function DriverDashboard() {
       setDriverStatus(r.data.driverProfile?.status || 'offline');
     }).catch(console.error);
     driversAPI.activeOrder().then(r => setOrder(r.data)).catch(console.error);
+    driversAPI.stats().then(r => setStats(r.data)).catch(console.error);
   }, []);
 
   // Socket — connect then immediately start GPS
@@ -181,6 +183,14 @@ export default function DriverDashboard() {
 
       {/* Quick stats */}
       <div className="driver-quick-stats">
+        <div className="card dqs-card">
+          <p className="dqs-val">{stats?.today?.count || 0}</p>
+          <p className="dqs-lbl">📦 Today's Deliveries</p>
+        </div>
+        <div className="card dqs-card">
+          <p className="dqs-val">₦{Number(stats?.today?.earnings || 0).toLocaleString('en-NG', { maximumFractionDigits:0 })}</p>
+          <p className="dqs-lbl">💰 Today's Earnings</p>
+        </div>
         <div className="card dqs-card">
           <p className="dqs-val">{dp?.totalDeliveries || 0}</p>
           <p className="dqs-lbl">✅ Total Deliveries</p>

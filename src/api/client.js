@@ -270,6 +270,11 @@ export const driversAPI = {
   updateStatus: (s)       => api.put('/drivers/status', { status: s }),
   pushLocation: (lat, lng, orderId) => api.post('/drivers/location', { lat, lng, orderId }),
   verify:       (id, verified)      => api.put(`/drivers/${encodeURIComponent(id)}/verify`, { verified }),
+  // Driver self-service
+  me:           ()        => api.get('/drivers/me'),
+  reviews:      ()        => api.get('/drivers/reviews'),
+  stats:        ()        => api.get('/drivers/stats'),
+  earnings:     (p)       => api.get(`/drivers/earnings?${new URLSearchParams(p || {})}`),
 };
 
 export const paymentsAPI = {

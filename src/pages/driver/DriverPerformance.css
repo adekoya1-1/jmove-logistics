@@ -1,0 +1,52 @@
+/* ─── DriverPerformance.css ──────────────────────────────────── */
+.driver-performance { display: flex; flex-direction: column; gap: 20px; max-width: 680px; }
+
+.perf-stats-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+.perf-stat-card { padding: 20px; text-align: center; }
+.psc-icon { font-size: 22px; margin-bottom: 6px; }
+.psc-val  { font-size: 28px; font-weight: 900; color: var(--brand, #e65100); }
+.psc-lbl  { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-top: 4px; }
+
+/* Rating summary card */
+.perf-rating-card {
+  padding: 24px; display: flex; align-items: center; gap: 28px;
+}
+.prc-left  { text-align: center; flex-shrink: 0; }
+.prc-score { font-size: 52px; font-weight: 900; color: var(--brand, #e65100); line-height: 1; }
+.prc-total { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+.perf-stars { display: inline-flex; gap: 2px; font-size: 20px; }
+.star-on  { color: #f59e0b; }
+.star-off { color: #e2e8f0; }
+
+.prc-right  { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.prc-bar-row { display: flex; align-items: center; gap: 10px; }
+.prc-bar-label { font-size: 12px; font-weight: 700; color: var(--text-muted); width: 34px; flex-shrink: 0; }
+.prc-bar-track {
+  flex: 1; height: 8px; background: var(--bg-elevated, #f1f5f9); border-radius: 99px; overflow: hidden;
+}
+.prc-bar-fill { height: 100%; background: #f59e0b; border-radius: 99px; transition: width 0.6s ease; }
+.prc-bar-count { font-size: 12px; font-weight: 700; color: var(--text); min-width: 16px; text-align: right; }
+
+/* Reviews */
+.perf-reviews-header { margin-bottom: 16px; }
+.perf-section-label { font-size: 14px; font-weight: 800; color: var(--text); }
+.perf-reviews-list { display: flex; flex-direction: column; gap: 0; }
+.perf-review-item {
+  padding: 14px 20px; border-bottom: 1px solid var(--border, #e2e8f0);
+}
+.perf-review-item:last-child { border-bottom: none; }
+
+.pri-top {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;
+}
+.pri-route  { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+.pri-waybill{ font-size: 11px; color: var(--text-faint, #94a3b8); font-family: var(--font-mono, monospace); }
+.pri-comment{ font-size: 13px; color: var(--text-muted); font-style: italic; line-height: 1.5; }
+
+@media (max-width: 500px) {
+  .perf-stats-grid { grid-template-columns: 1fr; }
+  .perf-rating-card { flex-direction: column; }
+}

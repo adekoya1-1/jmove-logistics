@@ -1,0 +1,75 @@
+/* ─── DriverProfile.css ──────────────────────────────────────── */
+.driver-profile-page { display: flex; flex-direction: column; gap: 20px; max-width: 680px; }
+
+.dp-error {
+  background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;
+  padding: 14px 18px; border-radius: 12px; font-weight: 600;
+}
+
+.dp-verify-banner {
+  display: flex; gap: 12px; padding: 14px 18px;
+  background: #fffbeb; border: 1px solid #fbbf24; border-left: 4px solid #f59e0b;
+  border-radius: 12px; color: #92400e;
+}
+.dp-verify-title { font-weight: 700; font-size: 14px; }
+.dp-verify-sub   { font-size: 13px; color: #a16207; margin-top: 2px; }
+
+/* Card base */
+.dp-card { padding: 22px 26px; }
+.dp-card-header { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; }
+.dp-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand, #e65100), #ff8f00);
+  color: #fff; font-size: 24px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(230,81,0,0.3);
+}
+.dp-name { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+.dp-role { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+
+.dp-badge {
+  display: inline-block; font-size: 12px; font-weight: 700;
+  padding: 4px 12px; border-radius: 20px; border: 1px solid;
+}
+.dp-badge-verified { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+.dp-badge-pending  { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+
+.dp-divider { height: 1px; background: var(--border, #e2e8f0); margin: 4px 0 18px; }
+
+.dp-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+@media (max-width: 500px) { .dp-grid { grid-template-columns: 1fr; } }
+
+.dp-label { font-size: 11px; font-weight: 700; color: var(--text-faint, #94a3b8); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.dp-value { font-size: 15px; font-weight: 600; color: var(--text); }
+.dp-mono  { font-family: var(--font-mono, monospace); }
+.dp-capitalize { text-transform: capitalize; }
+.dp-plate { font-size: 16px; letter-spacing: 2px; }
+
+.dp-status { font-size: 14px; font-weight: 700; text-transform: capitalize; }
+.dp-status-available { color: #16a34a; }
+.dp-status-busy      { color: #d97706; }
+.dp-status-offline   { color: #6b7280; }
+
+.dp-section-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.dp-section-icon  { font-size: 20px; }
+.dp-section-title { font-size: 15px; font-weight: 700; color: var(--text); }
+
+.dp-notice {
+  display: flex; gap: 10px; margin-top: 16px;
+  background: var(--bg-elevated, #f8fafc); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--text-muted);
+}
+
+.dp-stats-row {
+  display: flex; gap: 16px;
+}
+.dp-stat {
+  flex: 1; background: var(--bg-elevated, #f8fafc); border-radius: 12px;
+  padding: 16px; text-align: center; border: 1px solid var(--border);
+}
+.dp-stat-val { font-size: 26px; font-weight: 900; color: var(--brand, #e65100); }
+.dp-stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
