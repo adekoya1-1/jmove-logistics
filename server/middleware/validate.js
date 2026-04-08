@@ -23,8 +23,8 @@ const phone = z.string()
   .regex(/^[\+\d\s\-\(\)]+$/, 'Invalid phone number format');
 
 const cityKey = z.string()
-  .min(2).max(30)
-  .regex(/^[a-z_]+$/, 'State key must be lowercase letters and underscores only');
+  .min(2).max(50)
+  .regex(/^[A-Za-z\s\(\)\-\.]+$/, 'Invalid location format');
 
 const nigerianAmount = z.number().min(0).max(100_000_000);
 

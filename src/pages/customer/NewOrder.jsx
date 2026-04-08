@@ -142,7 +142,7 @@ export default function NewOrder() {
                      form.receiverName && form.receiverPhone && form.receiverAddress && form.destinationCity &&
                      isOriginActive && isDestActive;
   const step2Valid = form.description && form.weight && +form.weight > 0 &&
-                     (pricingConfig?.hasDynamicPricing ? !!form.truckTypeId : true);
+                     (pricingConfig ? (pricingConfig.hasDynamicPricing ? !!form.truckTypeId : true) : !!form.truckTypeId);
 
   const fmt = n => Number(n||0).toLocaleString('en-NG');
 
