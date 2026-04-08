@@ -370,4 +370,9 @@ export const supportAPI = {
   adminReply:  (id, d)   => api.post(`/support/admin/${encodeURIComponent(id)}/reply`, d),
 };
 
+export const statesAPI = {
+  list:   ()   => api.get('/states'),
+  toggle: (id) => api.patch(`/states/${encodeURIComponent(id)}/toggle`),
+};
+
 export default api;

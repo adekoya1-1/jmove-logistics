@@ -1,0 +1,116 @@
+/* ── AdminStates.css - Premium Modern Aesthetic ─────────────────────────── */
+
+:root {
+  --as-primary: #e65100;
+  --as-primary-light: #fff3e0;
+  --as-bg: #f8fafc;
+  --as-glass-bg: rgba(255, 255, 255, 0.85);
+  --as-glass-border: rgba(255, 255, 255, 0.6);
+  --as-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+  --as-transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --as-text-main: #1e293b;
+  --as-text-muted: #64748b;
+}
+
+.admin-states {
+  padding: 32px;
+  background: radial-gradient(circle at top left, rgba(230, 81, 0, 0.02), transparent 40%),
+              radial-gradient(circle at bottom right, rgba(52, 152, 219, 0.02), transparent 40%);
+  min-height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--as-text-main);
+}
+
+.as-header { margin-bottom: 24px; }
+.as-page-title { font-size: 26px; font-weight: 800; margin: 0 0 8px; color: var(--as-text-main); letter-spacing: -0.5px; }
+.as-page-sub { font-size: 15px; color: var(--as-text-muted); margin: 0; }
+
+.as-error {
+  background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;
+  padding: 12px 16px; border-radius: 12px; margin-bottom: 24px; font-weight: 600; font-size: 14px;
+}
+
+.as-controls {
+  display: flex; gap: 20px; align-items: center; margin-bottom: 24px; flex-wrap: wrap;
+}
+.as-search {
+  padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 12px;
+  font-size: 15px; width: 280px; transition: var(--as-transition); outline: none;
+  font-family: inherit; font-weight: 500;
+}
+.as-search:focus { border-color: var(--as-primary); box-shadow: 0 0 0 4px var(--as-primary-light); }
+
+.as-tabs {
+  display: flex; gap: 8px; background: rgba(0,0,0,0.03); padding: 4px; border-radius: 12px; overflow-x: auto;
+}
+.as-tab {
+  padding: 8px 16px; border: none; background: transparent; font-size: 13px; font-weight: 600;
+  color: var(--as-text-muted); border-radius: 8px; cursor: pointer; transition: var(--as-transition); white-space: nowrap;
+}
+.as-tab--active { background: white; color: var(--as-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.as-tab:hover:not(.as-tab--active) { color: var(--as-text-main); background: rgba(255,255,255,0.5); }
+
+/* Table Wrapper */
+.as-table-card {
+  background: var(--as-glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--as-glass-border);
+  border-radius: 20px; box-shadow: var(--as-shadow); overflow: hidden;
+}
+
+.as-table-wrap { overflow-x: auto; }
+.as-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+.as-table th {
+  background: #f8fafc; font-size: 12px; font-weight: 800; color: var(--as-text-muted);
+  text-transform: uppercase; letter-spacing: 1px; padding: 16px 24px; text-align: left;
+  border-bottom: 2px solid #e2e8f0;
+}
+.as-table td { padding: 16px 24px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; transition: var(--as-transition); }
+.as-table tbody tr:hover td { background: #fdfdfd; }
+.as-table tbody tr:last-child td { border-bottom: none; }
+
+.as-center { text-align: center !important; }
+.as-right  { text-align: right !important; }
+
+/* Cell Content */
+.as-state-name { font-size: 15px; font-weight: 800; color: var(--as-text-main); }
+.as-direction-badge {
+  background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700;
+  padding: 4px 12px; border-radius: 20px; border: 1px solid #e2e8f0;
+}
+
+.as-status-badge {
+  font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+}
+.as-status-badge.active   { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; box-shadow: 0 0 10px rgba(22, 163, 74, 0.1); }
+.as-status-badge.inactive { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+
+.as-row-inactive td { opacity: 0.6; }
+.as-row-inactive:hover td { opacity: 1; }
+
+.as-empty { text-align: center; color: var(--as-text-muted); padding: 40px !important; font-size: 14px; font-weight: 600; }
+.as-loading { padding: 40px; text-align: center; color: var(--as-primary); font-weight: 600; font-size: 15px; }
+
+/* Premium Toggle Switch */
+.as-toggle {
+  position: relative; display: inline-block; width: 44px; height: 24px;
+}
+.as-toggle input { opacity: 0; width: 0; height: 0; }
+.as-slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1; transition: 0.4s; border-radius: 24px;
+}
+.as-slider:before {
+  position: absolute; content: ""; height: 18px; width: 18px;
+  left: 3px; bottom: 3px; background-color: white; transition: 0.4s; border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.as-toggle input:checked + .as-slider {
+  background-color: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+.as-toggle input:focus + .as-slider { box-shadow: 0 0 1px #10b981; }
+.as-toggle input:checked + .as-slider:before { transform: translateX(20px); }
+
+@media (max-width: 768px) {
+  .admin-states { padding: 16px; }
+  .as-controls { flex-direction: column; align-items: stretch; }
+  .as-search { width: 100%; }
+}

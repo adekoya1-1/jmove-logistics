@@ -25,6 +25,8 @@ const nav = [
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="14" height="9" rx="1.5"/><path d="M1 7h14"/></svg> },
   { to: '/admin/pricing',    label: 'Pricing',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v1.5M8 10.5V12M5.5 9.5A1.5 1.5 0 007 11h2a1.5 1.5 0 000-3H7a1.5 1.5 0 010-3h2A1.5 1.5 0 0110.5 6.5"/></svg> },
+  { to: '/admin/states',     label: 'States (Regions)',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 4A6 6 0 1 0 2 4c0 3 6 10 6 10s6-7 6-10z"/><circle cx="8" cy="4" r="2"/></svg> },
   { to: '/admin/logs',       label: 'Audit Logs',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 4h6M5 7h6M5 10h4"/><circle cx="12" cy="12" r="3" fill="var(--brand)" stroke="none"/><path d="M11 12h2M12 11v2" stroke="#fff" strokeWidth="1.2"/></svg> },
   { to: '/admin/settings',   label: 'Settings',

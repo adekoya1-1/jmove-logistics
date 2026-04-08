@@ -139,6 +139,7 @@ import AdminCustomers    from './pages/admin/AdminCustomers.jsx';
 import AdminFleet        from './pages/admin/AdminFleet.jsx';
 import AdminSettings     from './pages/admin/AdminSettings.jsx';
 import AdminLogs         from './pages/admin/AdminLogs.jsx';
+import AdminStates       from './pages/admin/AdminStates.jsx';
 
 import CustomerLayout    from './components/customer/CustomerLayout.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
@@ -185,6 +186,7 @@ export default function App() {
             <Route path="analytics"   element={<AdminAnalytics />} />
             <Route path="payments"    element={<AdminPayments />} />
             <Route path="pricing"     element={<AdminPricing />} />
+            <Route path="states"      element={<AdminStates />} />
             <Route path="fleet"       element={<AdminFleet />} />
             <Route path="settings"    element={<AdminSettings />} />
             <Route path="logs"        element={<AdminLogs />} />
