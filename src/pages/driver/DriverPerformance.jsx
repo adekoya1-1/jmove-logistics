@@ -67,9 +67,9 @@ export default function DriverPerformance() {
           <p className="psc-lbl">All Time</p>
         </div>
         <div className="card perf-stat-card">
-          <p className="psc-icon">💰</p>
-          <p className="psc-val">₦{fmt(stats?.week?.earnings)}</p>
-          <p className="psc-lbl">Earnings This Week</p>
+          <p className="psc-icon">★</p>
+          <p className="psc-val">{Number(stats?.rating || 5).toFixed(1)}</p>
+          <p className="psc-lbl">Avg Rating</p>
         </div>
       </div>
 

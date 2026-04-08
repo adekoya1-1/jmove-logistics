@@ -181,15 +181,15 @@ export default function DriverDashboard() {
         </div>
       )}
 
-      {/* Quick stats */}
+      {/* Quick stats — deliveries only, no monetary values (salary-based) */}
       <div className="driver-quick-stats">
         <div className="card dqs-card">
           <p className="dqs-val">{stats?.today?.count || 0}</p>
           <p className="dqs-lbl">📦 Today's Deliveries</p>
         </div>
         <div className="card dqs-card">
-          <p className="dqs-val">₦{Number(stats?.today?.earnings || 0).toLocaleString('en-NG', { maximumFractionDigits:0 })}</p>
-          <p className="dqs-lbl">💰 Today's Earnings</p>
+          <p className="dqs-val">{stats?.week?.count || 0}</p>
+          <p className="dqs-lbl">📅 This Week</p>
         </div>
         <div className="card dqs-card">
           <p className="dqs-val">{dp?.totalDeliveries || 0}</p>

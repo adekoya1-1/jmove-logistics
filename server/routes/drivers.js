@@ -128,6 +128,79 @@ router.get('/earnings', authenticate, authorize('driver'), async (req, res, next
   } catch (e) { next(e); }
 });
 
+// ── GET /api/drivers/me ──────────────────────────────────
+// MUST be before /:id to avoid route shadowing
+router.get('/me', authenticate, authorize('driver'), async (req, res, next) => {
+  try {
+    const dp = await DriverProfile.findOne({ userId: req.user._id })
+      .populate('userId', 'firstName lastName email phone createdAt').lean();
+    if (!dp) return res.status(404).json({ success: false, message: 'Driver profile not found' });
+    res.json({ success: true, data: dp });
+  } catch (e) { next(e); }
+});
+
+// ── GET /api/drivers/reviews ──────────────────────────────
+router.get('/reviews', authenticate, authorize('driver'), async (req, res, next) => {
+  try {
+    const dp = await DriverProfile.findOne({ userId: req.user._id });
+    if (!dp) return res.status(404).json({ success: false, message: 'Driver profile not found' });
+
+    const reviews = await Review.find({ driverId: dp._id })
+      .populate('orderId', 'waybillNumber originCity destinationCity deliveredAt')
+      .sort({ createdAt: -1 }).limit(20).lean();
+
+    const summary = await Review.aggregate([
+      { $match: { driverId: dp._id } },
+      { $group: {
+        _id: null,
+        avgRating:    { $avg: '$rating' },
+        totalReviews: { $sum: 1 },
+        fiveStars:    { $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] } },
+        fourStars:    { $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] } },
+        threeStars:   { $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] } },
+        belowThree:   { $sum: { $cond: [{ $lt:  ['$rating', 3] }, 1, 0] } },
+      }},
+    ]);
+
+    res.json({ success: true, data: { reviews, summary: summary[0] || { avgRating: 0, totalReviews: 0 } } });
+  } catch (e) { next(e); }
+});
+
+// ── GET /api/drivers/stats ──────────────────────────────
+router.get('/stats', authenticate, authorize('driver'), async (req, res, next) => {
+  try {
+    const dp = await DriverProfile.findOne({ userId: req.user._id });
+    if (!dp) return res.status(404).json({ success: false, message: 'Driver profile not found' });
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const weekStart = new Date(Date.now() - 7 * 86400000);
+
+    const [todayStats, weekStats, totalStats] = await Promise.all([
+      DriverEarning.aggregate([
+        { $match: { driverId: dp._id, earnedAt: { $gte: today } } },
+        { $group: { _id: null, count: { $sum: 1 } } },
+      ]),
+      DriverEarning.aggregate([
+        { $match: { driverId: dp._id, earnedAt: { $gte: weekStart } } },
+        { $group: { _id: null, count: { $sum: 1 } } },
+      ]),
+      DriverEarning.aggregate([
+        { $match: { driverId: dp._id } },
+        { $group: { _id: null, count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    res.json({ success: true, data: {
+      today:      todayStats[0]  || { count: 0 },
+      week:       weekStats[0]   || { count: 0 },
+      total:      totalStats[0]  || { count: 0 },
+      rating:     dp.rating,
+      status:     dp.status,
+      isVerified: dp.isVerified,
+    }});
+  } catch (e) { next(e); }
+});
+
 // ── GET /api/drivers/:id ─────────────────────────────────
 // Restricted to admin — customers and drivers have no business
 // fetching arbitrary driver profiles (exposes plate, license, employeeId, phone).
@@ -195,79 +268,5 @@ router.post('/location', authenticate, authorize('driver'),
   } catch (e) { next(e); }
 });
 
-// ── GET /api/drivers/me ──────────────────────────────────
-// Driver views their own full profile
-router.get('/me', authenticate, authorize('driver'), async (req, res, next) => {
-  try {
-    const dp = await DriverProfile.findOne({ userId: req.user._id })
-      .populate('userId', 'firstName lastName email phone createdAt').lean();
-    if (!dp) return res.status(404).json({ success: false, message: 'Driver profile not found' });
-    res.json({ success: true, data: dp });
-  } catch (e) { next(e); }
-});
-
-// ── GET /api/drivers/reviews ──────────────────────────────
-// Driver views their own customer reviews
-router.get('/reviews', authenticate, authorize('driver'), async (req, res, next) => {
-  try {
-    const dp = await DriverProfile.findOne({ userId: req.user._id });
-    if (!dp) return res.status(404).json({ success: false, message: 'Driver profile not found' });
-
-    const reviews = await Review.find({ driverId: dp._id })
-      .populate('orderId', 'waybillNumber originCity destinationCity deliveredAt')
-      .sort({ createdAt: -1 }).limit(20).lean();
-
-    const summary = await Review.aggregate([
-      { $match: { driverId: dp._id } },
-      { $group: {
-        _id: null,
-        avgRating:    { $avg: '$rating' },
-        totalReviews: { $sum: 1 },
-        fiveStars:    { $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] } },
-        fourStars:    { $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] } },
-        threeStars:   { $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] } },
-        belowThree:   { $sum: { $cond: [{ $lt:  ['$rating', 3] }, 1, 0] } },
-      }},
-    ]);
-
-    res.json({ success: true, data: { reviews, summary: summary[0] || { avgRating: 0, totalReviews: 0 } } });
-  } catch (e) { next(e); }
-});
-
-// ── GET /api/drivers/stats ──────────────────────────────
-// Driver views own performance stats
-router.get('/stats', authenticate, authorize('driver'), async (req, res, next) => {
-  try {
-    const dp = await DriverProfile.findOne({ userId: req.user._id });
-    if (!dp) return res.status(404).json({ success: false, message: 'Driver profile not found' });
-
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const weekStart = new Date(Date.now() - 7 * 86400000);
-
-    const [todayStats, weekStats, totalStats] = await Promise.all([
-      DriverEarning.aggregate([
-        { $match: { driverId: dp._id, earnedAt: { $gte: today } } },
-        { $group: { _id: null, count: { $sum: 1 }, earnings: { $sum: '$commission' } } },
-      ]),
-      DriverEarning.aggregate([
-        { $match: { driverId: dp._id, earnedAt: { $gte: weekStart } } },
-        { $group: { _id: null, count: { $sum: 1 }, earnings: { $sum: '$commission' } } },
-      ]),
-      DriverEarning.aggregate([
-        { $match: { driverId: dp._id } },
-        { $group: { _id: null, count: { $sum: 1 }, earnings: { $sum: '$commission' } } },
-      ]),
-    ]);
-
-    res.json({ success: true, data: {
-      today:  todayStats[0]  || { count: 0, earnings: 0 },
-      week:   weekStats[0]   || { count: 0, earnings: 0 },
-      total:  totalStats[0]  || { count: 0, earnings: 0 },
-      rating: dp.rating,
-      status: dp.status,
-      isVerified: dp.isVerified,
-    }});
-  } catch (e) { next(e); }
-});
-
 export default router;
+
