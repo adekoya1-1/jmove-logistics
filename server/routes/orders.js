@@ -12,7 +12,7 @@
  */
 import { Router } from 'express';
 import { randomBytes } from 'crypto';
-import { Order, Payment, User, DriverProfile, DriverEarning, Notification } from '../db.js';
+import { Order, Payment, User, DriverProfile, DriverEarning, Notification, State } from '../db.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate, validateAll, orderSchemas } from '../middleware/validate.js';
 import { calcDynamicPrice } from '../services/pricingService.js';
@@ -35,8 +35,13 @@ const genWaybill = (originCity) => {
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ── GET /api/orders/cities ───────────────────────────────
-router.get('/cities', (req, res) => {
-  res.json({ success: true, data: getCityList() });
+router.get('/cities', async (req, res, next) => {
+  try {
+    const states = await State.find().sort({ name: 1 }).lean();
+    res.json({ success: true, data: states });
+  } catch (e) {
+    next(e);
+  }
 });
 
 // ── POST /api/orders/calculate-price ────────────────────
@@ -44,7 +49,12 @@ router.post('/calculate-price', validate(orderSchemas.calcPrice), async (req, re
   try {
     const pricing = await calcDynamicPrice(req.body);
     res.json({ success: true, data: pricing });
-  } catch (e) { next(e); }
+  } catch (e) { 
+    if (e.message === 'Service unavailable in selected state') {
+      return res.status(400).json({ error: e.message });
+    }
+    next(e); 
+  }
 });
 
 // ── GET /api/orders/track/:waybill ──────────────────────
@@ -140,7 +150,12 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
     });
 
     res.status(201).json({ success: true, message: 'Shipment booked', data: { order, pricing } });
-  } catch (e) { next(e); }
+  } catch (e) { 
+    if (e.message === 'Service unavailable in selected state') {
+      return res.status(400).json({ error: e.message });
+    }
+    next(e); 
+  }
 });
 
 // ── GET /api/orders ──────────────────────────────────────

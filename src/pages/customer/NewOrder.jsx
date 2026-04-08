@@ -75,7 +75,7 @@ export default function NewOrder() {
         truckTypeId: form.truckTypeId,
       });
       setPricing(r.data); setStep(3);
-    } catch (e) { setError(e?.response?.data?.message || 'Failed to calculate price'); }
+    } catch (e) { setError(e?.response?.data?.error || e?.response?.data?.message || 'Failed to calculate price'); }
     finally { setLoading(false); }
   };
 
@@ -95,12 +95,18 @@ export default function NewOrder() {
       } else {
         setStep(4);
       }
-    } catch (e) { setError(e?.response?.data?.message || 'Failed to book shipment'); }
+    } catch (e) { setError(e?.response?.data?.error || e?.response?.data?.message || 'Failed to book shipment'); }
     finally { setLoading(false); }
   };
 
+  const isOriginActive = form.originCity ? (cities.find(c => c.name === form.originCity)?.isActive !== false) : true;
+  const isDestActive   = form.destinationCity ? (cities.find(c => c.name === form.destinationCity)?.isActive !== false) : true;
+  const inactiveStateName = (!isOriginActive ? form.originCity : (!isDestActive ? form.destinationCity : null));
+  const isPickupInactive = !isOriginActive;
+
   const step1Valid = form.senderName && form.senderPhone && form.originCity &&
-                     form.receiverName && form.receiverPhone && form.receiverAddress && form.destinationCity;
+                     form.receiverName && form.receiverPhone && form.receiverAddress && form.destinationCity &&
+                     isOriginActive && isDestActive;
   const step2Valid = form.description && form.weight && +form.weight > 0 &&
                      (pricingConfig?.hasDynamicPricing ? !!form.truckTypeId : true);
 
@@ -146,10 +152,9 @@ export default function NewOrder() {
               <div className="field-row">
                 <div className="field"><label className="label">Sender Email</label><input type="email" className="input" value={form.senderEmail} onChange={set('senderEmail')} placeholder="sender@email.com" /></div>
                 <div className="field">
-                  <label className="label">Origin State *</label>
-                  <select className="input" value={form.originCity} onChange={set('originCity')} required>
+                  <select className={`input ${!isOriginActive ? 'input-error' : ''}`} value={form.originCity} onChange={set('originCity')} required>
                     <option value="">Select state…</option>
-                    {cities.map(c => <option key={c.key} value={c.key}>{c.name}</option>)}
+                    {cities.map(c => <option key={c._id || c.key || c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
@@ -165,15 +170,21 @@ export default function NewOrder() {
               <div className="field-row">
                 <div className="field"><label className="label">Receiver Email</label><input type="email" className="input" value={form.receiverEmail} onChange={set('receiverEmail')} placeholder="receiver@email.com" /></div>
                 <div className="field">
-                  <label className="label">Destination State *</label>
-                  <select className="input" value={form.destinationCity} onChange={set('destinationCity')} required>
+                  <select className={`input ${!isDestActive ? 'input-error' : ''}`} value={form.destinationCity} onChange={set('destinationCity')} required>
                     <option value="">Select state…</option>
-                    {cities.map(c => <option key={c.key} value={c.key}>{c.name}</option>)}
+                    {cities.map(c => <option key={c._id || c.key || c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
               <div className="field"><label className="label">Delivery Address *</label><input type="text" className="input" value={form.receiverAddress} onChange={set('receiverAddress')} placeholder="Full delivery address" required /></div>
             </div>
+            {inactiveStateName && (
+              <div className="order-error" style={{ marginBottom: 16 }}>
+                <strong>⚠ We are currently unavailable for pickup or delivery in the selected state.</strong>
+                <br />
+                {isPickupInactive ? `Pickup from ${inactiveStateName}` : `Delivery to ${inactiveStateName}`} is currently unavailable.
+              </div>
+            )}
             <button className="btn-primary step-cta" onClick={() => setStep(2)} disabled={!step1Valid}>
               Continue to Package Details →
             </button>

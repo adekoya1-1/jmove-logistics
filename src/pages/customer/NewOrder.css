@@ -45,7 +45,14 @@
   background: var(--red-light); border: 1px solid var(--brand-border);
   color: var(--red); font-size: 13px; padding: 11px 16px;
   border-radius: var(--radius); font-weight: 500;
-  display: flex; align-items: center; gap: 8px;
+  display: block; line-height: 1.5;
+}
+
+/* ── Input field error state (inactive state highlight) ── */
+.input-error {
+  border-color: var(--red, #dc2626) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+  background: #fff5f5 !important;
 }
 
 /* ── Fragile toggle ── */

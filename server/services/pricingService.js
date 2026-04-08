@@ -22,7 +22,7 @@ async function loadConfig() {
   if (_cache && Date.now() - _cacheTime < CACHE_TTL_MS) return _cache;
 
   const [states, truckTypes, rules] = await Promise.all([
-    State.find({ isActive: true }).lean(),
+    State.find().lean(),
     TruckType.find({ isActive: true }).sort({ sortOrder: 1, capacityTons: 1 }).lean(),
     Pricing.find({ isActive: true }).populate('truckTypeId', 'name capacityTons icon').lean(),
   ]);
@@ -64,6 +64,10 @@ export const calcDynamicPrice = async ({
 
   if (!originState) throw new Error(`Invalid pickup location: ${originCity}`);
   if (!destState) throw new Error(`Invalid destination location: ${destinationCity}`);
+
+  if (!originState.isActive || !destState.isActive) {
+    throw new Error('Service unavailable in selected state');
+  }
 
   const fromDirection = originState.direction;
   const toDirection = destState.direction;
