@@ -179,9 +179,9 @@ export const orderSchemas = {
   }),
 
   listQuery: z.object({
-    status:       z.enum(['booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled']).optional(),
-    deliveryType: z.enum(['intrastate','interstate']).optional(),
-    serviceType:  z.enum(['standard','express','sameday']).optional(),
+    status:       z.enum(['booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled']).or(z.literal('')).optional(),
+    deliveryType: z.enum(['intrastate','interstate']).or(z.literal('')).optional(),
+    serviceType:  z.enum(['standard','express','sameday']).or(z.literal('')).optional(),
     page:         z.coerce.number().int().min(1).max(1000).optional().default(1),
     limit:        z.coerce.number().int().min(1).max(100).optional().default(15),
     search:       z.string().max(100).trim().optional(),
