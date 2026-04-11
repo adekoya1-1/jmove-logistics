@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { ordersAPI } from '../api/client.js';
 import { format } from 'date-fns';
 import './TrackOrder.css';
+import PublicNav from '../components/PublicNav.jsx';
 
 const STEPS = [
   { key: 'booked',           label: 'Order Placed',     icon: '📋' },
@@ -54,21 +55,7 @@ export default function TrackOrder() {
 
   return (
     <div className="track-page">
-      {/* Nav */}
-      <nav className="track-nav">
-        <Link to="/" className="track-logo">
-          <div className="track-logo-mark">
-            <svg width="17" height="17" viewBox="0 0 17 17" fill="white">
-              <path d="M2 10l4-8h5l4 8H2z" opacity=".9"/><circle cx="5.5" cy="13" r="2"/><circle cx="11.5" cy="13" r="2"/>
-            </svg>
-          </div>
-          <span className="track-logo-name">JMove Logistics</span>
-        </Link>
-        <div className="track-nav-links">
-          <Link to="/" className="track-nav-link">Home</Link>
-          <Link to="/login" className="track-nav-link">Sign In</Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero search */}
       <section className="track-hero">
