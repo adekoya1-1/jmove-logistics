@@ -11,6 +11,8 @@ const nav = [
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6M5 8h6M5 11h4"/></svg> },
   { to: '/driver/active',       label: 'Active Delivery',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 11l3-7h8l3 7H1z"/><circle cx="4.5" cy="13" r="1.5"/><circle cx="11.5" cy="13" r="1.5"/></svg> },
+  { to: '/driver/route',        label: 'Active Route',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8h12M8 2l6 6-6 6"/><circle cx="2" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg> },
   { to: '/driver/history',      label: 'History',
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 14h14v1H1zM3 10h2v4H3zm4-3h2v7H7zm4-4h2v11h-2z"/></svg> },
   { to: '/driver/performance',  label: 'Performance',

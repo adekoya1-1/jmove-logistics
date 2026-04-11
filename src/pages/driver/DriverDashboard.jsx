@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authAPI, driversAPI } from '../../api/client.js';
+import { authAPI, driversAPI, routesAPI } from '../../api/client.js';
 import { useAuth } from '../../App.jsx';
 import './DriverDashboard.css';
 
 export default function DriverDashboard() {
   const { user }         = useAuth();
   const navigate         = useNavigate();
-  const [profile,  setProfile]  = useState(null);
-  const [order,    setOrder]    = useState(null);
-  const [stats,    setStats]    = useState(null);
+  const [profile,      setProfile]      = useState(null);
+  const [order,        setOrder]        = useState(null);
+  const [activeRoute,  setActiveRoute]  = useState(null);
+  const [stats,        setStats]        = useState(null);
   const [driverStatus, setDriverStatus] = useState('offline');
   const [statusLoading, setStatusLoading] = useState(false);
   const [gpsActive, setGpsActive] = useState(false);
@@ -23,6 +24,8 @@ export default function DriverDashboard() {
     }).catch(console.error);
     driversAPI.activeOrder().then(r => setOrder(r.data)).catch(console.error);
     driversAPI.stats().then(r => setStats(r.data)).catch(console.error);
+    // Check for active route assignment
+    routesAPI.activeRoute().then(r => setActiveRoute(r.data)).catch(() => {});
   }, []);
 
   // Socket — connect then immediately start GPS
@@ -70,7 +73,7 @@ export default function DriverDashboard() {
     finally { setStatusLoading(false); }
   };
 
-  const hasActiveDelivery = !!order;
+  const hasActiveDelivery = !!order || !!activeRoute;
 
   const dp      = profile?.driverProfile;
   const verified = dp?.isVerified;
@@ -137,8 +140,30 @@ export default function DriverDashboard() {
         </div>
       )}
 
+      {/* Active route preview — shown when driver is on a batched route */}
+      {activeRoute && (
+        <div className="card active-preview" style={{ borderLeft: '4px solid var(--brand)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <p style={{ fontSize: 14, fontWeight: 700 }}>🗺 Active Route</p>
+            <span className="badge" style={{ background: '#ecfdf5', color: '#065f46' }}>active</span>
+          </div>
+          <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--brand)', marginBottom: 6 }}>
+              {activeRoute.routeNumber}
+            </p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              {activeRoute.stops?.length || 0} stops ·{' '}
+              {activeRoute.stops?.filter(s => ['completed','skipped'].includes(s.status)).length || 0} completed
+            </p>
+          </div>
+          <Link to="/driver/route" className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 14 }}>
+            Open Active Route →
+          </Link>
+        </div>
+      )}
+
       {/* Active delivery preview */}
-      {order ? (
+      {!activeRoute && order ? (
         <div className="card active-preview">
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
             <p style={{ fontSize:14, fontWeight:700 }}>🚚 Active Delivery</p>
@@ -166,7 +191,7 @@ export default function DriverDashboard() {
             Open Active Delivery →
           </Link>
         </div>
-      ) : (
+      ) : !activeRoute ? (
         <div className="card" style={{ padding:'32px 24px', textAlign:'center' }}>
           <p style={{ fontSize:22, marginBottom:10 }}>📦</p>
           <p style={{ fontSize:15, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>No active delivery</p>
@@ -179,7 +204,7 @@ export default function DriverDashboard() {
             </button>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Quick stats — deliveries only, no monetary values (salary-based) */}
       <div className="driver-quick-stats">

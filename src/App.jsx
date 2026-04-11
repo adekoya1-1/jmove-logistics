@@ -140,6 +140,7 @@ import AdminFleet        from './pages/admin/AdminFleet.jsx';
 import AdminSettings     from './pages/admin/AdminSettings.jsx';
 import AdminLogs         from './pages/admin/AdminLogs.jsx';
 import AdminStates       from './pages/admin/AdminStates.jsx';
+import AdminRoutes       from './pages/admin/AdminRoutes.jsx';
 
 import CustomerLayout    from './components/customer/CustomerLayout.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
@@ -155,6 +156,7 @@ import DriverActive      from './pages/driver/DriverActive.jsx';
 import DriverHistory     from './pages/driver/DriverHistory.jsx';
 import DriverProfile     from './pages/driver/DriverProfile.jsx';
 import DriverPerformance from './pages/driver/DriverPerformance.jsx';
+import DriverRoute       from './pages/driver/DriverRoute.jsx';
 
 export default function App() {
   return (
@@ -190,6 +192,7 @@ export default function App() {
             <Route path="pricing"     element={<AdminPricing />} />
             <Route path="states"      element={<AdminStates />} />
             <Route path="fleet"       element={<AdminFleet />} />
+            <Route path="routes"      element={<AdminRoutes />} />
             <Route path="settings"    element={<AdminSettings />} />
             <Route path="logs"        element={<AdminLogs />} />
           </Route>
@@ -211,6 +214,7 @@ export default function App() {
             <Route path="history" element={<DriverHistory />} />
             <Route path="performance" element={<DriverPerformance />} />
             <Route path="profile"     element={<DriverProfile />} />
+            <Route path="route"       element={<DriverRoute />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -139,6 +139,9 @@ const orderSchema = new mongoose.Schema({
   // Truck type selected for this shipment (optional — set when dynamic pricing used)
   truckTypeId:   { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', default: null },
   truckTypeName: { type: String, trim: true, default: null },
+
+  // Route batching — internal only, never exposed to customers
+  routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryRoute', default: null },
 }, { timestamps: true });
 
 // Payment schema
@@ -376,5 +379,50 @@ export const SystemSetting  = mongoose.model('SystemSetting', systemSettingSchem
 export const AuditLog       = mongoose.model('AuditLog',      auditLogSchema);
 export const SavedAddress   = mongoose.model('SavedAddress',  savedAddressSchema);
 export const SupportTicket  = mongoose.model('SupportTicket', supportTicketSchema);
+
+// ── DeliveryRoute — Route Batching System ────────────────────────────────────
+// Internal-only: customers never see route data, pricing never changes.
+// Each stop is an embedded sub-document (atomic updates, no extra round-trips).
+const routeStopSchema = new mongoose.Schema({
+  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
+  sequence:     { type: Number, required: true },          // display order, 1-based
+  type:         { type: String, enum: ['pickup', 'delivery'], required: true },
+  status:       { type: String, enum: ['pending', 'arrived', 'completed', 'skipped'], default: 'pending' },
+  address:      { type: String, default: '' },
+  city:         { type: String, default: '' },
+  contactName:  { type: String, default: '' },
+  contactPhone: { type: String, default: '' },
+  note:         { type: String, default: '' },
+  completedAt:  { type: Date, default: null },
+}, { _id: true });
+
+const deliveryRouteSchema = new mongoose.Schema({
+  routeNumber:  { type: String, required: true, unique: true }, // RT-20240318-0001
+  driverId:     { type: mongoose.Schema.Types.ObjectId, ref: 'DriverProfile', default: null },
+  vehicleId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle',       default: null },
+  status:       { type: String, enum: ['planned', 'active', 'completed', 'cancelled'], default: 'planned' },
+  stops:        [routeStopSchema],
+
+  // Computed on create/update — stored for fast display
+  totalWeight:        { type: Number, default: 0 },   // kg
+  estimatedDistance:  { type: Number, default: 0 },   // km (rough estimate)
+  estimatedDuration:  { type: Number, default: 0 },   // minutes
+
+  // Admin-only efficiency metrics (never sent to customers)
+  totalRevenue:   { type: Number, default: 0 },   // sum of all order amounts
+  estimatedCost:  { type: Number, default: 0 },   // distance-based cost estimate
+  efficiency:     { type: String, enum: ['profitable', 'break_even', 'inefficient', 'pending'], default: 'pending' },
+
+  notes:        { type: String, default: '' },
+  activatedAt:  { type: Date, default: null },
+  completedAt:  { type: Date, default: null },
+  createdBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+}, { timestamps: true });
+
+deliveryRouteSchema.index({ status: 1, createdAt: -1 });
+deliveryRouteSchema.index({ driverId: 1, status: 1 });
+deliveryRouteSchema.index({ routeNumber: 1 });
+
+export const DeliveryRoute  = mongoose.model('DeliveryRoute', deliveryRouteSchema);
 
 export default connectDB;

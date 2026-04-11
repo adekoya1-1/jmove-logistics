@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { driversAPI, ordersAPI } from '../../api/client.js';
+import { driversAPI, ordersAPI, routesAPI } from '../../api/client.js';
 import { formatDistanceToNow, format } from 'date-fns';
 import './DriverActive.css';
 
@@ -42,20 +42,24 @@ export default function DriverActive() {
   const socketRef = useRef(null);
   const watchRef  = useRef(null);
 
-  const loadOrder = () =>
+  const loadOrder = () => {
+    // Check for active route first — if found, redirect immediately
+    routesAPI.activeRoute().then(r => {
+      if (r.data) { navigate('/driver/route', { replace: true }); }
+    }).catch(() => {});
+
     driversAPI.activeOrder()
       .then(r => {
         setOrder(r.data);
         if (r.data) {
-          // Filter statusHistory entries that are "notes" (same fromStatus & toStatus)
-          // or that have a note field
           const history = r.data.statusHistory || [];
           const noteEntries = history.filter(h => h.note && h.note !== 'Driver self-accepted job');
-          setNotes(noteEntries.reverse());  // newest first
+          setNotes(noteEntries.reverse());
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     loadOrder();

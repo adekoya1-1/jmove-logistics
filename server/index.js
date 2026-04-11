@@ -24,6 +24,7 @@ import fleetRoutes    from './routes/fleet.js';
 import settingsRoutes from './routes/settings.js';
 import logsRoutes     from './routes/logs.js';
 import supportRoutes  from './routes/support.js';
+import routeRoutes   from './routes/routes.js';
 import statesRoutes   from './routes/states.js';
 import socketHandler  from './utils/socketHandler.js';
 
@@ -207,6 +208,7 @@ app.use('/api/fleet',    fleetRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/logs',     logsRoutes);
 app.use('/api/support',  supportRoutes);
+app.use('/api/routes',   routeRoutes);
 app.use('/api/states',   statesRoutes);
 
 // ── Health check ────────────────────────────────────────

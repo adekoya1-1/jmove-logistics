@@ -362,6 +362,23 @@ export const logsAPI = {
   stats: ()   => api.get('/logs/stats'),
 };
 
+export const routesAPI = {
+  // Admin
+  list:       (p)       => api.get(`/routes?${new URLSearchParams(p || {})}`),
+  get:        (id)      => api.get(`/routes/${encodeURIComponent(id)}`),
+  create:     (d)       => api.post('/routes', d),
+  update:     (id, d)   => api.put(`/routes/${encodeURIComponent(id)}`, d),
+  activate:   (id)      => api.put(`/routes/${encodeURIComponent(id)}/activate`),
+  cancel:     (id)      => api.put(`/routes/${encodeURIComponent(id)}/cancel`),
+  addStop:    (id, d)   => api.post(`/routes/${encodeURIComponent(id)}/stops`, d),
+  removeStop: (id, sid) => api.delete(`/routes/${encodeURIComponent(id)}/stops/${encodeURIComponent(sid)}`),
+  candidates: (p)       => api.get(`/routes/candidates?${new URLSearchParams(p || {})}`),
+  validate:   (d)       => api.post('/routes/validate', d),
+  // Driver
+  activeRoute:   ()          => api.get('/routes/driver/active'),
+  updateStop:    (id, sid, d) => api.put(`/routes/${encodeURIComponent(id)}/stops/${encodeURIComponent(sid)}/status`, d),
+};
+
 export const supportAPI = {
   // Customer
   create:  (d)      => api.post('/support', d),
