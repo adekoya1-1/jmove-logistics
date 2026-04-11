@@ -109,56 +109,123 @@ export default function Landing() {
       <PublicNav />
 
       {/* ── Hero ── */}
-      <section className="hero">
+      <section className="hero" role="banner">
+        {/* Background image rendered as <img> for LCP optimization + proper alt text */}
+        <img
+          src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1920&q=75"
+          alt="Fleet of JMove Logistics trucks on a Nigerian highway at dawn"
+          className="hero-bg-img"
+          loading="eager"
+          fetchpriority="high"
+          width="1920"
+          height="1080"
+          decoding="async"
+        />
+        {/* Multi-layer gradient overlay for text legibility */}
+        <div className="hero-overlay" aria-hidden="true" />
+
         <div className="hero-inner">
           <div className="hero-content">
+
+            {/* Eyebrow badge */}
             <div className="hero-eyebrow">
-              <span className="eyebrow-dot" />
-              Nigerian Haulage & Logistics
+              <span className="eyebrow-pulse" aria-hidden="true" />
+              Nigeria's Trusted Haulage Partner
             </div>
+
+            {/* H1 — one per page, keyword-rich */}
             <h1 className="hero-h1">
-              Moving goods across<br />
-              <span className="hero-h1-accent">Nigeria. On Time.</span>
+              Move Your Goods<br />
+              <span className="hero-h1-accent">Safely. On Time.</span>
             </h1>
+
             <p className="hero-desc">
-              JMove Logistics is your reliable partner for the safe, timely, and efficient
-              movement of goods across local, regional, and national routes. Professional haulage
-              solutions tailored to your needs.
+              Professional haulage across all 36 states — house moves, office
+              relocations, bulk cargo and commercial deliveries handled with
+              care, precision, and full transparency.
             </p>
+
+            {/* CTA row */}
             <div className="hero-actions">
-              <Link to="/register" className="btn-primary hero-cta">
+              <Link to="/register" className="hero-cta-primary">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <path d="M2 13V7l5-5h7v11H2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+                  <path d="M7 13V9h4v4" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+                  <circle cx="14" cy="14" r="3.5" fill="currentColor" stroke="none"/>
+                  <path d="M13 14l.9.9 1.6-1.6" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
                 Book a Shipment
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M7.5 1l5.5 6-5.5 6V9H1V5h6.5V1z"/></svg>
               </Link>
-              
-                <Link to="/track" className="hero-cta-ghost">
-                Track a Shipment →
-                </Link>
-                
-              
+              <Link to="/track" className="hero-cta-outline">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
+                  <circle cx="8" cy="8" r="2" fill="currentColor"/>
+                  <path d="M8 2v2M8 12v2M2 8h2M12 8h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                Track a Shipment
+              </Link>
             </div>
+
+            {/* Inline quick-track bar */}
+            <div className="hero-track-bar">
+              <div className="hero-track-label">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                  <circle cx="6.5" cy="6.5" r="5.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2"/>
+                  <circle cx="6.5" cy="6.5" r="2" fill="var(--brand)"/>
+                </svg>
+                Quick track
+              </div>
+              <TrackForm />
+            </div>
+
+            {/* Trust badges */}
             <div className="hero-trust">
-              <div className="trust-item">
-                <svg width="14" height="14" viewBox="0 0 14 14"><path d="M12 3L5 10 2 7" stroke="#22c55e" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
-                <span>Licensed & Insured</span>
-              </div>
-              <div className="trust-sep" />
-              <div className="trust-item">
-                <svg width="14" height="14" viewBox="0 0 14 14"><path d="M12 3L5 10 2 7" stroke="#22c55e" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
-                <span>Experienced Drivers</span>
-              </div>
-              <div className="trust-sep" />
-              <div className="trust-item">
-                <svg width="14" height="14" viewBox="0 0 14 14"><path d="M12 3L5 10 2 7" stroke="#22c55e" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
-                <span>Real-Time Tracking</span>
-              </div>
+              {[
+                { icon: <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1L1 3.5v4c0 3 2.5 5.2 5.5 5.5 3-.3 5.5-2.5 5.5-5.5v-4L6.5 1z" stroke="#22c55e" strokeWidth="1.4"/><path d="M4 6.5l2 2 3-3" stroke="#22c55e" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: 'Licensed & Insured' },
+                { icon: <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4.5" r="2.5" stroke="#22c55e" strokeWidth="1.4"/><path d="M1 12a5.5 5.5 0 0111 0" stroke="#22c55e" strokeWidth="1.4" strokeLinecap="round"/></svg>, label: 'Professional Drivers' },
+                { icon: <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#22c55e" strokeWidth="1.4"/><path d="M6.5 3.5v3l2 1.5" stroke="#22c55e" strokeWidth="1.4" strokeLinecap="round"/></svg>, label: 'Real-Time Tracking' },
+                { icon: <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3 3 6-6" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: 'Transparent Pricing' },
+              ].map((b, i) => (
+                <div key={i} className="hero-trust-badge">
+                  {b.icon}
+                  <span>{b.label}</span>
+                </div>
+              ))}
             </div>
-          </div>
-          <div className="hero-visual">
-            <div className="hero-truck-wrap">
-              <img src="/truck.jpeg" alt="JMove Logistics Van" className="hero-truck-img" loading="eager" width="480" height="360" />
+
+          </div>{/* /hero-content */}
+
+          {/* Floating stats card — right side on desktop */}
+          <aside className="hero-stats-card" aria-label="Service highlights">
+            <div className="hsc-header">
+              <div className="hsc-pulse" aria-hidden="true">
+                <span className="hsc-pulse-ring" />
+                <span className="hsc-pulse-dot" />
+              </div>
+              <span className="hsc-live">Live Operations</span>
             </div>
-          </div>
+            <div className="hsc-divider" />
+            {[
+              { val: '36', unit: 'States', desc: 'National coverage' },
+              { val: '24/7', unit: '', desc: 'Support available' },
+              { val: '100%', unit: '', desc: 'Delivery commitment' },
+              { val: '₦0', unit: '', desc: 'Hidden fees' },
+            ].map(s => (
+              <div key={s.desc} className="hsc-stat">
+                <div className="hsc-stat-num">{s.val}<span className="hsc-stat-unit">{s.unit}</span></div>
+                <p className="hsc-stat-desc">{s.desc}</p>
+              </div>
+            ))}
+            <Link to="/register" className="hsc-cta">
+              Get an instant quote →
+            </Link>
+          </aside>
+
+        </div>{/* /hero-inner */}
+
+        {/* Bottom scroll indicator */}
+        <div className="hero-scroll" aria-hidden="true">
+          <div className="hero-scroll-line" />
         </div>
       </section>
 
