@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import './StaticPage.css';
 import PublicNav from '../components/PublicNav.jsx';
+import SEO from '../components/SEO.jsx';
 
 const SECTIONS = [
   {
@@ -116,6 +117,11 @@ function renderBody(text) {
 export default function TermsOfService() {
   return (
     <div className="sp-page">
+      <SEO
+        title="Terms of Service"
+        description="Read the JMove Logistics Terms of Service. Learn about your rights, responsibilities, payment terms, liability, and the rules governing use of our haulage platform in Nigeria."
+        canonical="/terms"
+      />
       <PublicNav />
 
       <div className="sp-hero sp-hero--compact">

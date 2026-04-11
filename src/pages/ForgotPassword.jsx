@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../api/client.js';
 import './ForgotPassword.css';
+import SEO from '../components/SEO.jsx';
 
 const OTP_TTL_SEC        = 10 * 60;
 const RESEND_COOLDOWN_SEC = 60;
@@ -240,6 +241,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="fp-page">
+      <SEO title="Reset Password" description="Reset your JMove Logistics account password securely. Enter your email to receive a one-time verification code." noindex />
       <div className="fp-card fade-in">
         {/* Header */}
         <div className="fp-nav">

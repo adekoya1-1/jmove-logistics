@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './StaticPage.css';
 import PublicNav from '../components/PublicNav.jsx';
+import SEO from '../components/SEO.jsx';
 
 const FAQS = [
   {
@@ -43,6 +44,23 @@ export default function HelpSupport() {
 
   return (
     <div className="sp-page">
+      <SEO
+        title="Help & Support"
+        description="Get answers to common questions about booking shipments, tracking orders, payments, and your JMove Logistics account. Contact our support team for further assistance."
+        canonical="/help"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          'name': 'JMove Logistics Help & Support',
+          'url': 'https://www.jmovelogistics.com/help',
+          'mainEntity': [
+            { '@type': 'Question', 'name': 'How do I book a shipment?', 'acceptedAnswer': { '@type': 'Answer', 'text': 'Create a free account, click "Book a Shipment" from your dashboard, fill in pickup and delivery details, select your vehicle type, and confirm. You\'ll receive a waybill number immediately.' } },
+            { '@type': 'Question', 'name': 'How do I track my shipment?', 'acceptedAnswer': { '@type': 'Answer', 'text': 'Use the waybill number sent to your email to track at jmovelogistics.com/track — no login required. You can also view live status from your dashboard under Orders.' } },
+            { '@type': 'Question', 'name': 'What payment methods does JMove Logistics accept?', 'acceptedAnswer': { '@type': 'Answer', 'text': 'We accept payments via Paystack — card, bank transfer, and USSD. All transactions are secured and instant.' } },
+            { '@type': 'Question', 'name': 'How do I get a refund?', 'acceptedAnswer': { '@type': 'Answer', 'text': 'Refunds for cancelled orders are processed within 3–5 business days to your original payment method. Contact support with your waybill number to initiate.' } },
+          ],
+        }}
+      />
       <PublicNav />
 
       <div className="sp-hero">

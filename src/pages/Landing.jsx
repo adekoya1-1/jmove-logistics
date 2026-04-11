@@ -2,6 +2,28 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Landing.css';
 import PublicNav from '../components/PublicNav.jsx';
+import SEO from '../components/SEO.jsx';
+
+const LANDING_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  '@id': 'https://www.jmovelogistics.com/#webpage',
+  'url': 'https://www.jmovelogistics.com/',
+  'name': 'JMove Logistics — Nigeria Haulage & Logistics | On Time. Everytime.',
+  'description': 'Nigeria\'s trusted haulage partner. Book house moves, office relocations, bulk goods transport and commercial haulage across all 36 states. Real-time tracking, transparent pricing.',
+  'isPartOf': { '@id': 'https://www.jmovelogistics.com/#website' },
+  'about': { '@id': 'https://www.jmovelogistics.com/#organization' },
+  'mainEntity': {
+    '@type': 'ItemList',
+    'name': 'Haulage & Logistics Services in Nigeria',
+    'itemListElement': [
+      { '@type': 'ListItem', 'position': 1, 'name': 'House Move', 'url': 'https://www.jmovelogistics.com/#services' },
+      { '@type': 'ListItem', 'position': 2, 'name': 'Office Move', 'url': 'https://www.jmovelogistics.com/#services' },
+      { '@type': 'ListItem', 'position': 3, 'name': 'Bulk Goods Move', 'url': 'https://www.jmovelogistics.com/#services' },
+      { '@type': 'ListItem', 'position': 4, 'name': 'Business & Commercial Haulage', 'url': 'https://www.jmovelogistics.com/#services' },
+    ],
+  },
+};
 
 function TrackForm() {
   const [waybill, setWaybill] = useState('');
@@ -69,6 +91,12 @@ function TrackForm() {
 export default function Landing() {
   return (
     <div className="landing">
+      <SEO
+        title="Nigeria Haulage & Logistics — On Time. Everytime."
+        description="JMove Logistics — Nigeria's trusted haulage partner. Book house moves, office relocations, bulk goods transport and commercial haulage across all 36 states. Real-time tracking, transparent pricing, professional drivers."
+        canonical="/"
+        jsonLd={LANDING_JSON_LD}
+      />
 
       {/* ── Top bar ── */}
       <div className="top-bar">

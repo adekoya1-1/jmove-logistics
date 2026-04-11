@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './StaticPage.css';
 import PublicNav from '../components/PublicNav.jsx';
+import SEO from '../components/SEO.jsx';
 
 export default function ContactUs() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -15,6 +16,19 @@ export default function ContactUs() {
 
   return (
     <div className="sp-page">
+      <SEO
+        title="Contact Us"
+        description="Get in touch with JMove Logistics. Have a question, need a haulage quote, or want to discuss your logistics needs? Our team is ready to help you anywhere in Nigeria."
+        canonical="/contact"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'ContactPage',
+          'name': 'Contact JMove Logistics',
+          'url': 'https://www.jmovelogistics.com/contact',
+          'description': 'Contact JMove Logistics for haulage quotes, enquiries, and logistics support.',
+          'mainEntity': { '@id': 'https://www.jmovelogistics.com/#organization' },
+        }}
+      />
       <PublicNav />
 
       {/* Hero */}

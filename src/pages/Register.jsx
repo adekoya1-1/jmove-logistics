@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App.jsx';
 import { authAPI } from '../api/client.js';
 import './Register.css';
+import SEO from '../components/SEO.jsx';
 
 export default function Register() {
   const [showPw,  setShowPw]  = useState(false);
@@ -42,6 +43,7 @@ export default function Register() {
 
   return (
     <div className="auth-page register">
+      <SEO title="Create Account" description="Sign up for a free JMove Logistics account to book haulage services across Nigeria, track your shipments, and manage your deliveries online." canonical="/register" noindex />
       <div className="auth-panel wide slide-up">
         <div className="auth-logo">
           <img src="/logo-dark.png" alt="JMove Logistics" className="auth-logo-img" />

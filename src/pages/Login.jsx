@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../App.jsx';
 import { authAPI } from '../api/client.js';
 import './Login.css';
+import SEO from '../components/SEO.jsx';
 
 export default function Login() {
   const [email,    setEmail]    = useState('');
@@ -59,6 +60,7 @@ export default function Login() {
 
   return (
     <div className="auth-page">
+      <SEO title="Sign In" description="Sign in to your JMove Logistics account to manage your haulage bookings, track shipments, and view payment history." canonical="/login" noindex />
       {/* Left: form */}
       <div className="auth-panel slide-up">
         <div className="auth-logo">

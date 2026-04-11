@@ -1,0 +1,33 @@
+# robots.txt — JMove Logistics
+# https://www.jmovelogistics.com/robots.txt
+
+User-agent: *
+
+# ── Allow all public pages ─────────────────────────────
+Allow: /$
+Allow: /track
+Allow: /contact
+Allow: /help
+Allow: /careers
+Allow: /privacy-policy
+Allow: /terms
+
+# ── Block auth/private flows (thin pages, no SEO value) ─
+Disallow: /login
+Disallow: /register
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /payment/
+
+# ── Block ALL protected dashboards ────────────────────
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /driver/
+
+# ── Block common crawl noise ───────────────────────────
+Disallow: /api/
+Disallow: /*.json$
+Disallow: /manifest.json
+
+# ── Sitemap ────────────────────────────────────────────
+Sitemap: https://www.jmovelogistics.com/sitemap.xml

@@ -1,12 +1,174 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-NG">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/logo-icon.jpeg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#FF7A00" />
+
+    <!-- ── Favicon & PWA ─────────────────────────────────────────────── -->
+    <link rel="icon" type="image/jpeg" href="/logo-icon.jpeg" />
+    <link rel="apple-touch-icon" href="/logo-icon.jpeg" />
     <link rel="manifest" href="/manifest.json" />
-    <title>JMove Logistics — On Time. Everytime.</title>
+    <meta name="theme-color" content="#FF7A00" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="JMove Logistics" />
+
+    <!-- ── Default title & description (overridden per-page by react-helmet-async) -->
+    <title>JMove Logistics — On Time. Everytime. | Nigeria Haulage &amp; Logistics</title>
+    <meta name="description" content="JMove Logistics is Nigeria's trusted haulage and logistics company. Book house moves, office relocations, bulk goods transport, and commercial haulage across all 36 states. Real-time tracking, transparent pricing, professional drivers." />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <link rel="canonical" href="https://www.jmovelogistics.com/" />
+
+    <!-- ── Open Graph fallbacks ───────────────────────────────────────── -->
+    <meta property="og:type"         content="website" />
+    <meta property="og:site_name"    content="JMove Logistics" />
+    <meta property="og:title"        content="JMove Logistics — On Time. Everytime. | Nigeria Haulage &amp; Logistics" />
+    <meta property="og:description"  content="Nigeria's trusted haulage partner. Book safe, reliable goods transport across all 36 states. Real-time tracking, transparent pricing, professional drivers." />
+    <meta property="og:url"          content="https://www.jmovelogistics.com/" />
+    <meta property="og:image"        content="https://www.jmovelogistics.com/og-image.jpg" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale"       content="en_NG" />
+
+    <!-- ── Twitter Card fallbacks ────────────────────────────────────── -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:site"        content="@JMoveLogistics" />
+    <meta name="twitter:title"       content="JMove Logistics — Nigeria Haulage &amp; Logistics" />
+    <meta name="twitter:description" content="Book safe, reliable goods transport across Nigeria. Real-time tracking, transparent pricing." />
+    <meta name="twitter:image"       content="https://www.jmovelogistics.com/og-image.jpg" />
+
+    <!-- ── Geo / Business meta ───────────────────────────────────────── -->
+    <meta name="geo.region"          content="NG" />
+    <meta name="geo.placename"       content="Lagos, Nigeria" />
+    <meta name="geo.position"        content="6.5244;3.3792" />
+    <meta name="ICBM"                content="6.5244, 3.3792" />
+
+    <!-- ── Performance: preconnect to critical origins ───────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://api.paystack.co" />
+
+    <!-- ── Organisation + LocalBusiness JSON-LD (always present) ──────
+         This is in the static HTML so crawlers that don't execute JS
+         still discover structured data on every page load.
+    ───────────────────────────────────────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://www.jmovelogistics.com/#organization",
+          "name": "JMove Logistics",
+          "legalName": "JMove Logistics Ltd",
+          "url": "https://www.jmovelogistics.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.jmovelogistics.com/logo-orange-white.png",
+            "width": 300,
+            "height": 100
+          },
+          "description": "JMove Logistics is Nigeria's trusted haulage and logistics company offering house moves, office relocations, bulk goods transport, and commercial haulage across all 36 states.",
+          "foundingDate": "2023",
+          "areaServed": {
+            "@type": "Country",
+            "name": "Nigeria"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "availableLanguage": "English",
+            "url": "https://www.jmovelogistics.com/contact"
+          },
+          "sameAs": []
+        },
+        {
+          "@type": "LocalBusiness",
+          "@id": "https://www.jmovelogistics.com/#localbusiness",
+          "name": "JMove Logistics",
+          "image": "https://www.jmovelogistics.com/og-image.jpg",
+          "url": "https://www.jmovelogistics.com",
+          "description": "Professional haulage and logistics services across Nigeria. House moves, office relocations, bulk goods transport and commercial haulage.",
+          "priceRange": "₦₦",
+          "currenciesAccepted": "NGN",
+          "paymentAccepted": "Credit Card, Debit Card, Bank Transfer, USSD",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Lagos",
+            "addressRegion": "Lagos State",
+            "addressCountry": "NG"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 6.5244,
+            "longitude": 3.3792
+          },
+          "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+            "opens": "00:00",
+            "closes": "23:59"
+          },
+          "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Haulage & Logistics Services",
+            "itemListElement": [
+              {
+                "@type": "Offer",
+                "itemOffered": {
+                  "@type": "Service",
+                  "name": "House Move",
+                  "description": "Safe and stress-free relocation of household items across Nigeria."
+                }
+              },
+              {
+                "@type": "Offer",
+                "itemOffered": {
+                  "@type": "Service",
+                  "name": "Office Move",
+                  "description": "Professional office relocation services minimising downtime and business disruption."
+                }
+              },
+              {
+                "@type": "Offer",
+                "itemOffered": {
+                  "@type": "Service",
+                  "name": "Bulk Goods Move",
+                  "description": "Efficient transportation of large quantities of goods across local, regional, and national routes."
+                }
+              },
+              {
+                "@type": "Offer",
+                "itemOffered": {
+                  "@type": "Service",
+                  "name": "Business & Commercial Haulage",
+                  "description": "End-to-end haulage solutions for businesses — supply chain support to scheduled bulk deliveries."
+                }
+              }
+            ]
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.jmovelogistics.com/#website",
+          "url": "https://www.jmovelogistics.com",
+          "name": "JMove Logistics",
+          "description": "Nigeria haulage and logistics platform",
+          "publisher": {
+            "@id": "https://www.jmovelogistics.com/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://www.jmovelogistics.com/track?waybill={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import './StaticPage.css';
 import PublicNav from '../components/PublicNav.jsx';
+import SEO from '../components/SEO.jsx';
 
 const SECTIONS = [
   {
@@ -91,6 +92,11 @@ function renderBody(text) {
 export default function PrivacyPolicy() {
   return (
     <div className="sp-page">
+      <SEO
+        title="Privacy Policy"
+        description="Read the JMove Logistics Privacy Policy. Understand how we collect, use, and protect your personal data in compliance with the Nigeria Data Protection Act (NDPA) 2023."
+        canonical="/privacy-policy"
+      />
       <PublicNav />
 
       <div className="sp-hero sp-hero--compact">

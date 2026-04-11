@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import './StaticPage.css';
 import PublicNav from '../components/PublicNav.jsx';
+import SEO from '../components/SEO.jsx';
 
 const ROLES = [
   {
@@ -29,6 +30,19 @@ const ROLES = [
 export default function Careers() {
   return (
     <div className="sp-page">
+      <SEO
+        title="Careers at JMove Logistics"
+        description="Join JMove Logistics — Nigeria's fastest-growing haulage company. We're hiring professional truck drivers, logistics coordinators, and customer experience representatives. Apply today."
+        canonical="/careers"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'JobPosting',
+          'hiringOrganization': { '@id': 'https://www.jmovelogistics.com/#organization' },
+          'jobLocation': { '@type': 'Place', 'address': { '@type': 'PostalAddress', 'addressLocality': 'Lagos', 'addressCountry': 'NG' } },
+          'employmentType': 'FULL_TIME',
+          'validThrough': '2026-12-31',
+        }}
+      />
       <PublicNav />
 
       <div className="sp-hero">

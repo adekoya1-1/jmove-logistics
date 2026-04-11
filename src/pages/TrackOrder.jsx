@@ -4,6 +4,7 @@ import { ordersAPI } from '../api/client.js';
 import { format } from 'date-fns';
 import './TrackOrder.css';
 import PublicNav from '../components/PublicNav.jsx';
+import SEO from '../components/SEO.jsx';
 
 const STEPS = [
   { key: 'booked',           label: 'Order Placed',     icon: '📋' },
@@ -55,6 +56,11 @@ export default function TrackOrder() {
 
   return (
     <div className="track-page">
+      <SEO
+        title="Track Your Shipment"
+        description="Track your JMove Logistics shipment in real time. Enter your waybill number to see live delivery status, route updates, and estimated delivery time anywhere in Nigeria."
+        canonical="/track"
+      />
       <PublicNav />
 
       {/* Hero search */}

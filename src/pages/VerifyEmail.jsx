@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../App.jsx';
 import { authAPI } from '../api/client.js';
 import './VerifyEmail.css';
+import SEO from '../components/SEO.jsx';
 
 const OTP_TTL_SEC   = 10 * 60; // 10 minutes — must match backend
 const RESEND_COOLDOWN_SEC = 60; // 60 seconds between resends
@@ -162,6 +163,7 @@ export default function VerifyEmail() {
 
   return (
     <div className="ve-page">
+      <SEO title="Verify Your Email" description="Verify your JMove Logistics account email address with the OTP code sent to your inbox." noindex />
       <div className="ve-card fade-in">
         {/* Header */}
         <div className="ve-header">

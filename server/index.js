@@ -220,7 +220,50 @@ app.get('/api/health', (_, res) => res.json({
   timestamp: new Date().toISOString(),
 }));
 
-// ── 404 ─────────────────────────────────────────────────
+// ── Production: serve built React SPA + SEO files ───────
+if (process.env.NODE_ENV === 'production') {
+  const distPath = join(__dirname, '..', 'dist');
+
+  // Serve static assets with long-term cache headers
+  app.use(express.static(distPath, {
+    maxAge: '1y',
+    etag: true,
+    immutable: true,
+    // Don't cache index.html — always fresh so SW/meta updates propagate
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    },
+  }));
+
+  // Explicit SEO files with correct content types & no-cache
+  app.get('/robots.txt', (_, res) => {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=86400');  // 24 hrs
+    res.sendFile(join(distPath, 'robots.txt'));
+  });
+
+  app.get('/sitemap.xml', (_, res) => {
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=86400');  // 24 hrs
+    res.sendFile(join(distPath, 'sitemap.xml'));
+  });
+
+  // SPA fallback — all non-API routes → index.html
+  app.get('*', (req, res) => {
+    // Never fall through to index.html for /api routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ success: false, message: 'API route not found' });
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(join(distPath, 'index.html'));
+  });
+}
+
+// ── 404 (dev only — production 404s are handled above) ──
 app.use((req, res) =>
   res.status(404).json({ success: false, message: `Route ${req.method} ${req.path} not found` })
 );
