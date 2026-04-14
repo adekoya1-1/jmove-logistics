@@ -45,6 +45,11 @@ export default function NewOrder() {
   const [orderId,  setOrderId] = useState(null);
   const [error,    setError]   = useState('');
   const submitting = useRef(false);  // prevents concurrent double-submissions
+  // Generated once per checkout session; reused on retries so the backend
+  // can detect duplicates and return the existing order instead of throwing.
+  const idempotencyKey = useRef(
+    `idem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  );
 
   const [form, setForm] = useState({
     // Sender
@@ -134,6 +139,7 @@ export default function NewOrder() {
         declaredValue: +form.declaredValue || 0,
         codAmount: +form.codAmount || 0,
         truckTypeId: form.truckTypeId || undefined,
+        idempotencyKey: idempotencyKey.current,
       });
       setOrderId(r.data.order._id);
       if (form.paymentMethod === 'online') {
@@ -146,13 +152,7 @@ export default function NewOrder() {
       const status  = e?.response?.status || e?.status;
       const message = e?.response?.data?.message || e?.message || 'Failed to book shipment';
 
-      // 409 usually means a waybill collision that exhausted retries, or a rare DB race.
-      // Tell the user exactly what to do instead of a confusing generic message.
-      if (status === 409) {
-        setError('A duplicate booking was detected. Please tap the button again — a new booking reference will be generated automatically.');
-      } else {
-        setError(message);
-      }
+      setError(message);
     } finally {
       setLoading(false);
       submitting.current = false;
@@ -534,7 +534,11 @@ export default function NewOrder() {
               <button className="btn-primary step-cta" onClick={() => navigate('/dashboard/orders')}>
                 View My Shipments
               </button>
-              <button className="btn-secondary" style={{width:'100%',justifyContent:'center'}} onClick={() => { setStep(1); setPricing(null); setOrderId(null); }}>
+              <button className="btn-secondary" style={{width:'100%',justifyContent:'center'}} onClick={() => {
+                // Generate a fresh key so a new booking is never treated as a retry
+                idempotencyKey.current = `idem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+                setStep(1); setPricing(null); setOrderId(null);
+              }}>
                 Book Another Shipment
               </button>
             </div>

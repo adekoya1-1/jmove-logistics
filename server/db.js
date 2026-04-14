@@ -148,7 +148,15 @@ const orderSchema = new mongoose.Schema({
 
   // Route batching — internal only, never exposed to customers
   routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryRoute', default: null },
+
+  // Idempotency key — generated per checkout session on the frontend.
+  // Sparse unique index: if the same key is submitted twice, the second
+  // request returns the first order instead of creating a duplicate.
+  idempotencyKey: { type: String, default: null },
 }, { timestamps: true });
+
+// Sparse unique index so old orders without the field don't conflict
+orderSchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });
 
 // Payment schema
 const paymentSchema = new mongoose.Schema({

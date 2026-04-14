@@ -147,7 +147,14 @@ export const orderSchemas = {
     deliveryLng:      z.coerce.number().min(-180).max(180).optional(),
 
     staffNotes:       z.string().max(500).trim().optional(),
-    truckTypeId:  objectId.optional(),
+    truckTypeId:      objectId.optional(),
+
+    // Idempotency key: generated once per checkout session on the frontend.
+    // Max 128 chars, alphanumeric + hyphens only to prevent injection.
+    idempotencyKey: z.string()
+      .max(128)
+      .regex(/^[A-Za-z0-9\-_]+$/, 'Invalid idempotency key format')
+      .optional(),
   }),
 
   calcPrice: z.object({

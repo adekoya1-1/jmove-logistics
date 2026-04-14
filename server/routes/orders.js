@@ -124,7 +124,35 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       serviceType, deliveryMode, paymentMethod, codAmount,
       pickupLat, pickupLng, deliveryLat, deliveryLng,
       staffNotes, truckTypeId,
+      idempotencyKey,
     } = req.body;
+
+    // ── Idempotency check ─────────────────────────────────────────────────
+    // If this session key already exists for this customer, return the
+    // existing order — safe for retries, double-clicks, and network replays.
+    if (idempotencyKey) {
+      const existing = await Order.findOne({
+        idempotencyKey,
+        customerId: req.user.role === 'customer' ? req.user._id : null,
+      }).lean();
+
+      if (existing) {
+        // Ensure the payment record still exists (safe upsert in case it was lost)
+        if (existing.paymentMethod === 'online') {
+          await Payment.findOneAndUpdate(
+            { orderId: existing._id },
+            { $setOnInsert: { orderId: existing._id, customerId: req.user._id, amount: existing.totalAmount } },
+            { upsert: true, new: true }
+          );
+        }
+        return res.status(200).json({
+          success:    true,
+          message:    'Shipment booked',
+          data:       { order: existing, pricing: null },
+          idempotent: true,   // signals to client this was a safe replay
+        });
+      }
+    }
 
     const pricing  = await calcDynamicPrice({ originCity, destinationCity, weight, serviceType, isFragile, declaredValue, truckTypeId, deliveryMode });
     const isAdmin  = req.user.role === 'admin';
@@ -172,6 +200,9 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       staffNotes: isAdmin ? staffNotes : undefined,  // only admin can set staffNotes
 
       statusHistory: [{ toStatus: 'booked', changedBy: req.user._id }],
+
+      // Stored for idempotency — backend returns existing order on retry
+      idempotencyKey: idempotencyKey || null,
     });
 
     if (paymentMethod === 'online' || !paymentMethod) {
