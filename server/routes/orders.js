@@ -231,11 +231,31 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
     });
 
     res.status(201).json({ success: true, message: 'Shipment booked', data: { order, pricing } });
-  } catch (e) { 
+  } catch (e) {
     if (e.message === 'Service unavailable in selected state') {
       return res.status(400).json({ error: e.message });
     }
-    next(e); 
+
+    // Race condition: two requests with the same idempotencyKey slipped past the
+    // pre-check simultaneously. The second write lost; look up and return the winner.
+    if (e.code === 11000) {
+      const dupeField = Object.keys(e.keyPattern || e.keyValue || {})[0] || e._dupeField || '';
+      if (dupeField === 'idempotencyKey' && idempotencyKey) {
+        try {
+          const existing = await Order.findOne({ idempotencyKey }).lean();
+          if (existing) {
+            return res.status(200).json({
+              success:    true,
+              message:    'Shipment booked',
+              data:       { order: existing, pricing: null },
+              idempotent: true,
+            });
+          }
+        } catch (_) { /* fall through to next(e) */ }
+      }
+    }
+
+    next(e);
   }
 });
 
