@@ -210,8 +210,10 @@ export default function AdminPricing() {
     { id: 'vehicles',    label: `Vehicle Types (${sortedTrucks.length})` },
   ];
 
-  // ── Empty state — nothing seeded yet ─────────────────────────────────────
-  const noData = !loading && !cfg && sortedTrucks.length === 0;
+  // ── Empty state — PricingConfig not seeded yet ───────────────────────────
+  // Show seed button whenever the pricing engine config is missing,
+  // even if truck types already exist from an old seed run.
+  const noData = !loading && !cfg;
 
   return (
     <div className="admin-pricing">
@@ -259,10 +261,11 @@ export default function AdminPricing() {
         <div className="card ap-matrix-card">
           <div className="ap-empty-setup">
             <div className="ap-setup-icon">⚙️</div>
-            <h3 className="ap-setup-title">No pricing engine configured</h3>
-            <p className="ap-setup-sub">
-              Seed the 36 Nigerian states, 4 default vehicle types, and a complete hybrid pricing
-              config with distance bands, weight tiers, and zone multipliers.
+            <h3 className="ap-setup-title">Pricing engine not configured</h3>
+            <p className="ap-eng-sub" style={{ maxWidth: 480 }}>
+              {sortedTrucks.length > 0
+                ? `Vehicle types exist but the hybrid pricing config is missing. Click below to seed the engine config (distance bands, weight tiers, zone multipliers) — existing vehicle types will be replaced.`
+                : `Seed the 36 Nigerian states, 4 default vehicle types, and a complete hybrid pricing config with distance bands, weight tiers, and zone multipliers.`}
             </p>
             <button className="btn-primary ap-setup-btn" onClick={handleSeed} disabled={seeding}>
               {seeding ? <><span className="spinner spinner-sm" /> Setting up…</> : '⚡ Initialize Pricing Engine'}
