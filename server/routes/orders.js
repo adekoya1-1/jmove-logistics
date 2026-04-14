@@ -33,21 +33,40 @@ const genWaybill = (originCity) => {
   return `${prefix}${city}${date}${rand}`;
 };
 
-// Retry order creation up to maxAttempts times on waybill collision
+// Retry order creation up to maxAttempts times on waybill collision.
+// Broadened detection covers MongoDB Atlas which sometimes omits keyPattern
+// and only populates keyValue, or encodes the field name only in the message.
 const createOrderWithRetry = async (data, maxAttempts = 5) => {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await Order.create(data);
     } catch (err) {
-      const isWaybillCollision =
-        err.code === 11000 &&
-        (err.keyPattern?.waybillNumber || err.message?.includes('waybillNumber'));
-      if (isWaybillCollision && attempt < maxAttempts) {
-        // Regenerate waybill and retry
-        data.waybillNumber = genWaybill(data.originCity);
-        continue;
+      if (err.code === 11000) {
+        // Log the full duplicate-key context so we can diagnose unknown fields
+        const dupeField = Object.keys(err.keyPattern || err.keyValue || {})[0] || '(unknown)';
+        console.warn(`[Order] duplicate key on field "${dupeField}" attempt ${attempt}/${maxAttempts}`, {
+          keyPattern: err.keyPattern,
+          keyValue:   err.keyValue,
+          message:    err.message,
+        });
+
+        const isWaybillCollision =
+          err.keyPattern?.waybillNumber ||
+          err.keyValue?.waybillNumber   ||
+          err.message?.toLowerCase().includes('waybillnumber') ||
+          err.message?.toLowerCase().includes('waybill');
+
+        if (isWaybillCollision && attempt < maxAttempts) {
+          data.waybillNumber = genWaybill(data.originCity);
+          continue;
+        }
+
+        // Any other duplicate-key: attach a human-readable field name to the error
+        // so the global handler can produce a useful message.
+        err._dupeField = dupeField;
+        throw err;
       }
-      throw err;   // re-throw anything else (or last attempt)
+      throw err;
     }
   }
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ordersAPI, paymentsAPI, pricingAPI, authAPI } from '../../api/client.js';
 import { useAuth } from '../../App.jsx';
@@ -44,6 +44,7 @@ export default function NewOrder() {
   const [pricingConfig, setPricingConfig] = useState(null);
   const [orderId,  setOrderId] = useState(null);
   const [error,    setError]   = useState('');
+  const submitting = useRef(false);  // prevents concurrent double-submissions
 
   const [form, setForm] = useState({
     // Sender
@@ -121,6 +122,11 @@ export default function NewOrder() {
   };
 
   const createOrder = async () => {
+    // Ref-based guard: prevents concurrent double-submissions caused by rapid clicks
+    // before the disabled={loading} re-render has a chance to fire.
+    if (submitting.current) return;
+    submitting.current = true;
+
     setError(''); setLoading(true);
     try {
       const r = await ordersAPI.create({
@@ -136,8 +142,21 @@ export default function NewOrder() {
       } else {
         setStep(4);
       }
-    } catch (e) { setError(e?.response?.data?.error || e?.response?.data?.message || 'Failed to book shipment'); }
-    finally { setLoading(false); }
+    } catch (e) {
+      const status  = e?.response?.status || e?.status;
+      const message = e?.response?.data?.message || e?.message || 'Failed to book shipment';
+
+      // 409 usually means a waybill collision that exhausted retries, or a rare DB race.
+      // Tell the user exactly what to do instead of a confusing generic message.
+      if (status === 409) {
+        setError('A duplicate booking was detected. Please tap the button again — a new booking reference will be generated automatically.');
+      } else {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+      submitting.current = false;
+    }
   };
 
   const isOriginActive = form.originCity ? (cities.find(c => c.name === form.originCity)?.isActive !== false) : true;

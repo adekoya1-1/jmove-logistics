@@ -278,15 +278,17 @@ app.use((err, req, res, next) => {
 
   // Mongoose: duplicate key
   if (err.code === 11000) {
-    status  = 409;
-    const field = Object.keys(err.keyPattern || {})[0];
-    // Map internal field names to user-friendly messages
+    status = 409;
+    // keyPattern may be absent on some MongoDB Atlas versions — fall back to keyValue or the hint attached by createOrderWithRetry
+    const field = Object.keys(err.keyPattern || err.keyValue || {})[0] || err._dupeField || '';
     const fieldMessages = {
       waybillNumber: 'A shipment with this waybill already exists. Please try again.',
       email:         'An account with this email already exists.',
       orderId:       'A payment record for this order already exists.',
     };
-    message = fieldMessages[field] || 'A record with this information already exists';
+    message = fieldMessages[field] || `Duplicate record (field: ${field || 'unknown'}). Please try again.`;
+    // Log for server-side debugging without leaking to client
+    console.warn(`[409 DupeKey] field="${field}" keyPattern=${JSON.stringify(err.keyPattern)} keyValue=${JSON.stringify(err.keyValue)}`);
   }
   // Mongoose: validation
   if (err.name === 'ValidationError') {
