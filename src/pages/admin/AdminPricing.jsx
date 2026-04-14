@@ -2,12 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { pricingAPI } from '../../api/client.js';
 import './AdminPricing.css';
 
+const ZONES = ['North West', 'North East', 'North Central', 'South West', 'South East', 'South South'];
 const fmt = n => new Intl.NumberFormat('en-NG').format(Number(n || 0));
 
-const PALETTE = ['#3498DB','#8E44AD','#27AE60','#F39C12','#E74C3C','#2980B9','#E91E63','#16A085'];
-const dirColor = idx => PALETTE[idx % PALETTE.length];
-
-// ── Modal shell ───────────────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────────────────
 function Modal({ title, onClose, children }) {
   useEffect(() => {
     const h = e => { if (e.key === 'Escape') onClose(); };
@@ -31,7 +29,7 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-// ── Vehicle Type Form ─────────────────────────────────────────────────────
+// ── Truck Type Form ───────────────────────────────────────────────────────────
 function TruckTypeForm({ initial, onSave, onCancel, saving }) {
   const ICONS = ['🚐', '🚛', '🚚', '🏗️', '🚜', '🛻'];
   const [form, setForm] = useState({
@@ -44,11 +42,7 @@ function TruckTypeForm({ initial, onSave, onCancel, saving }) {
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const submit = e => {
     e.preventDefault();
-    onSave({
-      name: form.name.trim(), description: form.description.trim(),
-      capacityTons: Number(form.capacityTons), icon: form.icon,
-      sortOrder: Number(form.sortOrder),
-    });
+    onSave({ name: form.name.trim(), description: form.description.trim(), capacityTons: Number(form.capacityTons), icon: form.icon, sortOrder: Number(form.sortOrder) });
   };
   return (
     <form className="ap-form" onSubmit={submit}>
@@ -70,9 +64,7 @@ function TruckTypeForm({ initial, onSave, onCancel, saving }) {
         <label className="ap-label">Icon</label>
         <div className="ap-icon-picker">
           {ICONS.map(ic => (
-            <button key={ic} type="button"
-              className={`ap-icon-btn${form.icon === ic ? ' selected' : ''}`}
-              onClick={() => setForm(f => ({ ...f, icon: ic }))}>
+            <button key={ic} type="button" className={`ap-icon-btn${form.icon === ic ? ' selected' : ''}`} onClick={() => setForm(f => ({ ...f, icon: ic }))}>
               {ic}
             </button>
           ))}
@@ -88,95 +80,48 @@ function TruckTypeForm({ initial, onSave, onCancel, saving }) {
   );
 }
 
-// ── Inline-editable matrix cell ───────────────────────────────────────────
-// Each cell manages its own edit state so only one cell at a time goes live.
-function MatrixCell({ rule, fromDir, toDir, truckType, onSaved }) {
+// ── Inline number cell (for multiplier / band / tier grids) ──────────────────
+function InlineCell({ value, prefix = '', suffix = '', onSave, className = '' }) {
   const [editing, setEditing] = useState(false);
-  const [value,   setValue]   = useState('');
-  const [saving,  setSaving]  = useState(false);
-  const inputRef = useRef(null);
+  const [val, setVal]         = useState('');
+  const ref = useRef(null);
 
-  const openEdit = () => {
-    setValue(rule?.price?.toString() ?? '');
-    setEditing(true);
-    requestAnimationFrame(() => { inputRef.current?.select(); });
+  const open = () => { setVal(String(value ?? '')); setEditing(true); requestAnimationFrame(() => ref.current?.select()); };
+  const commit = () => {
+    setEditing(false);
+    const n = parseFloat(val);
+    if (!isNaN(n) && n !== value) onSave(n);
   };
-
-  const commitSave = async () => {
-    const num = Number(value);
-    if (value === '' || isNaN(num) || num < 0) { setEditing(false); return; }
-    if (rule && num === rule.price)             { setEditing(false); return; }
-    setSaving(true);
-    try {
-      await pricingAPI.upsertRule({
-        fromDirection: fromDir,
-        toDirection:   toDir,
-        truckTypeId:   truckType._id,
-        price:         num,
-      });
-      await onSaved();
-    } catch (err) {
-      console.error('[MatrixCell] save failed', err);
-    } finally {
-      setSaving(false);
-      setEditing(false);
-    }
-  };
-
-  const onKeyDown = e => {
-    if (e.key === 'Enter')  { e.preventDefault(); commitSave(); }
+  const onKey = e => {
+    if (e.key === 'Enter')  { e.preventDefault(); commit(); }
     if (e.key === 'Escape') { setEditing(false); }
   };
 
-  if (saving) {
-    return (
-      <td className="ap-matrix-cell ap-cell-saving">
-        <span className="spinner spinner-sm" />
-      </td>
-    );
-  }
-
-  if (editing) {
-    return (
-      <td className="ap-matrix-cell ap-cell-editing">
-        <div className="ap-inline-wrap">
-          <span className="ap-inline-naira">₦</span>
-          <input
-            ref={inputRef}
-            className="ap-inline-input"
-            type="number"
-            min="0"
-            value={value}
-            onChange={e => setValue(e.target.value)}
-            onBlur={commitSave}
-            onKeyDown={onKeyDown}
-            autoFocus
-          />
-        </div>
-      </td>
-    );
-  }
+  if (editing) return (
+    <td className="ap-matrix-cell ap-cell-editing">
+      <div className="ap-inline-wrap">
+        {prefix && <span className="ap-inline-naira">{prefix}</span>}
+        <input ref={ref} className="ap-inline-input" type="number" step="any" value={val}
+          onChange={e => setVal(e.target.value)} onBlur={commit} onKeyDown={onKey} autoFocus />
+        {suffix && <span className="ap-inline-suffix">{suffix}</span>}
+      </div>
+    </td>
+  );
 
   return (
-    <td
-      className={`ap-matrix-cell ${rule ? 'ap-cell--set' : 'ap-cell--empty'}`}
-      onClick={openEdit}
-      title={rule ? `₦${fmt(rule.price)} — click to edit` : 'Click to set price'}
-    >
-      {rule
-        ? <span className="ap-cell-price">₦{fmt(rule.price)}</span>
-        : <span className="ap-cell-empty">—</span>}
+    <td className={`ap-matrix-cell ap-cell--set ${className}`} onClick={open} title="Click to edit">
+      <span className="ap-eng-val">{prefix}{value ?? '—'}{suffix}</span>
     </td>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 //  MAIN PAGE
-// ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 export default function AdminPricing() {
-  const [tab,      setTab]     = useState('matrix');
-  const [data,     setData]    = useState({ directions: [], truckTypes: [], rules: [], states: [] });
-  const [truckIdx, setTruckIdx] = useState(0);
+  const [tab,      setTab]     = useState('fees');
+  const [data,     setData]    = useState({ truckTypes: [], pricingConfig: null });
+  const [cfg,      setCfg]     = useState(null);   // live editable copy of pricingConfig
   const [loading,  setLoading] = useState(true);
   const [saving,   setSaving]  = useState(false);
   const [seeding,  setSeeding] = useState(false);
@@ -184,11 +129,13 @@ export default function AdminPricing() {
   const [success,  setSuccess] = useState('');
   const [modal,    setModal]   = useState(null);
 
+  // ── Load ─────────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true); setError('');
     try {
       const r = await pricingAPI.adminFull();
       setData(r.data);
+      if (r.data.pricingConfig) setCfg(structuredClone(r.data.pricingConfig));
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to load pricing data');
     } finally { setLoading(false); }
@@ -196,32 +143,36 @@ export default function AdminPricing() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const flash = msg => { setSuccess(msg); setTimeout(() => setSuccess(''), 3500); };
+  const flash = msg => { setSuccess(msg); setTimeout(() => setSuccess(''), 4000); };
 
-  // Sorted lists
-  const sortedDirs   = data.directions || [];
-  const sortedTrucks = [...(data.truckTypes || [])].sort(
-    (a, b) => (a.sortOrder - b.sortOrder) || (a.capacityTons - b.capacityTons)
-  );
-  const activeTruck = sortedTrucks[truckIdx] || sortedTrucks[0];
+  // ── Save engine (partial merge) ───────────────────────────────────────────
+  const saveEngine = async (patch) => {
+    setSaving(true); setError('');
+    try {
+      const next = { ...cfg, ...patch };
+      await pricingAPI.updateEngine(next);
+      setCfg(next);
+      setData(d => ({ ...d, pricingConfig: next }));
+      flash('✓ Pricing config saved');
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to save config');
+    } finally { setSaving(false); }
+  };
 
-  // Helper: find rule for a cell
-  const getRule = (fromDir, toDir, truckId) =>
-    data.rules.find(r =>
-      r.fromDirection === fromDir &&
-      r.toDirection   === toDir   &&
-      (r.truckTypeId?._id || r.truckTypeId)?.toString() === truckId.toString()
-    );
+  // ── Seed defaults ─────────────────────────────────────────────────────────
+  const handleSeed = async () => {
+    if (!window.confirm('Initialize Nigerian states, vehicle types, and default pricing config? Existing vehicle types will be replaced.')) return;
+    setSeeding(true); setError('');
+    try {
+      await pricingAPI.seedDefaults();
+      flash('✅ Defaults initialized!');
+      await loadData();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to initialize');
+    } finally { setSeeding(false); }
+  };
 
-  // Coverage stats for the active truck type
-  const totalCells = sortedDirs.length * sortedDirs.length;
-  const filledCells = activeTruck
-    ? sortedDirs.reduce((n, from) =>
-        n + sortedDirs.filter(to => getRule(from, to, activeTruck._id)).length, 0)
-    : 0;
-  const allFilled = totalCells > 0 && filledCells === totalCells;
-
-  // ── Vehicle Types CRUD ────────────────────────────────────────────────
+  // ── Vehicle type CRUD ─────────────────────────────────────────────────────
   const saveTruckType = async fd => {
     setSaving(true);
     try {
@@ -233,66 +184,64 @@ export default function AdminPricing() {
         flash('Vehicle type created');
       }
       setModal(null); await loadData();
-    } catch (e) { setError(e?.response?.data?.message || 'Failed to save vehicle type'); }
+    } catch (e) { setError(e?.response?.data?.message || 'Failed to save'); }
     finally { setSaving(false); }
   };
 
   const deleteTruckType = async id => {
-    if (!window.confirm('Deactivate this vehicle type? Linked pricing rules will be preserved.')) return;
+    if (!window.confirm('Deactivate this vehicle type?')) return;
     setSaving(true);
     try {
       await pricingAPI.deleteTruckType(id);
-      flash('Vehicle type removed'); await loadData();
-    } catch (e) { setError(e?.response?.data?.message || 'Failed to remove vehicle type'); }
+      flash('Vehicle type deactivated'); await loadData();
+    } catch (e) { setError(e?.response?.data?.message || 'Failed to deactivate'); }
     finally { setSaving(false); }
   };
 
-  // ── Seed defaults ─────────────────────────────────────────────────────
-  const handleSeed = async () => {
-    if (!window.confirm(
-      'Set up the 6 Nigerian compass directions, vehicle types, and a full starter pricing grid?'
-    )) return;
-    setSeeding(true); setError('');
-    try {
-      await pricingAPI.seedDefaults();
-      flash('✅ Compass directions, vehicle types, and pricing grid initialised!');
-      await loadData();
-    } catch (e) { setError(e?.response?.data?.message || 'Failed to initialise pricing'); }
-    finally { setSeeding(false); }
-  };
+  const sortedTrucks = [...(data.truckTypes || [])].sort(
+    (a, b) => (a.sortOrder - b.sortOrder) || (a.capacityTons - b.capacityTons)
+  );
 
-  // ── Render ────────────────────────────────────────────────────────────
+  const TABS = [
+    { id: 'fees',        label: 'Fee Structure'     },
+    { id: 'distance',    label: 'Distance Bands'    },
+    { id: 'weight',      label: 'Weight Tiers'      },
+    { id: 'multipliers', label: 'Route Multipliers' },
+    { id: 'vehicles',    label: `Vehicle Types (${sortedTrucks.length})` },
+  ];
+
+  // ── Empty state — nothing seeded yet ─────────────────────────────────────
+  const noData = !loading && !cfg && sortedTrucks.length === 0;
+
   return (
     <div className="admin-pricing">
 
-      {/* ── Page header ──────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Pricing Management</h1>
-          <p className="page-subtitle">
-            Fixed direction-based pricing — Origin → Destination × Vehicle type
-          </p>
+          <p className="page-subtitle">Hybrid engine: distance × route × weight × extras — all configurable</p>
         </div>
+        {cfg && (
+          <button className="btn-secondary ap-reseed-btn" onClick={handleSeed} disabled={seeding}>
+            {seeding ? <span className="spinner spinner-sm" /> : '↺ Re-seed Defaults'}
+          </button>
+        )}
       </div>
 
-      {/* ── Alerts ───────────────────────────────────────────────────────── */}
+      {/* Alerts */}
       {error   && <div className="order-error" style={{ marginBottom: 16 }}>⚠ {error}</div>}
-      {success && <div className="ap-success">✓ {success}</div>}
+      {success && <div className="ap-success">{success}</div>}
 
-      {/* ── Stats bar (only when data exists) ────────────────────────────── */}
-      {sortedDirs.length > 0 && (
+      {/* Stats */}
+      {cfg && (
         <div className="ap-stats-row">
           {[
-            { label: 'Directions',    val: sortedDirs.length,   icon: '🧭' },
-            { label: 'Vehicle Types', val: sortedTrucks.length, icon: '🚛' },
-            { label: 'Price Rules',   val: data.rules.length,   icon: '💰' },
-            {
-              label: 'Grid Coverage',
-              val: totalCells > 0
-                ? `${filledCells}/${totalCells} (${Math.round(filledCells / totalCells * 100)}%)`
-                : '—',
-              icon: allFilled ? '✅' : '⚠️',
-            },
+            { label: 'Vehicle Types',   val: sortedTrucks.length,          icon: '🚛' },
+            { label: 'Distance Bands',  val: cfg.distanceBands?.length ?? 0,  icon: '📏' },
+            { label: 'Weight Tiers',    val: cfg.weightTiers?.length ?? 0,     icon: '⚖️' },
+            { label: 'Route Factors',   val: cfg.routeMultipliers?.length ?? 0,icon: '🗺️' },
+            { label: 'Minimum Charge',  val: `₦${fmt(cfg.minimumCharge)}`,     icon: '💰' },
           ].map(s => (
             <div key={s.label} className="ap-stat-card">
               <span className="ap-stat-icon">{s.icon}</span>
@@ -305,258 +254,563 @@ export default function AdminPricing() {
         </div>
       )}
 
-      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-      <div className="ap-tabs">
-        {[
-          { id: 'matrix',   label: 'Pricing Matrix'                          },
-          { id: 'vehicles', label: `Vehicle Types (${sortedTrucks.length})`  },
-        ].map(t => (
-          <button
-            key={t.id}
-            className={`ap-tab${tab === t.id ? ' ap-tab--active' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ══════════════════════════════════════════════════════
-          TAB — PRICING MATRIX
-      ══════════════════════════════════════════════════════ */}
-      {tab === 'matrix' && (
-        <div className="card ap-matrix-card fade-in">
-
-          {/* Loading skeletons */}
-          {loading && (
-            <div className="ap-loading-rows">
-              {[1,2,3,4,5,6].map(i => (
-                <div key={i} className="shimmer" style={{ height: 44, borderRadius: 8, marginBottom: 8 }} />
-              ))}
-            </div>
-          )}
-
-          {/* Empty state — no directions seeded yet */}
-          {!loading && sortedDirs.length === 0 && (
-            <div className="ap-empty-setup">
-              <div className="ap-setup-icon">🧭</div>
-              <h3 className="ap-setup-title">No pricing configured yet</h3>
-              <p className="ap-setup-sub">
-                Initialise the 6 Nigerian compass directions, vehicle types, and a complete
-                pricing grid. You can then click any cell to edit the price directly.
-              </p>
-              <button
-                className="btn-primary ap-setup-btn"
-                onClick={handleSeed}
-                disabled={seeding}
-              >
-                {seeding
-                  ? <><span className="spinner spinner-sm" /> Setting up…</>
-                  : '⚡ Initialise Compass Directions & Pricing Grid'}
-              </button>
-            </div>
-          )}
-
-          {/* Matrix */}
-          {!loading && sortedDirs.length > 0 && (
-            <>
-              {/* Top bar: hint + vehicle type pills */}
-              <div className="ap-matrix-topbar">
-                <div className="ap-matrix-hints">
-                  <p className="ap-matrix-hint">
-                    Click any cell to edit the price inline.&nbsp;
-                    <kbd>Enter</kbd> to save · <kbd>Esc</kbd> to cancel.
-                  </p>
-                  {!allFilled && (
-                    <p className="ap-coverage-warn">
-                      ⚠&nbsp;
-                      {totalCells - filledCells} cell{totalCells - filledCells !== 1 ? 's' : ''} not
-                      set for this vehicle type — missing combinations will result in an error during quote calculations.
-                    </p>
-                  )}
-                </div>
-                <div className="ap-truck-tabs">
-                  {sortedTrucks.map((tt, i) => (
-                    <button
-                      key={tt._id}
-                      className={`ap-truck-tab${truckIdx === i ? ' ap-truck-tab--active' : ''}`}
-                      onClick={() => setTruckIdx(i)}
-                    >
-                      <span>{tt.icon}</span>
-                      <span>{tt.name}</span>
-                      <span className="ap-truck-cap">{tt.capacityTons}t</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Grid */}
-              <div className="ap-matrix-scroll">
-                <table className="ap-matrix-table">
-                  <thead>
-                    <tr>
-                      <th className="ap-matrix-corner">
-                        <span className="ap-corner-from">Origin</span>
-                        <span className="ap-corner-sep"> ↘ </span>
-                        <span className="ap-corner-to">Destination</span>
-                      </th>
-                      {sortedDirs.map((d, i) => (
-                        <th key={d} className="ap-matrix-th">
-                          <span className="ap-mth-dot" style={{ background: dirColor(i) }} />
-                          {d}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedDirs.map((fromDir, fi) => (
-                      <tr key={fromDir}>
-                        <td className="ap-matrix-zone-cell">
-                          <span className="ap-mth-dot" style={{ background: dirColor(fi) }} />
-                          {fromDir}
-                        </td>
-                        {sortedDirs.map(toDir => (
-                          <MatrixCell
-                            key={`${fromDir}-${toDir}`}
-                            rule={activeTruck ? getRule(fromDir, toDir, activeTruck._id) : null}
-                            fromDir={fromDir}
-                            toDir={toDir}
-                            truckType={activeTruck}
-                            onSaved={loadData}
-                          />
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Legend */}
-              <div className="ap-legend">
-                <span className="ap-legend-item">
-                  <span className="ap-legend-swatch ap-legend-set" />Price set
-                </span>
-                <span className="ap-legend-item">
-                  <span className="ap-legend-swatch ap-legend-empty" />Not configured
-                </span>
-                {sortedTrucks.length > 1 && (
-                  <span className="ap-legend-truck">
-                    Showing: {activeTruck?.icon} {activeTruck?.name}
-                  </span>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════
-          TAB — VEHICLE TYPES
-      ══════════════════════════════════════════════════════ */}
-      {tab === 'vehicles' && (
-        <div className="card fade-in">
-          <div className="ap-list-header">
-            <p className="ap-list-title">Vehicle / Truck Types</p>
-            <button
-              className="btn-primary ap-add-btn"
-              onClick={() => setModal({ type: 'truck', mode: 'create', data: null })}
-            >
-              + Add Vehicle Type
+      {/* Empty / Seed Setup */}
+      {noData && (
+        <div className="card ap-matrix-card">
+          <div className="ap-empty-setup">
+            <div className="ap-setup-icon">⚙️</div>
+            <h3 className="ap-setup-title">No pricing engine configured</h3>
+            <p className="ap-setup-sub">
+              Seed the 36 Nigerian states, 4 default vehicle types, and a complete hybrid pricing
+              config with distance bands, weight tiers, and zone multipliers.
+            </p>
+            <button className="btn-primary ap-setup-btn" onClick={handleSeed} disabled={seeding}>
+              {seeding ? <><span className="spinner spinner-sm" /> Setting up…</> : '⚡ Initialize Pricing Engine'}
             </button>
           </div>
-
-          {loading ? (
-            <div style={{ padding: 20 }}>
-              {[1,2,3].map(i => (
-                <div key={i} className="shimmer" style={{ height: 60, borderRadius: 8, marginBottom: 10 }} />
-              ))}
-            </div>
-          ) : sortedTrucks.length === 0 ? (
-            <div className="empty-state" style={{ padding: '32px 0' }}>
-              <div className="empty-icon">🚛</div>
-              <h3>No vehicle types defined</h3>
-              <p>Add vehicle types — customers select one when booking a shipment</p>
-            </div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Vehicle</th>
-                    <th>Capacity</th>
-                    <th>Price Rules</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedTrucks.map(tt => {
-                    const ruleCount = data.rules.filter(r =>
-                      (r.truckTypeId?._id || r.truckTypeId)?.toString() === tt._id.toString()
-                    ).length;
-                    return (
-                      <tr key={tt._id}>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{ fontSize: 22 }}>{tt.icon}</span>
-                            <div>
-                              <div className="ap-zone-name">{tt.name}</div>
-                              {tt.description && <div className="td-sub">{tt.description}</div>}
-                            </div>
-                          </div>
-                        </td>
-                        <td><span className="ap-capacity-badge">{tt.capacityTons}t</span></td>
-                        <td>
-                          <span className={`badge ${ruleCount > 0 ? 'badge-paid' : 'badge-pending'}`}>
-                            {ruleCount} rule{ruleCount !== 1 ? 's' : ''}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`badge ${tt.isActive !== false ? 'badge-delivered' : 'badge-cancelled'}`}>
-                            {tt.isActive !== false ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="td-actions">
-                            <button
-                              className="assign-btn"
-                              onClick={() => setModal({ type: 'truck', mode: 'edit', data: tt })}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="btn-ghost"
-                              style={{ padding: '5px 8px', fontSize: 13, color: 'var(--red)' }}
-                              onClick={() => deleteTruckType(tt._id)}
-                            >
-                              {tt.isActive !== false ? 'Deactivate' : 'Delete'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
 
-      {/* ── Modal ──────────────────────────────────────────────────────────── */}
+      {/* Loading shimmer */}
+      {loading && (
+        <div className="card ap-matrix-card">
+          <div className="ap-loading-rows">
+            {[1,2,3,4,5].map(i => <div key={i} className="shimmer" style={{ height: 44, borderRadius: 8, marginBottom: 8 }} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Only show tabs when config exists */}
+      {!loading && cfg && (
+        <>
+          <div className="ap-tabs">
+            {TABS.map(t => (
+              <button key={t.id} className={`ap-tab${tab === t.id ? ' ap-tab--active' : ''}`} onClick={() => setTab(t.id)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ══ TAB: FEE STRUCTURE ══════════════════════════════════════════ */}
+          {tab === 'fees' && (
+            <FeeStructureTab
+              cfg={cfg}
+              truckTypes={sortedTrucks}
+              saving={saving}
+              onSave={saveEngine}
+            />
+          )}
+
+          {/* ══ TAB: DISTANCE BANDS ════════════════════════════════════════ */}
+          {tab === 'distance' && (
+            <DistanceBandsTab cfg={cfg} saving={saving} onSave={saveEngine} />
+          )}
+
+          {/* ══ TAB: WEIGHT TIERS ══════════════════════════════════════════ */}
+          {tab === 'weight' && (
+            <WeightTiersTab cfg={cfg} saving={saving} onSave={saveEngine} />
+          )}
+
+          {/* ══ TAB: ROUTE MULTIPLIERS ═════════════════════════════════════ */}
+          {tab === 'multipliers' && (
+            <RouteMultipliersTab cfg={cfg} saving={saving} onSave={saveEngine} />
+          )}
+
+          {/* ══ TAB: VEHICLE TYPES ═════════════════════════════════════════ */}
+          {tab === 'vehicles' && (
+            <div className="card fade-in">
+              <div className="ap-list-header">
+                <p className="ap-list-title">Vehicle / Truck Types</p>
+                <button className="btn-primary ap-add-btn" onClick={() => setModal({ type: 'truck', mode: 'create', data: null })}>
+                  + Add Vehicle Type
+                </button>
+              </div>
+              {sortedTrucks.length === 0 ? (
+                <div className="empty-state" style={{ padding: '32px 0' }}>
+                  <div className="empty-icon">🚛</div>
+                  <h3>No vehicle types defined</h3>
+                  <p>Add vehicle types — customers select one when booking</p>
+                </div>
+              ) : (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Vehicle</th>
+                        <th>Capacity</th>
+                        <th>Base Fee</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedTrucks.map(tt => {
+                        const baseFee = cfg.baseFees?.find(b => b.truckTypeId?.toString() === tt._id.toString())?.amount;
+                        return (
+                          <tr key={tt._id}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ fontSize: 22 }}>{tt.icon}</span>
+                                <div>
+                                  <div className="ap-zone-name">{tt.name}</div>
+                                  {tt.description && <div className="td-sub">{tt.description}</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td><span className="ap-capacity-badge">{tt.capacityTons}t</span></td>
+                            <td><span style={{ fontWeight: 700 }}>{baseFee ? `₦${fmt(baseFee)}` : '—'}</span></td>
+                            <td>
+                              <span className={`badge ${tt.isActive !== false ? 'badge-delivered' : 'badge-cancelled'}`}>
+                                {tt.isActive !== false ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="td-actions">
+                                <button className="assign-btn" onClick={() => setModal({ type: 'truck', mode: 'edit', data: tt })}>Edit</button>
+                                <button className="btn-ghost" style={{ padding: '5px 8px', fontSize: 13, color: 'var(--red)' }} onClick={() => deleteTruckType(tt._id)}>
+                                  {tt.isActive !== false ? 'Deactivate' : 'Delete'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Modal */}
       {modal?.type === 'truck' && (
-        <Modal
-          title={modal.mode === 'edit' ? `Edit: ${modal.data.name}` : 'New Vehicle Type'}
-          onClose={() => setModal(null)}
-        >
-          <TruckTypeForm
-            initial={modal.data}
-            onSave={saveTruckType}
-            onCancel={() => setModal(null)}
-            saving={saving}
-          />
+        <Modal title={modal.mode === 'edit' ? `Edit: ${modal.data.name}` : 'New Vehicle Type'} onClose={() => setModal(null)}>
+          <TruckTypeForm initial={modal.data} onSave={saveTruckType} onCancel={() => setModal(null)} saving={saving} />
         </Modal>
       )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  FEE STRUCTURE TAB
+// ══════════════════════════════════════════════════════════════════════════════
+function FeeStructureTab({ cfg, truckTypes, saving, onSave }) {
+  // Build baseFees map: truckTypeId → amount
+  const initialBaseMap = () => {
+    const m = {};
+    (cfg.baseFees || []).forEach(b => { m[b.truckTypeId?.toString()] = b.amount; });
+    return m;
+  };
+
+  const [baseMap,      setBaseMap]      = useState(initialBaseMap);
+  const [minCharge,    setMinCharge]    = useState(cfg.minimumCharge ?? 5000);
+  const [doorFee,      setDoorFee]      = useState(cfg.deliveryFees?.doorDelivery ?? 1500);
+  const [depotFee,     setDepotFee]     = useState(cfg.deliveryFees?.depotPickup  ?? 0);
+  const [fragile,      setFragile]      = useState(cfg.optionalFees?.fragilePercent    ?? 10);
+  const [insurance,    setInsurance]    = useState(cfg.optionalFees?.insurancePercent  ?? 1);
+  const [express,      setExpress]      = useState(cfg.optionalFees?.expressFee        ?? 2000);
+  const [sameday,      setSameday]      = useState(cfg.optionalFees?.samedayFee        ?? 3000);
+
+  const handleSave = () => {
+    const baseFees = truckTypes.map(tt => ({
+      truckTypeId: tt._id,
+      amount:      Number(baseMap[tt._id.toString()] || 0),
+    }));
+    onSave({
+      baseFees,
+      minimumCharge: Number(minCharge),
+      deliveryFees:  { doorDelivery: Number(doorFee), depotPickup: Number(depotFee) },
+      optionalFees:  {
+        fragilePercent:   Number(fragile),
+        insurancePercent: Number(insurance),
+        expressFee:       Number(express),
+        samedayFee:       Number(sameday),
+      },
+    });
+  };
+
+  const NInput = ({ label, value, onChange, prefix, suffix, hint }) => (
+    <div className="ap-eng-field">
+      <label className="ap-label">{label}</label>
+      {hint && <span className="ap-field-hint">{hint}</span>}
+      <div className="ap-eng-input-wrap">
+        {prefix && <span className="ap-eng-prefix">{prefix}</span>}
+        <input className="ap-input" type="number" min="0" step="any" value={value} onChange={e => onChange(e.target.value)} />
+        {suffix && <span className="ap-eng-suffix">{suffix}</span>}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="ap-engine-tab fade-in">
+
+      {/* Base fees */}
+      <div className="ap-eng-section">
+        <h3 className="ap-eng-title">Base Fee by Vehicle Type</h3>
+        <p className="ap-eng-sub">Fixed charge applied to every shipment regardless of distance.</p>
+        <div className="ap-base-fees-grid">
+          {truckTypes.map(tt => (
+            <div key={tt._id} className="ap-base-fee-card">
+              <div className="ap-bfc-header">
+                <span className="ap-bfc-icon">{tt.icon}</span>
+                <div>
+                  <p className="ap-bfc-name">{tt.name}</p>
+                  <p className="ap-bfc-cap">{tt.capacityTons}t capacity</p>
+                </div>
+              </div>
+              <div className="ap-eng-input-wrap">
+                <span className="ap-eng-prefix">₦</span>
+                <input
+                  className="ap-input"
+                  type="number"
+                  min="0"
+                  step="500"
+                  value={baseMap[tt._id.toString()] ?? ''}
+                  onChange={e => setBaseMap(m => ({ ...m, [tt._id.toString()]: e.target.value }))}
+                  placeholder="e.g. 5000"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Delivery mode fees */}
+      <div className="ap-eng-section">
+        <h3 className="ap-eng-title">Delivery Mode Fees</h3>
+        <p className="ap-eng-sub">Charged based on whether the receiver gets door delivery or picks up at a depot.</p>
+        <div className="ap-eng-row">
+          <NInput label="🏠 Door Delivery" value={doorFee}  onChange={setDoorFee}  prefix="₦" hint="Added when delivery mode = door" />
+          <NInput label="🏢 Depot Pickup"  value={depotFee} onChange={setDepotFee} prefix="₦" hint="Usually ₦0 — receiver picks up themselves" />
+          <NInput label="💰 Minimum Charge" value={minCharge} onChange={setMinCharge} prefix="₦" hint="No order can be priced below this" />
+        </div>
+      </div>
+
+      {/* Optional extras */}
+      <div className="ap-eng-section">
+        <h3 className="ap-eng-title">Optional Extras</h3>
+        <p className="ap-eng-sub">Applied only when the customer selects the relevant option at checkout.</p>
+        <div className="ap-eng-row">
+          <NInput label="⚠ Fragile Handling"  value={fragile}   onChange={setFragile}   suffix="% of subtotal" />
+          <NInput label="🛡 Insurance"         value={insurance} onChange={setInsurance} suffix="% of declared value" />
+          <NInput label="⚡ Express Fee"        value={express}   onChange={setExpress}   prefix="₦" hint="Flat fee for express delivery" />
+          <NInput label="🕐 Same Day Fee"      value={sameday}   onChange={setSameday}   prefix="₦" hint="Flat fee for same-day delivery" />
+        </div>
+      </div>
+
+      <div className="ap-eng-save-row">
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 160 }}>
+          {saving ? <span className="spinner spinner-sm" /> : 'Save Fee Structure'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DISTANCE BANDS TAB
+// ══════════════════════════════════════════════════════════════════════════════
+function DistanceBandsTab({ cfg, saving, onSave }) {
+  const [bands, setBands] = useState(() =>
+    (cfg.distanceBands || []).map((b, i) => ({ ...b, _key: i }))
+  );
+  const nextKey = useRef(bands.length);
+
+  const update = (key, field, value) =>
+    setBands(bs => bs.map(b => b._key === key ? { ...b, [field]: value === '' ? null : Number(value) } : b));
+
+  const addBand = () => {
+    const last = bands[bands.length - 1];
+    setBands(bs => [...bs, { _key: nextKey.current++, minKm: (last?.maxKm ?? 0) + 1, maxKm: null, ratePerKm: 100, billedMinKm: 0 }]);
+  };
+
+  const removeBand = key => setBands(bs => bs.filter(b => b._key !== key));
+
+  const handleSave = () => {
+    const distanceBands = bands.map(({ _key, ...b }) => b);
+    onSave({ distanceBands });
+  };
+
+  return (
+    <div className="ap-engine-tab fade-in">
+      <div className="ap-eng-section">
+        <div className="ap-eng-section-header">
+          <div>
+            <h3 className="ap-eng-title">Distance Bands</h3>
+            <p className="ap-eng-sub">Distance cost = billedKm × rate/km × route multiplier. Click any cell to edit.</p>
+          </div>
+          <button className="btn-secondary ap-add-row-btn" onClick={addBand}>+ Add Band</button>
+        </div>
+        <div className="ap-matrix-scroll" style={{ marginBottom: 0 }}>
+          <table className="ap-matrix-table ap-eng-table">
+            <thead>
+              <tr>
+                <th>Min KM</th>
+                <th>Max KM</th>
+                <th>Rate per KM (₦)</th>
+                <th>Billed Min KM</th>
+                <th>Example</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {bands.map(b => (
+                <tr key={b._key}>
+                  <td className="ap-eng-td">
+                    <input className="ap-inline-num" type="number" min="0" value={b.minKm ?? ''} onChange={e => update(b._key, 'minKm', e.target.value)} />
+                  </td>
+                  <td className="ap-eng-td">
+                    <input className="ap-inline-num" type="number" min="0" value={b.maxKm ?? ''} placeholder="∞" onChange={e => update(b._key, 'maxKm', e.target.value === '' ? null : e.target.value)} />
+                  </td>
+                  <td className="ap-eng-td">
+                    <div className="ap-inline-prefix-wrap">
+                      <span className="ap-inline-label">₦</span>
+                      <input className="ap-inline-num" type="number" min="0" value={b.ratePerKm ?? ''} onChange={e => update(b._key, 'ratePerKm', e.target.value)} />
+                    </div>
+                  </td>
+                  <td className="ap-eng-td">
+                    <input className="ap-inline-num" type="number" min="0" value={b.billedMinKm ?? 0} onChange={e => update(b._key, 'billedMinKm', e.target.value)} />
+                  </td>
+                  <td className="ap-eng-td ap-eng-example">
+                    {b.ratePerKm > 0 && (b.billedMinKm > 0
+                      ? `${b.billedMinKm}km min → ₦${new Intl.NumberFormat('en-NG').format(b.billedMinKm * b.ratePerKm)}`
+                      : b.maxKm
+                      ? `100km → ₦${new Intl.NumberFormat('en-NG').format(Math.min(100, b.maxKm) * b.ratePerKm)}`
+                      : `—`
+                    )}
+                  </td>
+                  <td style={{ padding: '0 12px', textAlign: 'center' }}>
+                    <button className="ap-del-btn" onClick={() => removeBand(b._key)} title="Remove band">✕</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="ap-eng-table-hint">
+          Set Max KM to empty (∞) for the last band. Billed Min KM ensures short trips pay a minimum distance fee.
+        </div>
+      </div>
+      <div className="ap-eng-save-row">
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 160 }}>
+          {saving ? <span className="spinner spinner-sm" /> : 'Save Distance Bands'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  WEIGHT TIERS TAB
+// ══════════════════════════════════════════════════════════════════════════════
+function WeightTiersTab({ cfg, saving, onSave }) {
+  const [tiers, setTiers] = useState(() =>
+    (cfg.weightTiers || []).map((t, i) => ({ ...t, _key: i }))
+  );
+  const nextKey = useRef(tiers.length);
+
+  const update = (key, field, value) =>
+    setTiers(ts => ts.map(t => t._key === key ? { ...t, [field]: value === '' ? null : Number(value) } : t));
+
+  const addTier = () => {
+    const last = tiers[tiers.length - 1];
+    setTiers(ts => [...ts, { _key: nextKey.current++, minKg: (last?.maxKg ?? 0) + 1, maxKg: null, fee: 0, extraPerKg: 0 }]);
+  };
+
+  const removeTier = key => setTiers(ts => ts.filter(t => t._key !== key));
+
+  const handleSave = () => {
+    const weightTiers = tiers.map(({ _key, ...t }) => t);
+    onSave({ weightTiers });
+  };
+
+  return (
+    <div className="ap-engine-tab fade-in">
+      <div className="ap-eng-section">
+        <div className="ap-eng-section-header">
+          <div>
+            <h3 className="ap-eng-title">Weight Tiers</h3>
+            <p className="ap-eng-sub">Weight fee = tier base fee + (extra per kg × kg above tier minimum).</p>
+          </div>
+          <button className="btn-secondary ap-add-row-btn" onClick={addTier}>+ Add Tier</button>
+        </div>
+        <div className="ap-matrix-scroll" style={{ marginBottom: 0 }}>
+          <table className="ap-matrix-table ap-eng-table">
+            <thead>
+              <tr>
+                <th>Min KG</th>
+                <th>Max KG</th>
+                <th>Base Fee (₦)</th>
+                <th>Extra per KG (₦)</th>
+                <th>Example (30 kg in tier)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {tiers.map(t => {
+                const exampleKg = Math.max(t.minKg + 20, t.minKg);
+                const exampleFee = t.fee + (t.extraPerKg || 0) * (exampleKg - t.minKg);
+                return (
+                  <tr key={t._key}>
+                    <td className="ap-eng-td">
+                      <input className="ap-inline-num" type="number" min="0" value={t.minKg ?? ''} onChange={e => update(t._key, 'minKg', e.target.value)} />
+                    </td>
+                    <td className="ap-eng-td">
+                      <input className="ap-inline-num" type="number" min="0" value={t.maxKg ?? ''} placeholder="∞" onChange={e => update(t._key, 'maxKg', e.target.value === '' ? null : e.target.value)} />
+                    </td>
+                    <td className="ap-eng-td">
+                      <div className="ap-inline-prefix-wrap">
+                        <span className="ap-inline-label">₦</span>
+                        <input className="ap-inline-num" type="number" min="0" value={t.fee ?? ''} onChange={e => update(t._key, 'fee', e.target.value)} />
+                      </div>
+                    </td>
+                    <td className="ap-eng-td">
+                      <div className="ap-inline-prefix-wrap">
+                        <span className="ap-inline-label">₦</span>
+                        <input className="ap-inline-num" type="number" min="0" value={t.extraPerKg ?? ''} onChange={e => update(t._key, 'extraPerKg', e.target.value)} />
+                      </div>
+                    </td>
+                    <td className="ap-eng-td ap-eng-example">
+                      {t.fee > 0 || t.extraPerKg > 0
+                        ? `${exampleKg}kg → ₦${new Intl.NumberFormat('en-NG').format(exampleFee)}`
+                        : '—'}
+                    </td>
+                    <td style={{ padding: '0 12px', textAlign: 'center' }}>
+                      <button className="ap-del-btn" onClick={() => removeTier(t._key)} title="Remove tier">✕</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="ap-eng-table-hint">
+          Leave Max KG empty for the final tier. Tiers are matched top to bottom — ensure they don't overlap.
+        </div>
+      </div>
+      <div className="ap-eng-save-row">
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 160 }}>
+          {saving ? <span className="spinner spinner-sm" /> : 'Save Weight Tiers'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  ROUTE MULTIPLIERS TAB
+// ══════════════════════════════════════════════════════════════════════════════
+function RouteMultipliersTab({ cfg, saving, onSave }) {
+  // Build multiplier map: "fromZone||toZone" → multiplier
+  const buildMap = mults =>
+    Object.fromEntries((mults || []).map(m => [`${m.fromZone}||${m.toZone}`, m.multiplier]));
+
+  const [multMap, setMultMap] = useState(() => buildMap(cfg.routeMultipliers));
+
+  const get = (from, to) => multMap[`${from}||${to}`] ?? '';
+
+  const set = (from, to, val) =>
+    setMultMap(m => ({ ...m, [`${from}||${to}`]: val === '' ? undefined : Number(val) }));
+
+  const handleSave = () => {
+    const routeMultipliers = [];
+    for (const from of ZONES) {
+      for (const to of ZONES) {
+        const v = multMap[`${from}||${to}`];
+        if (v !== undefined) routeMultipliers.push({ fromZone: from, toZone: to, multiplier: Number(v) });
+      }
+    }
+    onSave({ routeMultipliers });
+  };
+
+  const MultiplierCell = ({ from, to }) => {
+    const val = get(from, to);
+    const [editing, setEditing] = useState(false);
+    const [local, setLocal]     = useState('');
+    const ref = useRef(null);
+
+    const open = () => { setLocal(String(val ?? '')); setEditing(true); requestAnimationFrame(() => ref.current?.select()); };
+    const commit = () => { setEditing(false); set(from, to, local); };
+    const onKey = e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') setEditing(false); };
+
+    const mult = parseFloat(val);
+    const isSame = from === to;
+    const color = isSame ? '#6366f1' : mult >= 1.4 ? '#ef4444' : mult >= 1.2 ? '#f59e0b' : '#22c55e';
+
+    if (editing) return (
+      <td className="ap-matrix-cell ap-cell-editing">
+        <div className="ap-inline-wrap">
+          <input ref={ref} className="ap-inline-input" type="number" step="0.05" min="0.5" max="3"
+            value={local} onChange={e => setLocal(e.target.value)} onBlur={commit} onKeyDown={onKey} autoFocus />
+          <span className="ap-inline-suffix">×</span>
+        </div>
+      </td>
+    );
+
+    return (
+      <td className="ap-matrix-cell ap-cell--set ap-mult-cell" onClick={open}
+        title={`${from} → ${to}: ×${val || '—'} (click to edit)`}>
+        <span className="ap-mult-val" style={{ color }}>
+          {val !== '' && val !== undefined ? `×${val}` : '—'}
+        </span>
+      </td>
+    );
+  };
+
+  return (
+    <div className="ap-engine-tab fade-in">
+      <div className="ap-eng-section">
+        <div className="ap-eng-section-header">
+          <div>
+            <h3 className="ap-eng-title">Zone-to-Zone Route Multipliers</h3>
+            <p className="ap-eng-sub">
+              Applied to the raw distance cost. ×1.0 = no adjustment. ×1.3 = 30% more for that route.
+              Click any cell to edit. Missing pairs default to ×1.0.
+            </p>
+          </div>
+        </div>
+
+        <div className="ap-mult-legend">
+          <span className="ap-mult-dot" style={{ background: '#6366f1' }} /> Same zone (×1.0)
+          <span className="ap-mult-dot" style={{ background: '#22c55e' }} /> Low (&lt;×1.2)
+          <span className="ap-mult-dot" style={{ background: '#f59e0b' }} /> Medium (×1.2–1.39)
+          <span className="ap-mult-dot" style={{ background: '#ef4444' }} /> High (≥×1.4)
+        </div>
+
+        <div className="ap-matrix-scroll">
+          <table className="ap-matrix-table">
+            <thead>
+              <tr>
+                <th className="ap-matrix-corner">
+                  <span className="ap-corner-from">Origin</span>
+                  <span className="ap-corner-sep"> ↘ </span>
+                  <span className="ap-corner-to">Destination</span>
+                </th>
+                {ZONES.map(z => <th key={z} className="ap-matrix-th">{z}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {ZONES.map(from => (
+                <tr key={from}>
+                  <td className="ap-matrix-zone-cell">{from}</td>
+                  {ZONES.map(to => <MultiplierCell key={to} from={from} to={to} />)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="ap-eng-table-hint">
+          Changes take effect immediately after saving. The service recalculates on every new booking.
+        </p>
+      </div>
+      <div className="ap-eng-save-row">
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 180 }}>
+          {saving ? <span className="spinner spinner-sm" /> : 'Save Route Multipliers'}
+        </button>
+      </div>
     </div>
   );
 }

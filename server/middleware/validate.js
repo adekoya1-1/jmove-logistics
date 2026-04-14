@@ -137,6 +137,7 @@ export const orderSchemas = {
     specialInstructions: z.string().max(500).trim().optional(),
 
     serviceType:      z.enum(['standard', 'express', 'sameday']).optional().default('standard'),
+    deliveryMode:     z.enum(['door', 'depot']).optional().default('door'),
     paymentMethod:    z.enum(['online', 'cash', 'cod', 'wallet']).optional().default('online'),
     codAmount:        z.coerce.number().min(0).max(100_000_000).optional().default(0),
 
@@ -157,6 +158,7 @@ export const orderSchemas = {
     serviceType:     z.enum(['standard', 'express', 'sameday']).optional().default('standard'),
     isFragile:       z.coerce.boolean().optional().default(false),
     declaredValue:   z.coerce.number().min(0).max(100_000_000).optional().default(0),
+    deliveryMode:    z.enum(['door', 'depot']).optional().default('door'),
   }),
 
   addNote: z.object({

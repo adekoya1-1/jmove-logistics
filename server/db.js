@@ -140,6 +140,12 @@ const orderSchema = new mongoose.Schema({
   truckTypeId:   { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', default: null },
   truckTypeName: { type: String, trim: true, default: null },
 
+  // Delivery mode chosen at booking
+  deliveryMode:  { type: String, enum: ['door', 'depot'], default: 'door' },
+
+  // Pricing breakdown stored for receipt / admin display
+  pricingBreakdown: { type: mongoose.Schema.Types.Mixed, default: null },
+
   // Route batching — internal only, never exposed to customers
   routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryRoute', default: null },
 }, { timestamps: true });
@@ -219,23 +225,56 @@ const truckTypeSchema = new mongoose.Schema({
   isActive:     { type: Boolean, default: true },
 }, { timestamps: true });
 
-// ── Pricing — price for origin direction → dest direction × truck type ────────
-const pricingSchema = new mongoose.Schema({
-  fromDirection: { 
-    type: String, 
-    required: true,
-    enum: ['North West', 'North East', 'North Central', 'South West', 'South East', 'South South']
+// ── Pricing schema REMOVED — replaced by PricingConfig (hybrid engine) ────────
+// Old direction-matrix model deprecated. Use PricingConfig for all pricing logic.
+
+// ── PricingConfig — Singleton document for the hybrid pricing engine ─────────
+const pricingConfigSchema = new mongoose.Schema({
+  // Base fee by truck type (array so each truck can have its own base)
+  baseFees: [{
+    truckTypeId:  { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', required: true },
+    amount:       { type: Number, required: true, min: 0 },
+  }],
+
+  // Distance bands: e.g. 0–30 km → rate ₦200/km, billed min 30 km
+  distanceBands: [{
+    minKm:        { type: Number, required: true, min: 0 },
+    maxKm:        { type: Number, default: null },  // null = no upper limit
+    ratePerKm:    { type: Number, required: true, min: 0 },
+    billedMinKm:  { type: Number, default: 0 },    // minimum billed distance
+  }],
+
+  // Zone-pair route multipliers
+  routeMultipliers: [{
+    fromZone:     { type: String, required: true },
+    toZone:       { type: String, required: true },
+    multiplier:   { type: Number, required: true, min: 0 },
+  }],
+
+  // Weight tiers (flat fee per tier, plus optional per-kg above min)
+  weightTiers: [{
+    minKg:        { type: Number, required: true, min: 0 },
+    maxKg:        { type: Number, default: null },
+    fee:          { type: Number, required: true, min: 0 },
+    extraPerKg:   { type: Number, default: 0 },    // charged on (weight - minKg)
+  }],
+
+  // Delivery mode fees
+  deliveryFees: {
+    doorDelivery: { type: Number, default: 0 },
+    depotPickup:  { type: Number, default: 0 },
   },
-  toDirection:   { 
-    type: String, 
-    required: true,
-    enum: ['North West', 'North East', 'North Central', 'South West', 'South East', 'South South']
+
+  // Optional add-on fees
+  optionalFees: {
+    fragilePercent:    { type: Number, default: 10 },   // % of subtotal before extras
+    insurancePercent:  { type: Number, default: 1 },    // % of declared value
+    expressFee:        { type: Number, default: 2000 },
+    samedayFee:        { type: Number, default: 3000 },
   },
-  truckTypeId:   { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', required: true },
-  price:         { type: Number, required: true, min: 0 },
-  isActive:      { type: Boolean, default: true },
+
+  minimumCharge: { type: Number, default: 5000 },
 }, { timestamps: true });
-pricingSchema.index({ fromDirection: 1, toDirection: 1, truckTypeId: 1 }, { unique: true });
 
 // ── OTP Token — for email verification and password reset ──────────────────
 // Security design:
@@ -373,12 +412,12 @@ export const DriverEarning  = mongoose.model('DriverEarning', driverEarningSchem
 export const OtpToken       = mongoose.model('OtpToken',      otpTokenSchema);
 export const State          = mongoose.model('State',         stateSchema);
 export const TruckType      = mongoose.model('TruckType',     truckTypeSchema);
-export const Pricing        = mongoose.model('Pricing',       pricingSchema);
 export const Vehicle        = mongoose.model('Vehicle',       vehicleSchema);
 export const SystemSetting  = mongoose.model('SystemSetting', systemSettingSchema);
 export const AuditLog       = mongoose.model('AuditLog',      auditLogSchema);
 export const SavedAddress   = mongoose.model('SavedAddress',  savedAddressSchema);
 export const SupportTicket  = mongoose.model('SupportTicket', supportTicketSchema);
+export const PricingConfig  = mongoose.model('PricingConfig', pricingConfigSchema);
 
 // ── DeliveryRoute — Route Batching System ────────────────────────────────────
 // Internal-only: customers never see route data, pricing never changes.

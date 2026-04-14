@@ -19,6 +19,11 @@ const SERVICE_TYPES = [
   { value:'sameday',  label:'Same Day Delivery',    desc:'Available in select cities only',                  extra:'+₦3,000' },
 ];
 
+const DELIVERY_MODES = [
+  { value:'door',  label:'Door Delivery',  desc:'We deliver directly to the receiver\'s address', extra:'+₦1,500', icon:'🏠' },
+  { value:'depot', label:'Depot Pickup',   desc:'Receiver picks up from our nearest office',       extra:'Free',    icon:'🏢' },
+];
+
 const PAYMENT_METHODS = [
   { value:'online', label:'Pay Online',         desc:'Card, bank transfer or USSD via Paystack', icon:'💳' },
   { value:'cash',   label:'Pay at Centre',      desc:'Pay cash when you drop off at our office', icon:'🏢' },
@@ -57,6 +62,7 @@ export default function NewOrder() {
     truckTypeId: '',
     // Service
     serviceType: 'standard',
+    deliveryMode: 'door',
     // Payment
     paymentMethod: 'online', codAmount: '',
   });
@@ -100,13 +106,14 @@ export default function NewOrder() {
     setError(''); setLoading(true);
     try {
       const r = await ordersAPI.calcPrice({
-        originCity: form.originCity, 
+        originCity:      form.originCity,
         destinationCity: form.destinationCity,
-        truckTypeId: form.truckTypeId,
-        weight: +form.weight,
-        serviceType: form.serviceType,
-        isFragile: form.isFragile,
-        declaredValue: +form.declaredValue || 0,
+        truckTypeId:     form.truckTypeId,
+        weight:          +form.weight,
+        serviceType:     form.serviceType,
+        isFragile:       form.isFragile,
+        declaredValue:   +form.declaredValue || 0,
+        deliveryMode:    form.deliveryMode,
       });
       setPricing(r.data); setStep(3);
     } catch (e) { setError(e?.response?.data?.error || e?.response?.data?.message || 'Failed to calculate price'); }
@@ -310,6 +317,23 @@ export default function NewOrder() {
                   </label>
                 ))}
               </div>
+
+              <div className="od-divider" />
+              <div className="od-section">Delivery Mode</div>
+              <div className="service-type-grid">
+                {DELIVERY_MODES.map(m => (
+                  <label key={m.value} className={`service-option ${form.deliveryMode === m.value ? 'active' : ''}`}>
+                    <input type="radio" name="deliveryMode" value={m.value} checked={form.deliveryMode === m.value} onChange={set('deliveryMode')} hidden />
+                    <div className="so-header">
+                      <p className="so-label" style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <span>{m.icon}</span> <span>{m.label}</span>
+                      </p>
+                      <span className="so-extra">{m.extra}</span>
+                    </div>
+                    <p className="so-desc">{m.desc}</p>
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="step-cta-row">
               <button className="btn-secondary" onClick={() => setStep(1)}>← Back</button>
@@ -330,7 +354,7 @@ export default function NewOrder() {
                 <span className="qr-dot origin" />
                 <div>
                   <p>{pricing.originCity}</p>
-                  <span style={{fontSize:10,color:'var(--text-faint)'}}>{pricing.fromDirection}</span>
+                  <span style={{fontSize:10,color:'var(--text-faint)'}}>{pricing.fromZone}</span>
                 </div>
               </div>
               <div className="qr-arrow">→</div>
@@ -338,7 +362,7 @@ export default function NewOrder() {
                 <span className="qr-dot dest" />
                 <div>
                   <p>{pricing.destinationCity}</p>
-                  <span style={{fontSize:10,color:'var(--text-faint)'}}>{pricing.toDirection}</span>
+                  <span style={{fontSize:10,color:'var(--text-faint)'}}>{pricing.toZone}</span>
                 </div>
               </div>
               <div className="qr-badge">{pricing.deliveryType === 'intrastate' ? 'Intrastate' : 'Interstate'}</div>
@@ -350,43 +374,91 @@ export default function NewOrder() {
                 <span>{pricing.truckType.icon}</span>
                 <span>{pricing.truckType.name}</span>
                 <span className="pvt-cap">{pricing.truckType.capacityTons}t capacity</span>
-                {pricing.isDynamic && <span className="pvt-badge">Zone Pricing</span>}
+                {pricing.distanceKm > 0 && (
+                  <span className="pvt-badge">{pricing.distanceKm} km</span>
+                )}
               </div>
             )}
 
             <div className="pricing-box">
+              {/* ── Base fee ── */}
               <div className="pricing-row">
-                <span className="pr-label">Base Matrix Rate</span>
-                <span className="pr-val">₦{fmt(pricing.basePrice)}</span>
+                <span className="pr-label">Base Fee</span>
+                <span className="pr-val">₦{fmt(pricing.baseFee)}</span>
               </div>
-              {pricing.serviceSurcharge > 0 && (
+
+              {/* ── Distance cost ── */}
+              {pricing.distanceFee > 0 && (
                 <div className="pricing-row">
-                  <span className="pr-label">{form.serviceType === 'express' ? 'Express Delivery' : 'Same Day'} Surcharge</span>
-                  <span className="pr-val">₦{fmt(pricing.serviceSurcharge)}</span>
+                  <span className="pr-label">
+                    Distance Cost
+                    <span className="pr-meta">
+                      {pricing.billedKm} km × ₦{fmt(pricing.ratePerKm)}/km
+                      {pricing.routeFactor !== 1 && ` × ${pricing.routeFactor}x route`}
+                    </span>
+                  </span>
+                  <span className="pr-val">₦{fmt(pricing.distanceFee)}</span>
                 </div>
               )}
-              {pricing.weightSurcharge > 0 && (
+
+              {/* ── Weight fee ── */}
+              {pricing.weightFee > 0 && (
                 <div className="pricing-row">
-                  <span className="pr-label">Extra Weight Surcharge</span>
-                  <span className="pr-val">₦{fmt(pricing.weightSurcharge)}</span>
+                  <span className="pr-label">Weight Fee ({form.weight} kg)</span>
+                  <span className="pr-val">₦{fmt(pricing.weightFee)}</span>
                 </div>
               )}
-              {pricing.fragileSurcharge > 0 && (
+
+              {/* ── Delivery mode fee ── */}
+              {pricing.deliveryModeFee > 0 && (
                 <div className="pricing-row">
-                  <span className="pr-label">Fragile Handling Fee</span>
-                  <span className="pr-val">₦{fmt(pricing.fragileSurcharge)}</span>
+                  <span className="pr-label">
+                    {pricing.deliveryMode === 'door' ? 'Door Delivery' : 'Depot Pickup'}
+                  </span>
+                  <span className="pr-val">₦{fmt(pricing.deliveryModeFee)}</span>
                 </div>
               )}
+
+              {/* ── Fragile ── */}
+              {pricing.fragileFee > 0 && (
+                <div className="pricing-row">
+                  <span className="pr-label">Fragile Handling</span>
+                  <span className="pr-val">₦{fmt(pricing.fragileFee)}</span>
+                </div>
+              )}
+
+              {/* ── Service surcharge ── */}
+              {pricing.serviceFee > 0 && (
+                <div className="pricing-row">
+                  <span className="pr-label">
+                    {form.serviceType === 'express' ? 'Express Delivery' : 'Same Day'} Fee
+                  </span>
+                  <span className="pr-val">₦{fmt(pricing.serviceFee)}</span>
+                </div>
+              )}
+
+              {/* ── Insurance ── */}
               {pricing.insuranceFee > 0 && (
                 <div className="pricing-row">
-                  <span className="pr-label">Insurance ({fmt(form.declaredValue)} Coverage)</span>
+                  <span className="pr-label">Insurance (₦{fmt(form.declaredValue)} coverage)</span>
                   <span className="pr-val">₦{fmt(pricing.insuranceFee)}</span>
                 </div>
               )}
+
               <div className="pricing-total" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
                 <span>Total Shipping Cost</span>
                 <span className="pt-total">₦{fmt(pricing.totalAmount)}</span>
               </div>
+            </div>
+
+            {/* Route info strip */}
+            <div className="pricing-route-info">
+              <span>{pricing.fromZone}</span>
+              <span className="pri-arrow">→</span>
+              <span>{pricing.toZone}</span>
+              {pricing.routeFactor !== 1 && (
+                <span className="pri-factor">Route factor: ×{pricing.routeFactor}</span>
+              )}
             </div>
 
             <div className="od-section" style={{marginTop:20}}>Payment Method</div>

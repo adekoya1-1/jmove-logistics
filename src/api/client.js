@@ -301,27 +301,21 @@ export const trackingAPI = {
 };
 
 export const pricingAPI = {
-  // Public (booking flow)
+  // ── Public (booking flow) ──────────────────────────────
   config:          ()        => api.get('/pricing/config'),
   calculate:       (d)       => api.post('/pricing/calculate', d),
-  // Admin — full matrix data + seed
+
+  // ── Admin — engine config (single PricingConfig document) ─
   adminFull:       ()        => api.get('/pricing/admin/full'),
+  adminEngine:     ()        => api.get('/pricing/admin/engine'),
+  updateEngine:    (d)       => api.put('/pricing/admin/engine', d),
   seedDefaults:    ()        => api.post('/pricing/admin/seed-defaults'),
-  // Zones
-  zones:           ()        => api.get('/pricing/zones'),
-  createZone:      (d)       => api.post('/pricing/zones', d),
-  updateZone:      (id, d)   => api.put(`/pricing/zones/${encodeURIComponent(id)}`, d),
-  deleteZone:      (id)      => api.delete(`/pricing/zones/${encodeURIComponent(id)}`),
-  // Truck types
+
+  // ── Admin — vehicle types ──────────────────────────────
   truckTypes:      ()        => api.get('/pricing/truck-types'),
   createTruckType: (d)       => api.post('/pricing/truck-types', d),
   updateTruckType: (id, d)   => api.put(`/pricing/truck-types/${encodeURIComponent(id)}`, d),
   deleteTruckType: (id)      => api.delete(`/pricing/truck-types/${encodeURIComponent(id)}`),
-  // Rules
-  rules:           ()        => api.get('/pricing/rules'),
-  upsertRule:      (d)       => api.post('/pricing/rules', d),
-  updateRule:      (id, d)   => api.put(`/pricing/rules/${encodeURIComponent(id)}`, d),
-  deleteRule:      (id)      => api.delete(`/pricing/rules/${encodeURIComponent(id)}`),
 };
 
 export const reviewsAPI = {

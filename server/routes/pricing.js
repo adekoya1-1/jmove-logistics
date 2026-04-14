@@ -1,10 +1,12 @@
 /**
- * ─────────────────────────────────────────────────────────────────────────
- *  PRICING ROUTES (Direction Matrix)
- * ─────────────────────────────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────
+ *  PRICING ROUTES
+ *  - Public:  GET /config, POST /calculate
+ *  - Admin:   PricingConfig CRUD, TruckType CRUD, seed
+ * ─────────────────────────────────────────────────────────────
  */
 import { Router } from 'express';
-import { State, TruckType, Pricing } from '../db.js';
+import { State, TruckType, PricingConfig } from '../db.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate, pricingSchemas, orderSchemas } from '../middleware/validate.js';
 import { calcDynamicPrice, getPublicConfig, invalidateCache } from '../services/pricingService.js';
@@ -31,19 +33,42 @@ router.post('/calculate', validate(orderSchemas.calcPrice), async (req, res, nex
 });
 
 // ══════════════════════════════════════════════════════════
+//  ADMIN — PricingConfig (singleton)
+// ══════════════════════════════════════════════════════════
+
+// GET  /api/pricing/admin/engine — fetch the current PricingConfig document
+router.get('/admin/engine', authenticate, authorize('admin'), async (req, res, next) => {
+  try {
+    const cfg = await PricingConfig.findOne().lean();
+    res.json({ success: true, data: cfg });
+  } catch (e) { next(e); }
+});
+
+// PUT  /api/pricing/admin/engine — upsert the PricingConfig singleton
+router.put('/admin/engine', authenticate, authorize('admin'), async (req, res, next) => {
+  try {
+    const cfg = await PricingConfig.findOneAndUpdate(
+      {},
+      { $set: req.body },
+      { upsert: true, new: true, runValidators: true }
+    );
+    invalidateCache();
+    res.json({ success: true, data: cfg });
+  } catch (e) { next(e); }
+});
+
+// ══════════════════════════════════════════════════════════
 //  ADMIN — FULL DATA + SEED
 // ══════════════════════════════════════════════════════════
 
 router.get('/admin/full', authenticate, authorize('admin'), async (req, res, next) => {
   try {
-    const [states, truckTypes, rules] = await Promise.all([
+    const [states, truckTypes, pricingConfig] = await Promise.all([
       State.find().lean(),
       TruckType.find().sort({ sortOrder: 1, capacityTons: 1 }).lean(),
-      Pricing.find()
-        .populate('truckTypeId', 'name capacityTons icon')
-        .lean(),
+      PricingConfig.findOne().lean(),
     ]);
-    res.json({ success: true, data: { states, truckTypes, rules, directions: DIRECTIONS } });
+    res.json({ success: true, data: { states, truckTypes, pricingConfig, directions: DIRECTIONS } });
   } catch (e) { next(e); }
 });
 
@@ -53,58 +78,103 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
       State.countDocuments(),
       TruckType.countDocuments(),
     ]);
-    
+
     if (existingStates > 0 || existingTrucks > 0) {
-      await Pricing.deleteMany({});
       await State.deleteMany({});
       await TruckType.deleteMany({});
     }
 
-    const stateDocs = Object.entries(STATE_DIRECTIONS).map(([key, val]) => ({
+    const stateDocs = Object.entries(STATE_DIRECTIONS).map(([, val]) => ({
       name: val.name,
-      direction: val.direction
+      direction: val.direction,
     }));
 
     const DEFAULT_TRUCKS = [
-      { name: 'Small Van',    description: 'Up to 1 ton — parcels, documents, electronics',          capacityTons: 1,  icon: '🚐', sortOrder: 0 },
-      { name: '2-Ton Truck',  description: 'Furniture, appliances, medium commercial goods',          capacityTons: 2,  icon: '🚛', sortOrder: 1 },
-      { name: '5-Ton Truck',  description: 'Large commercial loads, full house or office moves',      capacityTons: 5,  icon: '��', sortOrder: 2 },
-      { name: '10-Ton Truck', description: 'Heavy industrial goods and bulk freight',                 capacityTons: 10, icon: '🏗️', sortOrder: 3 },
+      { name: 'Small Van',    description: 'Up to 1 ton — parcels, documents, electronics',     capacityTons: 1,  icon: '🚐', sortOrder: 0 },
+      { name: '2-Ton Truck',  description: 'Furniture, appliances, medium commercial goods',     capacityTons: 2,  icon: '🚛', sortOrder: 1 },
+      { name: '5-Ton Truck',  description: 'Large commercial loads, full house or office moves', capacityTons: 5,  icon: '🚚', sortOrder: 2 },
+      { name: '10-Ton Truck', description: 'Heavy industrial goods and bulk freight',            capacityTons: 10, icon: '🏗️', sortOrder: 3 },
     ];
 
-    const states = await State.insertMany(stateDocs);
+    const states     = await State.insertMany(stateDocs);
     const truckTypes = await TruckType.insertMany(DEFAULT_TRUCKS);
 
-    // Realistic Nigerian logistics pricing matrix (₦)
-    // Rows = Origin, Cols = Dest (Order: NW, NE, NC, SW, SE, SS)
-    const BASE_RATES = {
-      'North West':    { 'North West': 15000, 'North East': 30000, 'North Central': 35000, 'South West': 55000, 'South East': 60000, 'South South': 65000 },
-      'North East':    { 'North West': 30000, 'North East': 15000, 'North Central': 40000, 'South West': 55000, 'South East': 50000, 'South South': 55000 },
-      'North Central': { 'North West': 35000, 'North East': 40000, 'North Central': 15000, 'South West': 40000, 'South East': 40000, 'South South': 45000 },
-      'South West':    { 'North West': 55000, 'North East': 55000, 'North Central': 40000, 'South West': 15000, 'South East': 30000, 'South South': 35000 },
-      'South East':    { 'North West': 60000, 'North East': 50000, 'North Central': 40000, 'South West': 30000, 'South East': 15000, 'South South': 25000 },
-      'South South':   { 'North West': 65000, 'North East': 55000, 'North Central': 45000, 'South West': 35000, 'South East': 25000, 'South South': 15000 },
-    };
+    // Seed the PricingConfig singleton with sensible defaults
+    const baseFees = truckTypes.map(tt => ({
+      truckTypeId: tt._id,
+      amount:      Math.max(5000, Math.round(tt.capacityTons * 3000)),
+    }));
 
-    const TRUCK_MUL = [1, 2, 3.5, 6];
+    await PricingConfig.findOneAndUpdate(
+      {},
+      {
+        $setOnInsert: {
+          baseFees,
+          distanceBands: [
+            { minKm: 0,   maxKm: 30,  ratePerKm: 200, billedMinKm: 30 },
+            { minKm: 31,  maxKm: 100, ratePerKm: 150, billedMinKm: 0  },
+            { minKm: 101, maxKm: 300, ratePerKm: 120, billedMinKm: 0  },
+            { minKm: 301, maxKm: 700, ratePerKm: 100, billedMinKm: 0  },
+            { minKm: 701, maxKm: null,ratePerKm: 90,  billedMinKm: 0  },
+          ],
+          routeMultipliers: [
+            { fromZone: 'South West',    toZone: 'South West',    multiplier: 1.0  },
+            { fromZone: 'South East',    toZone: 'South East',    multiplier: 1.0  },
+            { fromZone: 'South South',   toZone: 'South South',   multiplier: 1.0  },
+            { fromZone: 'North Central', toZone: 'North Central', multiplier: 1.0  },
+            { fromZone: 'North West',    toZone: 'North West',    multiplier: 1.0  },
+            { fromZone: 'North East',    toZone: 'North East',    multiplier: 1.0  },
+            { fromZone: 'South West',    toZone: 'South East',    multiplier: 1.1  },
+            { fromZone: 'South East',    toZone: 'South West',    multiplier: 1.1  },
+            { fromZone: 'South West',    toZone: 'South South',   multiplier: 1.15 },
+            { fromZone: 'South South',   toZone: 'South West',    multiplier: 1.15 },
+            { fromZone: 'South East',    toZone: 'South South',   multiplier: 1.1  },
+            { fromZone: 'South South',   toZone: 'South East',    multiplier: 1.1  },
+            { fromZone: 'North Central', toZone: 'South West',    multiplier: 1.2  },
+            { fromZone: 'South West',    toZone: 'North Central', multiplier: 1.2  },
+            { fromZone: 'North Central', toZone: 'South East',    multiplier: 1.2  },
+            { fromZone: 'South East',    toZone: 'North Central', multiplier: 1.2  },
+            { fromZone: 'North Central', toZone: 'South South',   multiplier: 1.2  },
+            { fromZone: 'South South',   toZone: 'North Central', multiplier: 1.2  },
+            { fromZone: 'North West',    toZone: 'South West',    multiplier: 1.35 },
+            { fromZone: 'South West',    toZone: 'North West',    multiplier: 1.35 },
+            { fromZone: 'North West',    toZone: 'North Central', multiplier: 1.1  },
+            { fromZone: 'North Central', toZone: 'North West',    multiplier: 1.1  },
+            { fromZone: 'North West',    toZone: 'North East',    multiplier: 1.1  },
+            { fromZone: 'North East',    toZone: 'North West',    multiplier: 1.1  },
+            { fromZone: 'North East',    toZone: 'South East',    multiplier: 1.4  },
+            { fromZone: 'South East',    toZone: 'North East',    multiplier: 1.4  },
+            { fromZone: 'North East',    toZone: 'South South',   multiplier: 1.4  },
+            { fromZone: 'South South',   toZone: 'North East',    multiplier: 1.4  },
+            { fromZone: 'North West',    toZone: 'South South',   multiplier: 1.5  },
+            { fromZone: 'South South',   toZone: 'North West',    multiplier: 1.5  },
+            { fromZone: 'North West',    toZone: 'South East',    multiplier: 1.45 },
+            { fromZone: 'South East',    toZone: 'North West',    multiplier: 1.45 },
+            { fromZone: 'North East',    toZone: 'North Central', multiplier: 1.15 },
+            { fromZone: 'North Central', toZone: 'North East',    multiplier: 1.15 },
+            { fromZone: 'North East',    toZone: 'South West',    multiplier: 1.45 },
+            { fromZone: 'South West',    toZone: 'North East',    multiplier: 1.45 },
+          ],
+          weightTiers: [
+            { minKg: 0,   maxKg: 10,  fee: 0,    extraPerKg: 0   },
+            { minKg: 10,  maxKg: 50,  fee: 1500, extraPerKg: 50  },
+            { minKg: 50,  maxKg: 100, fee: 3500, extraPerKg: 100 },
+            { minKg: 100, maxKg: null,fee: 8500, extraPerKg: 150 },
+          ],
+          deliveryFees:  { doorDelivery: 1500, depotPickup: 0 },
+          optionalFees:  { fragilePercent: 10, insurancePercent: 1, expressFee: 2000, samedayFee: 3000 },
+          minimumCharge: 5000,
+        },
+      },
+      { upsert: true, new: true }
+    );
 
-    const rules = [];
-    for (const fromDir of DIRECTIONS) {
-      for (const toDir of DIRECTIONS) {
-        for (let t = 0; t < truckTypes.length; t++) {
-          const base = BASE_RATES[fromDir][toDir];
-          const price = Math.round(base * TRUCK_MUL[t] / 1000) * 1000;
-          rules.push({ fromDirection: fromDir, toDirection: toDir, truckTypeId: truckTypes[t]._id, price });
-        }
-      }
-    }
-    await Pricing.insertMany(rules);
     invalidateCache();
 
     res.json({
       success: true,
-      message: 'Default compass directions and pricing initialised successfully',
-      data: { states: states.length, trucks: truckTypes.length, rules: rules.length },
+      message: 'States, truck types, and hybrid pricing config seeded successfully',
+      data: { states: states.length, trucks: truckTypes.length },
     });
   } catch (e) { next(e); }
 });
@@ -139,42 +209,11 @@ router.put('/truck-types/:id', authenticate, authorize('admin'), validate(pricin
 
 router.delete('/truck-types/:id', authenticate, authorize('admin'), validate(pricingSchemas.idParam, 'params'), async (req, res, next) => {
   try {
-    const ruleCount = await Pricing.countDocuments({ truckTypeId: req.params.id });
-    if (ruleCount > 0) {
-      await TruckType.findByIdAndUpdate(req.params.id, { isActive: false });
-      invalidateCache();
-      return res.json({ success: true, message: `Truck type deactivated (${ruleCount} linked rules preserved)` });
-    }
-    await TruckType.findByIdAndDelete(req.params.id);
-    invalidateCache();
-    res.json({ success: true, message: 'Truck type deleted' });
-  } catch (e) { next(e); }
-});
-
-// ══════════════════════════════════════════════════════════
-//  PRICING RULES (Matrix Grid)
-// ══════════════════════════════════════════════════════════
-
-router.get('/rules', authenticate, authorize('admin'), async (req, res, next) => {
-  try {
-    const rules = await Pricing.find().populate('truckTypeId', 'name capacityTons icon').lean();
-    res.json({ success: true, data: rules });
-  } catch (e) { next(e); }
-});
-
-router.post('/rules', authenticate, authorize('admin'), validate(pricingSchemas.upsertRule), async (req, res, next) => {
-  try {
-    const { fromDirection, toDirection, truckTypeId, price } = req.body;
-    const tt = await TruckType.findById(truckTypeId).lean();
+    const tt = await TruckType.findById(req.params.id);
     if (!tt) return res.status(404).json({ success: false, message: 'Truck type not found' });
-
-    const rule = await Pricing.findOneAndUpdate(
-      { fromDirection, toDirection, truckTypeId },
-      { price: price, isActive: true },
-      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
-    );
+    await TruckType.findByIdAndUpdate(req.params.id, { isActive: false });
     invalidateCache();
-    res.json({ success: true, data: rule });
+    res.json({ success: true, message: 'Truck type deactivated' });
   } catch (e) { next(e); }
 });
 

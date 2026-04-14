@@ -102,12 +102,12 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       receiverName, receiverPhone, receiverEmail, receiverAddress,
       originCity, destinationCity,
       description, weight, quantity, category, isFragile, declaredValue, specialInstructions,
-      serviceType, paymentMethod, codAmount,
+      serviceType, deliveryMode, paymentMethod, codAmount,
       pickupLat, pickupLng, deliveryLat, deliveryLng,
       staffNotes, truckTypeId,
     } = req.body;
 
-    const pricing  = await calcDynamicPrice({ originCity, destinationCity, weight, serviceType, isFragile, declaredValue, truckTypeId });
+    const pricing  = await calcDynamicPrice({ originCity, destinationCity, weight, serviceType, isFragile, declaredValue, truckTypeId, deliveryMode });
     const isAdmin  = req.user.role === 'admin';
 
     const order = await createOrderWithRetry({
@@ -128,17 +128,22 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       declaredValue: +declaredValue || 0, specialInstructions,
 
       serviceType: serviceType || 'standard',
+      deliveryMode:      deliveryMode || 'door',
       deliveryType:      pricing.deliveryType,
       estimatedDelivery: pricing.estimatedDelivery,
       truckTypeId:       pricing.truckType?._id || null,
       truckTypeName:     pricing.truckType?.name || null,
 
+      // Pricing fields (legacy schema fields kept for backward compat)
       basePrice:        pricing.basePrice,
       weightSurcharge:  pricing.weightSurcharge,
       serviceSurcharge: pricing.serviceSurcharge,
       fragileSurcharge: pricing.fragileSurcharge,
       insuranceFee:     pricing.insuranceFee,
       totalAmount:      pricing.totalAmount,
+
+      // Full breakdown stored for admin/receipt display
+      pricingBreakdown: pricing.breakdown,
 
       paymentMethod:  paymentMethod || 'online',
       paymentStatus:  (paymentMethod === 'cash' || paymentMethod === 'cod') ? 'paid' : 'pending',

@@ -361,6 +361,102 @@ tr:hover td { background: #fcfcfd; }
 .btn-primary { background: linear-gradient(135deg, var(--ap-primary), #ff7b00); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px var(--ap-primary-glow); transition: var(--ap-bounce); }
 .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(230,81,0,0.3); }
 
+/* ── Engine Config Tabs ──────────────────────────────────────────────── */
+.ap-engine-tab { display: flex; flex-direction: column; gap: 0; }
+
+.ap-eng-section {
+  background: var(--ap-glass-bg); backdrop-filter: blur(20px);
+  border: 1px solid var(--ap-glass-border);
+  border-radius: 20px; padding: 32px;
+  box-shadow: var(--ap-shadow);
+  margin-bottom: 24px;
+}
+
+.ap-eng-section-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 24px; gap: 16px;
+}
+
+.ap-eng-title { font-size: 17px; font-weight: 800; color: var(--ap-text-main); margin: 0 0 6px; letter-spacing: -0.3px; }
+.ap-eng-sub   { font-size: 13px; color: var(--ap-text-muted); margin: 0; line-height: 1.5; }
+
+.ap-eng-row {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;
+}
+
+.ap-eng-field { display: flex; flex-direction: column; gap: 6px; }
+.ap-field-hint { font-size: 11px; color: var(--ap-text-muted); margin: 0; font-weight: 500; }
+
+.ap-eng-input-wrap { display: flex; align-items: stretch; border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #f8fafc; transition: var(--ap-transition); }
+.ap-eng-input-wrap:focus-within { border-color: var(--ap-primary); background: white; box-shadow: 0 0 0 4px var(--ap-primary-glow); }
+.ap-eng-input-wrap .ap-input { border: none; border-radius: 0; background: transparent; box-shadow: none; padding: 10px 14px; }
+.ap-eng-prefix { display: flex; align-items: center; padding: 0 12px; font-weight: 700; color: var(--ap-primary); background: rgba(230,81,0,0.06); border-right: 1px solid #e2e8f0; font-size: 14px; }
+.ap-eng-suffix { display: flex; align-items: center; padding: 0 12px; font-weight: 600; color: var(--ap-text-muted); background: #f8fafc; border-left: 1px solid #e2e8f0; font-size: 12px; }
+
+/* Base fees grid */
+.ap-base-fees-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+.ap-base-fee-card {
+  border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 16px;
+  background: white; display: flex; flex-direction: column; gap: 12px;
+  transition: var(--ap-transition);
+}
+.ap-base-fee-card:hover { border-color: var(--ap-primary); box-shadow: 0 4px 12px var(--ap-primary-glow); }
+.ap-bfc-header { display: flex; align-items: center; gap: 12px; }
+.ap-bfc-icon   { font-size: 28px; }
+.ap-bfc-name   { font-weight: 700; font-size: 14px; color: var(--ap-text-main); margin: 0; }
+.ap-bfc-cap    { font-size: 12px; color: var(--ap-text-muted); margin: 2px 0 0; }
+
+/* Engine table (distance bands / weight tiers) */
+.ap-eng-table thead th {
+  padding: 14px 16px !important; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+  background: #f8fafc; color: var(--ap-text-muted); font-weight: 800; border-bottom: 1px solid #e2e8f0;
+}
+.ap-eng-td {
+  padding: 8px 12px !important; vertical-align: middle;
+}
+.ap-inline-num {
+  width: 100%; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;
+  font-size: 14px; font-weight: 600; outline: none; background: #f8fafc;
+  transition: var(--ap-transition); color: var(--ap-text-main); font-family: inherit;
+  min-width: 80px;
+}
+.ap-inline-num:focus { border-color: var(--ap-primary); background: white; box-shadow: 0 0 0 3px var(--ap-primary-glow); }
+.ap-inline-prefix-wrap { display: flex; align-items: center; gap: 4px; }
+.ap-inline-label { font-weight: 700; color: var(--ap-primary); font-size: 14px; flex-shrink: 0; }
+.ap-eng-example { font-size: 12px; color: var(--ap-text-muted); font-weight: 600; white-space: nowrap; }
+.ap-eng-table-hint { font-size: 12px; color: var(--ap-text-muted); margin-top: 12px; font-weight: 500; padding: 0 4px; }
+
+.ap-add-row-btn { font-size: 13px; padding: 8px 16px; white-space: nowrap; }
+
+.ap-del-btn {
+  background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 14px; font-weight: 700;
+  padding: 4px 8px; border-radius: 6px; transition: all 0.15s;
+}
+.ap-del-btn:hover { color: #ef4444; background: #fef2f2; }
+
+/* Multiplier matrix */
+.ap-mult-legend {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  font-size: 12px; font-weight: 600; color: var(--ap-text-muted);
+  margin-bottom: 16px; padding: 10px 16px; background: rgba(255,255,255,0.6);
+  border-radius: 10px; border: 1px solid #f1f5f9;
+}
+.ap-mult-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.ap-mult-cell { cursor: text; }
+.ap-mult-val { font-weight: 800; font-size: 14px; display: inline-block; transition: var(--ap-bounce); }
+.ap-mult-cell:hover .ap-mult-val { transform: scale(1.1); }
+.ap-inline-suffix { display: flex; align-items: center; padding: 0 10px; font-weight: 700; color: var(--ap-primary); background: rgba(230,81,0,0.06); border-left: 1px solid rgba(230,81,0,0.15); }
+
+/* Save row */
+.ap-eng-save-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+/* Re-seed button in header */
+.ap-reseed-btn { font-size: 13px; padding: 8px 16px; }
+
+/* Engine cell value */
+.ap-eng-val { font-weight: 700; font-size: 14px; display: inline-block; transition: var(--ap-bounce); }
+.ap-cell--set:hover .ap-eng-val { transform: scale(1.06); }
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 800px) {
   .admin-pricing { padding: 20px; }
@@ -373,4 +469,10 @@ tr:hover td { background: #fcfcfd; }
   .modal-body, .modal-header { padding: 20px; }
   .ap-form-row { flex-direction: column; gap: 0; }
   .ap-field--sm { margin-bottom: 20px; }
+
+  .ap-eng-section { padding: 20px; }
+  .ap-eng-row { grid-template-columns: 1fr 1fr; }
+  .ap-base-fees-grid { grid-template-columns: 1fr 1fr; }
+  .ap-eng-section-header { flex-direction: column; gap: 12px; }
+  .ap-mult-legend { gap: 10px; font-size: 11px; }
 }
