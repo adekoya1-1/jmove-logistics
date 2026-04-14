@@ -23,12 +23,33 @@ import { logAction } from '../utils/auditLog.js';
 const router = Router();
 
 // ── Waybill generator ────────────────────────────────────
+// Uses 5 random bytes (10 hex chars) — 1 trillion combinations,
+// virtually zero collision chance.
 const genWaybill = (originCity) => {
   const prefix = 'JMV';
   const city   = (originCity || 'NG').slice(0, 3).toUpperCase();
   const date   = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const rand   = randomBytes(3).toString('hex').toUpperCase();
+  const rand   = randomBytes(5).toString('hex').toUpperCase();
   return `${prefix}${city}${date}${rand}`;
+};
+
+// Retry order creation up to maxAttempts times on waybill collision
+const createOrderWithRetry = async (data, maxAttempts = 5) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await Order.create(data);
+    } catch (err) {
+      const isWaybillCollision =
+        err.code === 11000 &&
+        (err.keyPattern?.waybillNumber || err.message?.includes('waybillNumber'));
+      if (isWaybillCollision && attempt < maxAttempts) {
+        // Regenerate waybill and retry
+        data.waybillNumber = genWaybill(data.originCity);
+        continue;
+      }
+      throw err;   // re-throw anything else (or last attempt)
+    }
+  }
 };
 
 // ── Escape user input for use in regex ───────────────────
@@ -89,7 +110,7 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
     const pricing  = await calcDynamicPrice({ originCity, destinationCity, weight, serviceType, isFragile, declaredValue, truckTypeId });
     const isAdmin  = req.user.role === 'admin';
 
-    const order = await Order.create({
+    const order = await createOrderWithRetry({
       waybillNumber:  genWaybill(originCity),
       customerId:     req.user.role === 'customer' ? req.user._id : null,
       createdByStaff: isAdmin ? req.user._id : null,
@@ -130,7 +151,12 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
     });
 
     if (paymentMethod === 'online' || !paymentMethod) {
-      await Payment.create({ orderId: order._id, customerId: req.user._id, amount: pricing.totalAmount });
+      // upsert so a browser retry never throws a duplicate orderId error
+      await Payment.findOneAndUpdate(
+        { orderId: order._id },
+        { $setOnInsert: { orderId: order._id, customerId: req.user._id, amount: pricing.totalAmount } },
+        { upsert: true, new: true }
+      );
     }
 
     const recipientEmail = senderEmail || req.user.email;

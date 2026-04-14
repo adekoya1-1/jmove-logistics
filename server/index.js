@@ -280,7 +280,13 @@ app.use((err, req, res, next) => {
   if (err.code === 11000) {
     status  = 409;
     const field = Object.keys(err.keyPattern || {})[0];
-    message = field ? `${field} already exists` : 'A record with this information already exists';
+    // Map internal field names to user-friendly messages
+    const fieldMessages = {
+      waybillNumber: 'A shipment with this waybill already exists. Please try again.',
+      email:         'An account with this email already exists.',
+      orderId:       'A payment record for this order already exists.',
+    };
+    message = fieldMessages[field] || 'A record with this information already exists';
   }
   // Mongoose: validation
   if (err.name === 'ValidationError') {
