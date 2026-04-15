@@ -18,7 +18,7 @@ import crypto from 'crypto';
 import { Order, Payment, User } from '../db.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate, paymentSchemas } from '../middleware/validate.js';
-import { sendPaymentReceipt } from '../utils/email.js';
+import { sendOrderConfirmation, sendPaymentReceipt } from '../utils/email.js';
 
 const router = Router();
 
@@ -143,12 +143,19 @@ router.get('/verify', authenticate, validate(paymentSchemas.verify, 'query'), as
     const io = req.app.get('io');
     io?.to('admin:room').emit('payment:received', { orderId, reference, amount: tx.amount / 100 });
 
-    // Send receipt email
+    // Send booking confirmation + payment receipt now that payment is verified.
+    // (Confirmation is intentionally withheld at order-creation time for online
+    //  payment orders so customers don't get a "confirmed" email before they pay.)
     if (order.customerId) {
       const customer = await User.findById(order.customerId);
-      if (customer) sendPaymentReceipt({ email: customer.email, firstName: customer.firstName }, order, reference).catch(console.error);
+      if (customer) {
+        sendOrderConfirmation({ email: customer.email, firstName: customer.firstName }, order).catch(console.error);
+        sendPaymentReceipt({ email: customer.email, firstName: customer.firstName }, order, reference).catch(console.error);
+      }
     } else if (order.senderEmail) {
-      sendPaymentReceipt({ email: order.senderEmail, firstName: order.senderName.split(' ')[0] }, order, reference).catch(console.error);
+      const firstName = order.senderName?.split(' ')[0] || 'Customer';
+      sendOrderConfirmation({ email: order.senderEmail, firstName }, order).catch(console.error);
+      sendPaymentReceipt({ email: order.senderEmail, firstName }, order, reference).catch(console.error);
     }
 
     res.json({ success: true, message: 'Payment verified', data: { orderId, amount: tx.amount / 100, reference } });
@@ -222,6 +229,23 @@ router.post('/webhook', async (req, res, next) => {
           const io = req.app.get('io');
           io?.to('admin:room').emit('payment:received', { orderId, reference, amount: amount / 100 });
           console.log(`[Webhook] Payment confirmed for order ${orderId}, ref: ${reference}`);
+
+          // Send booking confirmation + receipt via webhook path
+          // (covers cases where user closed the tab before /verify was called)
+          try {
+            let recipientEmail, firstName;
+            if (order.customerId) {
+              const customer = await User.findById(order.customerId).select('email firstName').lean();
+              if (customer) { recipientEmail = customer.email; firstName = customer.firstName; }
+            } else if (order.senderEmail) {
+              recipientEmail = order.senderEmail;
+              firstName = order.senderName?.split(' ')[0] || 'Customer';
+            }
+            if (recipientEmail) {
+              sendOrderConfirmation({ email: recipientEmail, firstName }, order).catch(console.error);
+              sendPaymentReceipt({ email: recipientEmail, firstName }, order, reference).catch(console.error);
+            }
+          } catch (_) { /* non-fatal — payment is recorded, email can be retried manually */ }
         }
       }
     }

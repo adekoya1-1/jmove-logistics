@@ -214,8 +214,12 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       );
     }
 
+    // For cash / COD orders — confirm immediately (no payment step).
+    // For online payment orders — confirmation is sent AFTER payment is verified
+    // (see payments.js /verify and /webhook routes). Sending it here would mean
+    // the customer gets a "booking confirmed" email even if they never pay.
     const recipientEmail = senderEmail || req.user.email;
-    if (recipientEmail) {
+    if (recipientEmail && (paymentMethod === 'cash' || paymentMethod === 'cod')) {
       sendOrderConfirmation({ email: recipientEmail, firstName: senderName.split(' ')[0] }, order).catch(console.error);
     }
 
