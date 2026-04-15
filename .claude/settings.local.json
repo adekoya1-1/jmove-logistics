@@ -3,7 +3,8 @@
     "allow": [
       "WebFetch(domain:www.pexels.com)",
       "WebSearch",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(node --input-type=module --eval ':*)"
     ]
   }
 }
