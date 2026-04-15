@@ -28,6 +28,7 @@ import routeRoutes   from './routes/routes.js';
 import statesRoutes   from './routes/states.js';
 import socketHandler  from './utils/socketHandler.js';
 
+import compression from 'compression';
 import { noSqlSanitize, xssSanitize, hppProtect } from './middleware/sanitize.js';
 import { limiters, checkBlocked, trackAbuse }      from './middleware/rateLimit.js';
 
@@ -101,6 +102,11 @@ app.set('io', io);
 
 // 1. Trust proxy (Heroku, Vercel, Nginx — needed for req.ip to be real IP)
 app.set('trust proxy', 1);
+
+// 1a. Compression — must be registered before any response-generating middleware.
+//     level 6 = good balance of CPU cost vs ratio; threshold 1KB = skip tiny payloads.
+//     In production this cuts JS/CSS/JSON payloads by 60-70%.
+app.use(compression({ level: 6, threshold: 1024 }));
 
 // 2. Helmet — security headers
 app.use(helmet({

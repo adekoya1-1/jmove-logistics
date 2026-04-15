@@ -111,12 +111,23 @@ export default function Landing() {
       {/* ── Hero ── */}
       <section className="hero" role="banner">
         {/* Background image rendered as <img> for LCP optimization + proper alt text */}
+        {/* Hero background — LCP image.
+            srcset serves the right size for each viewport: 640px for mobile,
+            1024px for tablets, 1920px for desktops. WebP (fm=webp) is ~30% smaller
+            than JPEG at equivalent quality. fetchpriority="high" tells the browser
+            to load this before other images. */}
         <img
-          src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1920&q=75"
+          src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fm=webp&fit=crop&w=1920&q=75"
+          srcSet="
+            https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fm=webp&fit=crop&w=640&q=70   640w,
+            https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fm=webp&fit=crop&w=1024&q=72 1024w,
+            https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fm=webp&fit=crop&w=1920&q=75 1920w
+          "
+          sizes="100vw"
           alt="Fleet of JMove Logistics trucks on a Nigerian highway at dawn"
           className="hero-bg-img"
           loading="eager"
-          fetchpriority="high"
+          fetchPriority="high"
           width="1920"
           height="1080"
           decoding="async"

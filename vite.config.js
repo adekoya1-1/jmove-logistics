@@ -13,6 +13,8 @@ export default defineConfig({
     target: ['es2020', 'chrome90', 'firefox88', 'safari14'],
     chunkSizeWarningLimit: 600,
     cssCodeSplit: true,    // Per-route CSS chunks → only load what's needed
+    // Inline assets smaller than 4KB as base64 → fewer HTTP requests
+    assetsInlineLimit: 4096,
     rollupOptions: {
       output: {
         // ── Manual chunk splitting for best caching & LCP ─────────────────

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react';
 import './App.css';
 import api from './api/client.js';
 
@@ -111,58 +111,77 @@ function RequireAuth({ children, roles }) {
   return children;
 }
 
-// ── Lazy page imports ─────────────────────────────────────────────────────────
-import Landing           from './pages/Landing.jsx';
-import Login             from './pages/Login.jsx';
-import Register          from './pages/Register.jsx';
-import VerifyEmail       from './pages/VerifyEmail.jsx';
-import ForgotPassword    from './pages/ForgotPassword.jsx';
-import PaymentVerify     from './pages/PaymentVerify.jsx';
-import TrackOrder        from './pages/TrackOrder.jsx';
-import ContactUs         from './pages/ContactUs.jsx';
-import HelpSupport       from './pages/HelpSupport.jsx';
-import Careers           from './pages/Careers.jsx';
-import PrivacyPolicy     from './pages/PrivacyPolicy.jsx';
-import TermsOfService    from './pages/TermsOfService.jsx';
+// ── Page imports ──────────────────────────────────────────────────────────────
+// Eager: only the three pages a landing-page visitor might hit immediately.
+// Everything else is lazy-loaded so the initial JS bundle only contains what's
+// needed to render "/" — keeping Recharts, Leaflet, Socket.io, and 30+ page
+// components out of the critical path entirely.
+import Landing  from './pages/Landing.jsx';
+import Login    from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
 
-import AdminLayout       from './components/admin/AdminLayout.jsx';
-import AdminDashboard    from './pages/admin/AdminDashboard.jsx';
-import AdminOrders       from './pages/admin/AdminOrders.jsx';
-import AdminOrderDetail  from './pages/admin/AdminOrderDetail.jsx';
-import AdminDrivers      from './pages/admin/AdminDrivers.jsx';
-import AdminUsers        from './pages/admin/AdminUsers.jsx';
-import AdminMap          from './pages/admin/AdminMap.jsx';
-import AdminAnalytics    from './pages/admin/AdminAnalytics.jsx';
-import AdminPayments     from './pages/admin/AdminPayments.jsx';
-import AdminPricing      from './pages/admin/AdminPricing.jsx';
-import AdminCustomers    from './pages/admin/AdminCustomers.jsx';
-import AdminFleet        from './pages/admin/AdminFleet.jsx';
-import AdminSettings     from './pages/admin/AdminSettings.jsx';
-import AdminLogs         from './pages/admin/AdminLogs.jsx';
-import AdminStates       from './pages/admin/AdminStates.jsx';
-import AdminRoutes       from './pages/admin/AdminRoutes.jsx';
+// ── Lazy public pages ─────────────────────────────────────────────────────────
+const VerifyEmail    = lazy(() => import('./pages/VerifyEmail.jsx'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
+const PaymentVerify  = lazy(() => import('./pages/PaymentVerify.jsx'));
+const TrackOrder     = lazy(() => import('./pages/TrackOrder.jsx'));
+const ContactUs      = lazy(() => import('./pages/ContactUs.jsx'));
+const HelpSupport    = lazy(() => import('./pages/HelpSupport.jsx'));
+const Careers        = lazy(() => import('./pages/Careers.jsx'));
+const PrivacyPolicy  = lazy(() => import('./pages/PrivacyPolicy.jsx'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService.jsx'));
 
-import CustomerLayout    from './components/customer/CustomerLayout.jsx';
-import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
-import CustomerOrders    from './pages/customer/CustomerOrders.jsx';
-import CustomerOrderDetail from './pages/customer/CustomerOrderDetail.jsx';
-import NewOrder          from './pages/customer/NewOrder.jsx';
-import CustomerPayments  from './pages/customer/CustomerPayments.jsx';
+// ── Lazy admin pages (Recharts + Leaflet live here) ───────────────────────────
+const AdminLayout      = lazy(() => import('./components/admin/AdminLayout.jsx'));
+const AdminDashboard   = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
+const AdminOrders      = lazy(() => import('./pages/admin/AdminOrders.jsx'));
+const AdminOrderDetail = lazy(() => import('./pages/admin/AdminOrderDetail.jsx'));
+const AdminDrivers     = lazy(() => import('./pages/admin/AdminDrivers.jsx'));
+const AdminUsers       = lazy(() => import('./pages/admin/AdminUsers.jsx'));
+const AdminMap         = lazy(() => import('./pages/admin/AdminMap.jsx'));
+const AdminAnalytics   = lazy(() => import('./pages/admin/AdminAnalytics.jsx'));
+const AdminPayments    = lazy(() => import('./pages/admin/AdminPayments.jsx'));
+const AdminPricing     = lazy(() => import('./pages/admin/AdminPricing.jsx'));
+const AdminCustomers   = lazy(() => import('./pages/admin/AdminCustomers.jsx'));
+const AdminFleet       = lazy(() => import('./pages/admin/AdminFleet.jsx'));
+const AdminSettings    = lazy(() => import('./pages/admin/AdminSettings.jsx'));
+const AdminLogs        = lazy(() => import('./pages/admin/AdminLogs.jsx'));
+const AdminStates      = lazy(() => import('./pages/admin/AdminStates.jsx'));
+const AdminRoutes      = lazy(() => import('./pages/admin/AdminRoutes.jsx'));
 
-import DriverLayout      from './components/driver/DriverLayout.jsx';
-import DriverDashboard   from './pages/driver/DriverDashboard.jsx';
-import DriverJobs        from './pages/driver/DriverJobs.jsx';
-import DriverActive      from './pages/driver/DriverActive.jsx';
-import DriverHistory     from './pages/driver/DriverHistory.jsx';
-import DriverProfile     from './pages/driver/DriverProfile.jsx';
-import DriverPerformance from './pages/driver/DriverPerformance.jsx';
-import DriverRoute       from './pages/driver/DriverRoute.jsx';
+// ── Lazy customer pages ───────────────────────────────────────────────────────
+const CustomerLayout     = lazy(() => import('./components/customer/CustomerLayout.jsx'));
+const CustomerDashboard  = lazy(() => import('./pages/customer/CustomerDashboard.jsx'));
+const CustomerOrders     = lazy(() => import('./pages/customer/CustomerOrders.jsx'));
+const CustomerOrderDetail = lazy(() => import('./pages/customer/CustomerOrderDetail.jsx'));
+const NewOrder           = lazy(() => import('./pages/customer/NewOrder.jsx'));
+const CustomerPayments   = lazy(() => import('./pages/customer/CustomerPayments.jsx'));
+
+// ── Lazy driver pages (Socket.io lives here) ──────────────────────────────────
+const DriverLayout      = lazy(() => import('./components/driver/DriverLayout.jsx'));
+const DriverDashboard   = lazy(() => import('./pages/driver/DriverDashboard.jsx'));
+const DriverJobs        = lazy(() => import('./pages/driver/DriverJobs.jsx'));
+const DriverActive      = lazy(() => import('./pages/driver/DriverActive.jsx'));
+const DriverHistory     = lazy(() => import('./pages/driver/DriverHistory.jsx'));
+const DriverProfile     = lazy(() => import('./pages/driver/DriverProfile.jsx'));
+const DriverPerformance = lazy(() => import('./pages/driver/DriverPerformance.jsx'));
+const DriverRoute       = lazy(() => import('./pages/driver/DriverRoute.jsx'));
+
+// ── Suspense fallback — same spinner used by the auth loader ──────────────────
+function PageLoader() {
+  return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)' }}>
+      <div className="spinner spinner-lg" />
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <ScrollToTop />
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public */}
           <Route path="/"                 element={<Landing />} />
@@ -219,6 +238,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

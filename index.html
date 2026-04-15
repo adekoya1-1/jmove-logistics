@@ -46,6 +46,9 @@
     <!-- ── Performance: preconnect to critical origins ───────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Unsplash CDN: preconnect cuts DNS+TLS from the LCP hero image request -->
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
     <link rel="dns-prefetch" href="https://api.paystack.co" />
 
     <!-- ── Organisation + LocalBusiness JSON-LD (always present) ──────
