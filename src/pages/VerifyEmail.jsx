@@ -99,7 +99,7 @@ export default function VerifyEmail() {
 
     // Auto-submit when all 6 filled
     const code = next.join('');
-    if (code.length === 6 && !code.includes('')) {
+    if (code.length === 6 && !next.includes('')) {
       submitOtp(code);
     }
   };
@@ -273,7 +273,7 @@ export default function VerifyEmail() {
               <button
                 className="btn-primary ve-submit"
                 onClick={() => submitOtp(otp)}
-                disabled={loading || otp.length < 6 || otp.includes('') || expired}
+                disabled={loading || otp.length < 6 || digits.includes('') || expired}
               >
                 {loading
                   ? <span className="spinner spinner-sm" style={{ borderTopColor: 'white' }} />
