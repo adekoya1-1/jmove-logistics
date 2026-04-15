@@ -1,9 +1,35 @@
 import mongoose from 'mongoose';
 
+// ── Drop stale indexes left over from previous schema versions ───────────────
+// Run once after connection. Non-fatal: a failure here just means the cleanup
+// didn't happen — it never prevents the server from starting.
+const dropStaleIndexes = async () => {
+  try {
+    const col = mongoose.connection.collection('orders');
+    const indexes = await col.indexes();
+
+    // Fields that were renamed / removed in current schema
+    const STALE_FIELDS = ['orderNumber', 'orderNo', 'shipmentNumber'];
+
+    for (const idx of indexes) {
+      const fields = Object.keys(idx.key || {});
+      if (fields.some(f => STALE_FIELDS.includes(f))) {
+        await col.dropIndex(idx.name);
+        console.log(`✅ Dropped stale DB index: "${idx.name}" (fields: ${fields.join(', ')})`);
+      }
+    }
+  } catch (err) {
+    // Non-fatal — log and continue; cleanup will retry on next deploy
+    console.warn('[DB] Could not clean stale indexes:', err.message);
+  }
+};
+
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
+    // Clean up any indexes left over from previous schema versions
+    await dropStaleIndexes();
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
     process.exit(1);
