@@ -249,3 +249,136 @@
   .pt-total         { font-size: 28px; }
 }
 @media (max-width: 400px) { .step-label { display: none; } }
+
+/* ── Payment step — order summary card ─────────────────── */
+.payment-order-summary {
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0 0 2px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.pos-header {
+  font-size: 11px; font-weight: 700; color: var(--brand);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 10px 18px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--brand-dim);
+}
+.pos-route {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 14px 18px 4px;
+  font-size: 15px; font-weight: 800; color: var(--text);
+}
+.pos-city   { display: flex; align-items: center; gap: 6px; }
+.pos-dot    { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.pos-dot.origin { background: var(--brand); }
+.pos-dot.dest   { background: var(--green); }
+.pos-arrow  { font-size: 17px; color: var(--text-faint); }
+.pos-badge  {
+  margin-left: auto; background: var(--blue-light); color: var(--blue);
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.pos-meta {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 4px 18px 12px;
+  font-size: 13px; color: var(--text-muted);
+}
+.pos-meta-sep { color: var(--border-strong); }
+.pos-divider  { height: 1px; background: var(--border); margin: 0 18px; }
+.pos-amount-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px;
+}
+.pos-amount-label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.pos-amount-value {
+  font-size: 26px; font-weight: 900; color: var(--brand);
+  letter-spacing: -0.02em;
+}
+
+/* ── Payment security notice ──────────────────────────── */
+.payment-secure-notice {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #f0fdf4; border: 1px solid #bbf7d0;
+  color: #15803d; font-size: 12.5px; font-weight: 500;
+  padding: 11px 14px; border-radius: var(--radius);
+  line-height: 1.5; margin-bottom: 14px;
+}
+.payment-secure-notice svg { flex-shrink: 0; margin-top: 1px; }
+
+/* ── Payment reference tag ────────────────────────────── */
+.payment-ref-tag {
+  font-size: 12px; color: var(--text-faint);
+  text-align: center; margin-bottom: 16px;
+  letter-spacing: 0.01em;
+}
+.payment-ref-tag strong { color: var(--text-muted); }
+
+/* ── Paystack pay button ──────────────────────────────── */
+.btn-paystack {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 15px 24px;
+  background: linear-gradient(135deg, #00b09b, #00c3a7);
+  color: #fff; font-size: 16px; font-weight: 800;
+  border: none; border-radius: var(--radius-lg);
+  cursor: pointer; letter-spacing: 0.01em;
+  box-shadow: 0 4px 18px rgba(0,195,167,0.35);
+  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+  position: relative; overflow: hidden;
+}
+.btn-paystack::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.btn-paystack:hover:not(:disabled) {
+  background: linear-gradient(135deg, #009e8e, #00b09b);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0,195,167,0.4);
+}
+.btn-paystack:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(0,195,167,0.3);
+}
+.btn-paystack:disabled {
+  opacity: 0.65; cursor: not-allowed;
+  transform: none; box-shadow: none;
+}
+
+/* ── Paystack trust badges ────────────────────────────── */
+.paystack-badges {
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--text-faint); font-weight: 500;
+  margin-top: 10px;
+}
+
+/* ── Verifying overlay (after popup success) ──────────── */
+.payment-verifying {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 40px 24px; text-align: center;
+}
+.payment-verify-spinner {
+  width: 44px; height: 44px;
+  border: 4px solid var(--border);
+  border-top-color: #00c3a7;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.pv-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.pv-sub   { font-size: 13px; color: var(--text-muted); }
+
+/* ── Success screen — reference line ─────────────────── */
+.success-ref {
+  font-size: 12px; color: var(--text-faint);
+  margin-top: -6px;
+}
+.success-ref strong { color: var(--text-muted); }
+
+/* ── Responsive additions ─────────────────────────────── */
+@media (max-width: 600px) {
+  .pos-amount-value { font-size: 22px; }
+  .btn-paystack     { font-size: 14px; padding: 13px 18px; }
+}
