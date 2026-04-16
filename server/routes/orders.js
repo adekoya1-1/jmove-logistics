@@ -192,6 +192,12 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       // Full breakdown stored for admin/receipt display
       pricingBreakdown: pricing.breakdown,
 
+      // For WhatsApp orders: lock the system-calculated quote immediately so it
+      // can never be accidentally overwritten during admin confirmation.
+      // finalPrice starts as null — set by admin on confirmation.
+      systemQuote: paymentMethod === 'whatsapp' ? pricing.totalAmount : null,
+      finalPrice:  null,
+
       paymentMethod:  paymentMethod || 'online',
       // cash/COD are paid at collection — mark paid immediately.
       // whatsapp is manual — payment confirmed later by admin.
@@ -630,24 +636,42 @@ router.put('/:id/confirm-whatsapp-payment', authenticate, authorize('admin'),
     const { finalPrice, note } = req.body;
     const prevStatus = order.status;
 
-    // Price negotiation: preserve the original system quote and update totalAmount
-    if (finalPrice !== undefined && finalPrice !== null) {
-      order.systemQuote = order.systemQuote ?? order.totalAmount; // preserve original if not already saved
-      order.finalPrice  = finalPrice;
-      order.totalAmount = finalPrice;
+    // finalPrice is validated as required by whatsappSchemas.confirm (Zod),
+    // but we add an explicit guard here as a belt-and-suspenders safety net.
+    if (finalPrice === undefined || finalPrice === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter the final confirmed amount before proceeding.',
+      });
     }
+
+    // Always preserve the original system quote (set at order creation).
+    // If — for legacy orders — it wasn't captured then, fall back to totalAmount.
+    // NEVER overwrite systemQuote once it has been set.
+    if (order.systemQuote === null || order.systemQuote === undefined) {
+      order.systemQuote = order.totalAmount;
+    }
+
+    // Record the actual agreed/paid amount and update totalAmount for invoicing.
+    order.finalPrice  = finalPrice;
+    order.totalAmount = finalPrice;
 
     order.status        = 'booked';
     order.paymentStatus = 'paid';
     if (note) order.whatsappNote = note;
+
+    const priceDiff = finalPrice - order.systemQuote;
+    const diffNote  = priceDiff !== 0
+      ? ` (${priceDiff > 0 ? '+' : ''}₦${Math.abs(priceDiff).toLocaleString()} vs quote)`
+      : ' (matched quote exactly)';
 
     order.statusHistory.push({
       fromStatus: prevStatus,
       toStatus:   'booked',
       changedBy:  req.user._id,
       note: note ||
-        `WhatsApp payment confirmed by ${req.user.firstName} ${req.user.lastName}` +
-        (finalPrice !== undefined ? ` (final price: ₦${finalPrice.toLocaleString()})` : ''),
+        `WhatsApp payment confirmed by ${req.user.firstName} ${req.user.lastName}. ` +
+        `Final: ₦${finalPrice.toLocaleString()} | Quote: ₦${order.systemQuote.toLocaleString()}${diffNote}`,
     });
     await order.save();
 

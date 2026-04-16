@@ -50,20 +50,31 @@ function ConfirmModal({ order, onClose, onConfirmed }) {
   const [note,       setNote]       = useState('');
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState('');
+  const [touched,    setTouched]    = useState(false); // show inline error only after first submit attempt
+
+  const systemQuote   = order.systemQuote ?? order.totalAmount;
+  const parsedFinal   = parseFloat(finalPrice);
+  const isValidPrice  = finalPrice.trim() !== '' && !isNaN(parsedFinal) && parsedFinal > 0;
+  const diff          = isValidPrice ? parsedFinal - systemQuote : null;
+  const canConfirm    = isValidPrice && !loading;
 
   const handleConfirm = async () => {
+    setTouched(true);
+
+    // Hard client-side guard — matches the server validation exactly
+    if (!isValidPrice) {
+      setError('Please enter the final confirmed amount before proceeding.');
+      return;
+    }
+
     setError(''); setLoading(true);
     try {
-      const fp = finalPrice.trim() ? parseFloat(finalPrice) : undefined;
-      await ordersAPI.confirmWhatsappPayment(order._id, fp, note.trim() || undefined);
+      await ordersAPI.confirmWhatsappPayment(order._id, parsedFinal, note.trim() || undefined);
       onConfirmed();
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Failed to confirm payment');
     } finally { setLoading(false); }
   };
-
-  const systemQuote = order.systemQuote ?? order.totalAmount;
-  const diff        = finalPrice.trim() ? parseFloat(finalPrice) - systemQuote : 0;
 
   return (
     <div className="wao-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -98,36 +109,71 @@ function ConfirmModal({ order, onClose, onConfirmed }) {
             </div>
           </div>
 
-          {/* Optional final price */}
+          {/* ── Final price — REQUIRED ── */}
           <div className="wao-modal-field">
             <label className="wao-modal-label">
-              Final Agreed Price (₦)
-              <span className="wao-modal-hint"> — leave blank to use system quote</span>
+              Final Confirmed Amount (₦)
+              <span className="wao-required-star"> *</span>
             </label>
+            <p className="wao-field-instruction">
+              Enter the exact amount the customer actually paid — this is recorded permanently and cannot be changed after confirmation.
+            </p>
             <input
               type="number"
-              className="wao-modal-input"
+              className={`wao-modal-input ${touched && !isValidPrice ? 'wao-input-error' : ''}`}
               value={finalPrice}
-              onChange={e => setFinalPrice(e.target.value)}
-              placeholder={`${fmt(systemQuote)} (current quote)`}
-              min="0"
+              onChange={e => { setFinalPrice(e.target.value); if (touched) setError(''); }}
+              onBlur={() => setTouched(true)}
+              placeholder="e.g. 45000"
+              min="1"
+              autoFocus
             />
-            {finalPrice.trim() && !isNaN(diff) && diff !== 0 && (
-              <p className={`wao-price-diff ${diff < 0 ? 'negative' : 'positive'}`}>
-                {diff > 0 ? `+₦${fmt(diff)} above quote` : `-₦${fmt(Math.abs(diff))} below quote`}
+
+            {/* Price adjustment display — always shown once a valid amount is entered */}
+            {isValidPrice && diff !== null && (
+              <div className="wao-price-adjustment">
+                <div className="wao-pa-row">
+                  <span className="wao-pa-lbl">System Quote</span>
+                  <span className="wao-pa-val">₦{fmt(systemQuote)}</span>
+                </div>
+                <div className="wao-pa-row">
+                  <span className="wao-pa-lbl">Final Amount</span>
+                  <span className="wao-pa-val wao-pa-final">₦{fmt(parsedFinal)}</span>
+                </div>
+                <div className="wao-pa-divider" />
+                <div className="wao-pa-row">
+                  <span className="wao-pa-lbl">Price Adjustment</span>
+                  <span className={`wao-pa-diff ${diff === 0 ? 'zero' : diff > 0 ? 'positive' : 'negative'}`}>
+                    {diff === 0
+                      ? '± ₦0 (exact match)'
+                      : diff > 0
+                      ? `+₦${fmt(diff)} above quote`
+                      : `-₦${fmt(Math.abs(diff))} below quote`}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Inline required error — shown after first submit attempt */}
+            {touched && !isValidPrice && (
+              <p className="wao-field-error">
+                ⚠ Please enter the final confirmed amount before proceeding.
               </p>
             )}
           </div>
 
           {/* Admin note */}
           <div className="wao-modal-field">
-            <label className="wao-modal-label">Confirmation Note (optional)</label>
+            <label className="wao-modal-label">
+              Confirmation Note
+              <span className="wao-modal-hint"> — optional (e.g. payment ref, bank name)</span>
+            </label>
             <textarea
               className="wao-modal-input"
               style={{ resize: 'none', height: 68 }}
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder="e.g. Payment verified via Opay screenshot, ref #ABC123"
+              placeholder="e.g. Verified via Opay screenshot, ref #ABC123"
             />
           </div>
 
@@ -135,8 +181,15 @@ function ConfirmModal({ order, onClose, onConfirmed }) {
         </div>
 
         <div className="wao-modal-footer">
-          <button className="wao-btn-secondary" onClick={onClose} disabled={loading}>Cancel</button>
-          <button className="wao-btn-confirm" onClick={handleConfirm} disabled={loading}>
+          <button className="wao-btn-secondary" onClick={onClose} disabled={loading}>
+            Cancel
+          </button>
+          <button
+            className="wao-btn-confirm"
+            onClick={handleConfirm}
+            disabled={!canConfirm}
+            title={!isValidPrice ? 'Enter the final amount first' : undefined}
+          >
             {loading
               ? <span className="wao-spinner" />
               : '✅ Confirm & Activate Order'}

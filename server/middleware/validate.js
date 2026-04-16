@@ -337,10 +337,14 @@ export const whatsappSchemas = {
   }),
 
   // Admin confirms payment and activates the order.
-  // finalPrice is optional — only set when the agreed price differs from systemQuote.
+  // finalPrice is REQUIRED — it must always reflect the actual agreed/paid amount.
+  // The system quote is preserved separately in systemQuote and must not be overwritten.
   confirm: z.object({
-    finalPrice: z.coerce.number().min(0).max(100_000_000).optional(),
-    note:       z.string().max(500).trim().optional(),
+    finalPrice: z.coerce
+      .number({ required_error: 'Please enter the final confirmed amount before proceeding.' })
+      .min(1, 'Final price must be greater than zero')
+      .max(100_000_000, 'Final price exceeds maximum allowed value'),
+    note: z.string().max(500).trim().optional(),
   }),
 
   // Admin cancels a pre-booked WhatsApp order
