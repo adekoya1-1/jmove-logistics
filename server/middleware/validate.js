@@ -138,7 +138,7 @@ export const orderSchemas = {
 
     serviceType:      z.enum(['standard', 'express', 'sameday']).optional().default('standard'),
     deliveryMode:     z.enum(['door', 'depot']).optional().default('door'),
-    paymentMethod:    z.enum(['online', 'cash', 'cod', 'wallet']).optional().default('online'),
+    paymentMethod:    z.enum(['online', 'cash', 'cod', 'wallet', 'whatsapp']).optional().default('online'),
     codAmount:        z.coerce.number().min(0).max(100_000_000).optional().default(0),
 
     pickupLat:        z.coerce.number().min(-90).max(90).optional(),
@@ -188,7 +188,7 @@ export const orderSchemas = {
   }),
 
   listQuery: z.object({
-    status:       z.enum(['booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled']).or(z.literal('')).optional(),
+    status:       z.enum(['pending_contact','booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled']).or(z.literal('')).optional(),
     deliveryType: z.enum(['intrastate','interstate']).or(z.literal('')).optional(),
     serviceType:  z.enum(['standard','express','sameday']).or(z.literal('')).optional(),
     page:         z.coerce.number().int().min(1).max(1000).optional().default(1),

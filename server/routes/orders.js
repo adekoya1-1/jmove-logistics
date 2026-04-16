@@ -193,13 +193,23 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       pricingBreakdown: pricing.breakdown,
 
       paymentMethod:  paymentMethod || 'online',
+      // cash/COD are paid at collection — mark paid immediately.
+      // whatsapp is manual — payment confirmed later by admin.
+      // online/wallet stay pending until Paystack webhook confirms.
       paymentStatus:  (paymentMethod === 'cash' || paymentMethod === 'cod') ? 'paid' : 'pending',
       codAmount:      paymentMethod === 'cod' ? +codAmount || 0 : 0,
 
       pickupLat, pickupLng, deliveryLat, deliveryLng,
       staffNotes: isAdmin ? staffNotes : undefined,  // only admin can set staffNotes
 
-      statusHistory: [{ toStatus: 'booked', changedBy: req.user._id }],
+      // WhatsApp orders start as pending_contact until admin confirms manual payment.
+      // All other methods enter the fulfilment queue immediately as 'booked'.
+      status: paymentMethod === 'whatsapp' ? 'pending_contact' : 'booked',
+      statusHistory: [{
+        toStatus:  paymentMethod === 'whatsapp' ? 'pending_contact' : 'booked',
+        changedBy: req.user._id,
+        note: paymentMethod === 'whatsapp' ? 'Order created — awaiting WhatsApp payment confirmation' : undefined,
+      }],
 
       // Stored for idempotency — backend returns existing order on retry
       idempotencyKey: idempotencyKey || null,
@@ -214,10 +224,10 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       );
     }
 
-    // For cash / COD orders — confirm immediately (no payment step).
-    // For online payment orders — confirmation is sent AFTER payment is verified
-    // (see payments.js /verify and /webhook routes). Sending it here would mean
-    // the customer gets a "booking confirmed" email even if they never pay.
+    // Email sending rules:
+    //   cash / cod     → confirm immediately (payment is at collection, order is live)
+    //   online / wallet → confirm AFTER Paystack verifies (payments.js /verify + /webhook)
+    //   whatsapp        → confirm AFTER admin manually confirms payment (/confirm-whatsapp-payment)
     const recipientEmail = senderEmail || req.user.email;
     if (recipientEmail && (paymentMethod === 'cash' || paymentMethod === 'cod')) {
       sendOrderConfirmation({ email: recipientEmail, firstName: senderName.split(' ')[0] }, order).catch(console.error);
@@ -523,6 +533,62 @@ router.post('/:id/note', authenticate, authorize('driver', 'admin'),
     io?.to(`order:${order._id}`).emit('order:noteAdded', { orderId: order._id, note: note.trim() });
 
     res.json({ success: true, message: 'Update sent to admin', data: entry });
+  } catch (e) { next(e); }
+});
+
+// ── PUT /api/orders/:id/confirm-whatsapp-payment ─────────
+// Admin-only: manually confirms that a WhatsApp payment was received.
+// Moves the order from pending_contact → booked and marks paymentStatus paid.
+// Sends the customer a booking confirmation email at this point.
+router.put('/:id/confirm-whatsapp-payment', authenticate, authorize('admin'),
+  validate(orderSchemas.idParam, 'params'),
+  async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('customerId', 'email firstName lastName');
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    if (order.paymentMethod !== 'whatsapp') {
+      return res.status(400).json({ success: false, message: 'This route is only for WhatsApp payment orders.' });
+    }
+    if (order.status !== 'pending_contact') {
+      return res.status(400).json({ success: false, message: `Order is already in status "${order.status}" — cannot re-confirm.` });
+    }
+
+    order.status        = 'booked';
+    order.paymentStatus = 'paid';
+    order.statusHistory.push({
+      fromStatus: 'pending_contact',
+      toStatus:   'booked',
+      changedBy:  req.user._id,
+      note:       `WhatsApp payment manually confirmed by ${req.user.firstName} ${req.user.lastName}`,
+    });
+    await order.save();
+
+    // Notify drivers of newly available job
+    const io = req.app.get('io');
+    io?.to('drivers:room').emit('job:new', {
+      orderId:         order._id,
+      waybillNumber:   order.waybillNumber,
+      originCity:      order.originCity,
+      destinationCity: order.destinationCity,
+      totalAmount:     order.totalAmount,
+      serviceType:     order.serviceType,
+    });
+
+    // Send booking confirmation email — deferred until now for WhatsApp orders
+    const recipientEmail = order.customerId?.email || order.senderEmail;
+    const firstName      = order.customerId?.firstName || order.senderName?.split(' ')[0] || 'Customer';
+    if (recipientEmail) {
+      sendOrderConfirmation({ email: recipientEmail, firstName }, order).catch(console.error);
+    }
+
+    await logAction(req, 'order.whatsapp_payment_confirmed', 'Order', order._id, {
+      waybill: order.waybillNumber,
+      confirmedBy: req.user._id,
+    });
+
+    res.json({ success: true, message: 'WhatsApp payment confirmed. Order is now active.', data: { order } });
   } catch (e) { next(e); }
 });
 

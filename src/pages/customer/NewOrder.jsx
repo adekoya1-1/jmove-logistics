@@ -10,7 +10,8 @@
  * States
  * ──────
  *   route  →  package  →  quoted  →  paying  →  verifying  →  confirmed
- *                                   ↘  booked  (cash / COD path)
+ *                                   ↘  booked    (cash / COD path)
+ *                                   ↘  whatsapp  (manual payment path)
  *
  * Persistence
  * ───────────
@@ -56,16 +57,17 @@ const S = {
   VERIFYING: 'verifying',  // Step 4 — backend verification in progress
   CONFIRMED: 'confirmed',  // Step 4 — paid & verified (terminal)
   BOOKED:    'booked',     // Step 4 — cash/COD, no upfront payment (terminal)
+  WHATSAPP:  'whatsapp',   // Step 4 — manual WhatsApp payment (terminal)
 };
 
 // Which visual step number each machine state maps to
-const VISUAL_STEP = { route: 1, package: 2, quoted: 3, paying: 4, verifying: 4, confirmed: 4, booked: 4 };
+const VISUAL_STEP = { route: 1, package: 2, quoted: 3, paying: 4, verifying: 4, confirmed: 4, booked: 4, whatsapp: 4 };
 
 // Forward transitions — only these are allowed
 const VALID_NEXT = {
   [S.ROUTE]:     [S.PACKAGE],
   [S.PACKAGE]:   [S.QUOTED],
-  [S.QUOTED]:    [S.PAYING, S.BOOKED],
+  [S.QUOTED]:    [S.PAYING, S.BOOKED, S.WHATSAPP],
   [S.PAYING]:    [S.VERIFYING],
   [S.VERIFYING]: [S.CONFIRMED],
 };
@@ -100,9 +102,10 @@ const DELIVERY_MODES = [
 ];
 
 const PAYMENT_METHODS = [
-  { value: 'online', label: 'Pay Online',       desc: 'Card, bank transfer or USSD via Paystack', icon: '💳' },
-  { value: 'cash',   label: 'Pay at Centre',    desc: 'Pay cash when you drop off at our office', icon: '🏢' },
-  { value: 'cod',    label: 'Cash on Delivery', desc: 'Receiver pays on delivery (e-commerce)',   icon: '📦' },
+  { value: 'online',    label: 'Pay Online',          desc: 'Card, bank transfer or USSD via Paystack',   icon: '💳' },
+  { value: 'cash',      label: 'Pay at Centre',        desc: 'Pay cash when you drop off at our office',   icon: '🏢' },
+  { value: 'cod',       label: 'Cash on Delivery',     desc: 'Receiver pays on delivery (e-commerce)',     icon: '📦' },
+  { value: 'whatsapp',  label: 'Pay via WhatsApp',     desc: 'Chat with us on WhatsApp & send proof of payment', icon: '📱' },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -179,6 +182,7 @@ export default function NewOrder() {
   const [orderId,      setOrderId]      = useState(null);
   const [paymentInit,  setPaymentInit]  = useState(null);   // { reference, access_code }
   const [payTab,       setPayTab]       = useState('card'); // payment method preview tab
+  const [bookedOrder,  setBookedOrder]  = useState(null);   // { waybillNumber } after booking
 
   /* ── UI state ── */
   const [loading,    setLoading]    = useState(false);
@@ -222,8 +226,8 @@ export default function NewOrder() {
     const saved = loadSession();
     if (!saved) return;
     const { state: savedState } = saved;
-    // Only restore non-terminal states; confirmed/booked sessions are stale
-    if (savedState && savedState !== S.CONFIRMED && savedState !== S.BOOKED) {
+    // Only restore non-terminal states; confirmed/booked/whatsapp sessions are stale
+    if (savedState && savedState !== S.CONFIRMED && savedState !== S.BOOKED && savedState !== S.WHATSAPP) {
       setMachineState(savedState);
       if (saved.form)        setForm(saved.form);
       if (saved.pricing)     setPricing(saved.pricing);
@@ -237,7 +241,7 @@ export default function NewOrder() {
      Terminal states clear the session instead of saving it.
   ───────────────────────────────────────────────────────── */
   useEffect(() => {
-    if (machineState === S.CONFIRMED || machineState === S.BOOKED) {
+    if (machineState === S.CONFIRMED || machineState === S.BOOKED || machineState === S.WHATSAPP) {
       clearSession();
     } else {
       saveSession({ state: machineState, form, pricing, orderId, paymentInit });
@@ -400,11 +404,16 @@ export default function NewOrder() {
         idempotencyKey: idempotencyKey.current,
       });
 
-      setOrderId(orderRes.data.order._id);
+      const createdOrder = orderRes.data.order;
+      setOrderId(createdOrder._id);
 
       if (form.paymentMethod === 'online') {
         /* Advance to the payment step — init happens when user clicks Pay */
         transition(S.PAYING);
+      } else if (form.paymentMethod === 'whatsapp') {
+        /* WhatsApp manual payment — reserve the order then redirect */
+        setBookedOrder({ waybillNumber: createdOrder.waybillNumber });
+        transition(S.WHATSAPP);
       } else {
         /* Cash / COD — no online payment needed */
         transition(S.BOOKED);
@@ -419,6 +428,30 @@ export default function NewOrder() {
       setLoading(false);
       submitting.current = false;
     }
+  };
+
+  /**
+   * Builds the wa.me redirect URL with a pre-filled message containing
+   * enough order context for our operations team to identify and confirm
+   * the payment manually.
+   */
+  const generateWhatsAppUrl = () => {
+    const waNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '2348000000000';
+    const waybill  = bookedOrder?.waybillNumber || orderId || 'N/A';
+    const amount   = pricing?.totalAmount ? `₦${fmt(pricing.totalAmount)}` : 'as quoted';
+    const msg = [
+      `Hello JMove Logistics 👋`,
+      ``,
+      `I just booked a shipment and would like to make payment via WhatsApp.`,
+      ``,
+      `📦 *Waybill:* ${waybill}`,
+      `🚚 *Route:* ${form.originCity} → ${form.destinationCity}`,
+      `📦 *Package:* ${form.description} (${form.weight} kg)`,
+      `💰 *Amount:* ${amount}`,
+      ``,
+      `Please confirm receipt of payment once sent. Thank you!`,
+    ].join('\n');
+    return `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
   };
 
   /**
@@ -539,7 +572,7 @@ export default function NewOrder() {
     clearSession();
     idempotencyKey.current = `idem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     setMachineState(S.ROUTE);
-    setPricing(null); setOrderId(null); setPaymentInit(null);
+    setPricing(null); setOrderId(null); setPaymentInit(null); setBookedOrder(null);
     setError('');
     setForm({
       senderName:    `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
@@ -560,7 +593,7 @@ export default function NewOrder() {
      RENDER
   ═══════════════════════════════════════════════════════ */
   const currentVisualStep = VISUAL_STEP[machineState] || 1;
-  const isTerminal = machineState === S.CONFIRMED || machineState === S.BOOKED;
+  const isTerminal = machineState === S.CONFIRMED || machineState === S.BOOKED || machineState === S.WHATSAPP;
 
   return (
     <div className="new-order">
@@ -936,6 +969,8 @@ export default function NewOrder() {
                   ? <span className="spinner spinner-sm" style={{ borderTopColor: 'white' }} />
                   : form.paymentMethod === 'online'
                   ? 'Confirm & Proceed to Payment →'
+                  : form.paymentMethod === 'whatsapp'
+                  ? '📱 Confirm & Chat on WhatsApp →'
                   : '📦 Confirm Booking'}
               </button>
             </div>
@@ -1269,6 +1304,101 @@ export default function NewOrder() {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+              <button className="btn-primary step-cta" onClick={() => navigate('/dashboard/orders')}>
+                View My Shipments
+              </button>
+              <button
+                className="btn-secondary"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={bookAnother}
+              >
+                Book Another Shipment
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════
+            STEP 4d — WhatsApp (manual payment)
+        ════════════════════════════════════════════════ */}
+        {machineState === S.WHATSAPP && (
+          <div className="order-step fade-in">
+            <div className="wa-header">
+              <div className="wa-icon">📱</div>
+              <h2 className="step-title" style={{ textAlign: 'center', marginBottom: 4 }}>
+                Shipment Reserved!
+              </h2>
+              <p className="success-sub" style={{ marginBottom: 0 }}>
+                Your shipment has been reserved. Complete payment by chatting with us on WhatsApp.
+              </p>
+            </div>
+
+            {bookedOrder?.waybillNumber && (
+              <div className="wa-waybill-tag">
+                Waybill: <strong>{bookedOrder.waybillNumber}</strong>
+              </div>
+            )}
+
+            {pricing && (
+              <div className="success-amount">
+                <p className="sa-val">₦{fmt(pricing.totalAmount)}</p>
+                <p className="sa-lbl">Amount to pay</p>
+              </div>
+            )}
+
+            {/* Pre-filled message preview */}
+            <div className="wa-message-preview">
+              <div className="wa-mp-header">
+                <span className="wa-mp-icon">💬</span>
+                <span className="wa-mp-title">Pre-filled WhatsApp Message</span>
+              </div>
+              <div className="wa-mp-body">
+                <p>Hello JMove Logistics 👋</p>
+                <p>I just booked a shipment and would like to make payment via WhatsApp.</p>
+                <p>
+                  📦 <strong>Waybill:</strong> {bookedOrder?.waybillNumber || orderId || 'N/A'}<br />
+                  🚚 <strong>Route:</strong> {form.originCity} → {form.destinationCity}<br />
+                  📦 <strong>Package:</strong> {form.description} ({form.weight} kg)<br />
+                  💰 <strong>Amount:</strong> {pricing?.totalAmount ? `₦${fmt(pricing.totalAmount)}` : 'as quoted'}
+                </p>
+                <p>Please confirm receipt of payment once sent. Thank you!</p>
+              </div>
+            </div>
+
+            <div className="wa-steps">
+              {[
+                { n: '1', t: 'Tap the button below',    d: 'WhatsApp will open with the message pre-filled.' },
+                { n: '2', t: 'Make your payment',        d: 'Transfer to our account number and send proof.' },
+                { n: '3', t: 'Send payment proof',       d: 'Send your bank receipt or screenshot in the chat.' },
+                { n: '4', t: 'We confirm & dispatch',    d: 'Our team verifies and activates your shipment within minutes.' },
+              ].map(s => (
+                <div key={s.n} className="wa-step-row">
+                  <div className="wa-step-num">{s.n}</div>
+                  <div>
+                    <p className="wa-step-title">{s.t}</p>
+                    <p className="wa-step-desc">{s.d}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <a
+              href={generateWhatsAppUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-whatsapp"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.570-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              Chat on WhatsApp — ₦{fmt(pricing?.totalAmount)}
+            </a>
+
+            <p className="wa-disclaimer">
+              Your shipment is reserved for <strong>24 hours</strong>. It will be cancelled automatically if payment is not confirmed within this window.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', marginTop: 8 }}>
               <button className="btn-primary step-cta" onClick={() => navigate('/dashboard/orders')}>
                 View My Shipments
               </button>

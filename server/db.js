@@ -128,15 +128,16 @@ const orderSchema = new mongoose.Schema({
   fragileSurcharge: { type: Number, default: 0 },
   insuranceFee:     { type: Number, default: 0 },
   totalAmount:      { type: Number, required: true },
-  paymentMethod:    { type: String, enum: ['online','cash','cod','wallet'], default: 'online' },
+  paymentMethod:    { type: String, enum: ['online','cash','cod','wallet','whatsapp'], default: 'online' },
   paymentStatus:    { type: String, enum: ['pending','paid','failed','refunded'], default: 'pending' },
   paystackReference:{ type: String },
   codAmount:        { type: Number, default: 0 },   // Cash on Delivery amount
 
   // Status
+  // pending_contact = WhatsApp manual payment flow: order reserved, awaiting admin payment confirmation
   status: {
     type: String,
-    enum: ['booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled'],
+    enum: ['pending_contact','booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled'],
     default: 'booked',
   },
 

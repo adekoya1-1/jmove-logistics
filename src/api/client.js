@@ -256,8 +256,9 @@ export const ordersAPI = {
   assign:       (id, driverId) => api.put(`/orders/${encodeURIComponent(id)}/assign`, { driverId }),
   updateStatus: (id, status, note, location) => api.put(`/orders/${encodeURIComponent(id)}/status`, { status, note, location }),
   addNote:      (id, note, location)          => api.post(`/orders/${encodeURIComponent(id)}/note`, { note, location }),
-  calcPrice:    (d)            => api.post('/orders/calculate-price', d),
-  stats:        ()             => api.get('/orders/stats'),
+  calcPrice:             (d)   => api.post('/orders/calculate-price', d),
+  stats:                 ()    => api.get('/orders/stats'),
+  confirmWhatsappPayment:(id)  => api.put(`/orders/${encodeURIComponent(id)}/confirm-whatsapp-payment`),
 };
 
 export const driversAPI = {
