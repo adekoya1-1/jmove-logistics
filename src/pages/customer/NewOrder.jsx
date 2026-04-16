@@ -47,6 +47,17 @@ import { useAuth } from '../../App.jsx';
 import './NewOrder.css';
 
 /* ═══════════════════════════════════════════════════════════
+   FEATURE FLAGS
+   ─────────────────────────────────────────────────────────
+   VITE_ENABLE_ONLINE_PAYMENT=true   → full payment flow (Paystack + cash/COD)
+   VITE_ENABLE_ONLINE_PAYMENT=false  → WhatsApp-only mode (all bookings via WA)
+
+   To re-enable online payment: set VITE_ENABLE_ONLINE_PAYMENT=true in .env.local
+   and restart the dev server. No code changes required.
+═══════════════════════════════════════════════════════════ */
+const PAYMENTS_ENABLED = import.meta.env.VITE_ENABLE_ONLINE_PAYMENT === 'true';
+
+/* ═══════════════════════════════════════════════════════════
    STATE MACHINE
 ═══════════════════════════════════════════════════════════ */
 const S = {
@@ -212,7 +223,7 @@ export default function NewOrder() {
     truckTypeId:    '',
     serviceType:    'standard',
     deliveryMode:   'door',
-    paymentMethod:  'online',
+    paymentMethod:  PAYMENTS_ENABLED ? 'online' : 'whatsapp',
     codAmount:      '',
   });
 
@@ -393,9 +404,19 @@ export default function NewOrder() {
     setError(''); setLoading(true);
 
     try {
+      /*
+       * If payments are disabled at the flag level, always send as whatsapp
+       * regardless of what the form holds (handles stale sessionStorage restores).
+       */
+      const effectivePaymentMethod =
+        !PAYMENTS_ENABLED && form.paymentMethod === 'online'
+          ? 'whatsapp'
+          : form.paymentMethod;
+
       /* Create the order (idempotent via idempotencyKey) */
       const orderRes = await ordersAPI.create({
         ...form,
+        paymentMethod:  effectivePaymentMethod,
         weight:         +form.weight,
         quantity:       +form.quantity,
         declaredValue:  +form.declaredValue || 0,
@@ -407,11 +428,11 @@ export default function NewOrder() {
       const createdOrder = orderRes.data.order;
       setOrderId(createdOrder._id);
 
-      if (form.paymentMethod === 'online') {
+      if (effectivePaymentMethod === 'online') {
         /* Advance to the payment step — init happens when user clicks Pay */
         transition(S.PAYING);
-      } else if (form.paymentMethod === 'whatsapp') {
-        /* WhatsApp manual payment — reserve the order then redirect */
+      } else if (effectivePaymentMethod === 'whatsapp') {
+        /* WhatsApp manual payment — reserve the order then open WA */
         setBookedOrder({ waybillNumber: createdOrder.waybillNumber });
         transition(S.WHATSAPP);
       } else {
@@ -431,26 +452,61 @@ export default function NewOrder() {
   };
 
   /**
-   * Builds the wa.me redirect URL with a pre-filled message containing
-   * enough order context for our operations team to identify and confirm
-   * the payment manually.
+   * Builds the wa.me redirect URL.
+   *
+   * When PAYMENTS_ENABLED is false (WhatsApp-only mode) the message uses the
+   * full structured *BOOKING REQUEST* format so the operations team can triage
+   * and confirm/adjust quickly.
+   *
+   * When PAYMENTS_ENABLED is true (normal mode, user chose WhatsApp method)
+   * the same structured format is used for consistency — it includes all the
+   * detail our team needs to verify manual payment.
    */
   const generateWhatsAppUrl = () => {
     const waNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '2348000000000';
     const waybill  = bookedOrder?.waybillNumber || orderId || 'N/A';
     const amount   = pricing?.totalAmount ? `₦${fmt(pricing.totalAmount)}` : 'as quoted';
-    const msg = [
-      `Hello JMove Logistics 👋`,
+
+    const serviceLabel = {
+      standard: 'Standard Delivery',
+      express:  'Express (GoFaster)',
+      sameday:  'Same Day',
+    }[form.serviceType] || form.serviceType;
+
+    const modeLabel = form.deliveryMode === 'door' ? 'Door Delivery' : 'Depot Pickup';
+
+    const lines = [
+      `🚚 *BOOKING REQUEST — JMove Logistics*`,
       ``,
-      `I just booked a shipment and would like to make payment via WhatsApp.`,
+      `📋 *Waybill:* ${waybill}`,
       ``,
-      `📦 *Waybill:* ${waybill}`,
-      `🚚 *Route:* ${form.originCity} → ${form.destinationCity}`,
-      `📦 *Package:* ${form.description} (${form.weight} kg)`,
-      `💰 *Amount:* ${amount}`,
+      `📍 *Pickup Location:* ${form.originCity}${pricing?.fromZone ? ` (${pricing.fromZone})` : ''}`,
+      `📍 *Delivery Location:* ${form.destinationCity}${pricing?.toZone ? ` (${pricing.toZone})` : ''}`,
       ``,
-      `Please confirm receipt of payment once sent. Thank you!`,
-    ].join('\n');
+      `📦 *Package Details*`,
+      `• Description:  ${form.description}`,
+      `• Weight:       ${form.weight} kg${+form.quantity > 1 ? ` × ${form.quantity} items` : ''}`,
+      `• Category:     ${form.category}`,
+      ...(form.isFragile ? [`• Fragile:      Yes ⚠️`] : []),
+      ...(+form.declaredValue > 0 ? [`• Declared Val: ₦${fmt(form.declaredValue)}`] : []),
+      ``,
+      `🚛 *Service Details*`,
+      `• Vehicle:   ${pricing?.truckType ? `${pricing.truckType.icon} ${pricing.truckType.name}` : 'N/A'}`,
+      `• Service:   ${serviceLabel}`,
+      `• Mode:      ${modeLabel}`,
+      ...(pricing?.distanceKm > 0 ? [`• Distance:  ${pricing.distanceKm} km`] : []),
+      ...(pricing?.estimatedDelivery ? [`• ETA:       ${pricing.estimatedDelivery}`] : []),
+      ``,
+      `💰 *System Quote: ${amount}*`,
+      ``,
+      `──────────────────────`,
+      `*Action Required:*`,
+      `☐  Confirm Booking`,
+      `☐  Request Adjustment`,
+      `     Reason: _______________`,
+    ];
+
+    const msg = lines.join('\n');
     return `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
   };
 
@@ -585,7 +641,7 @@ export default function NewOrder() {
       category:      'general goods', isFragile: false,
       declaredValue: '',    specialInstructions: '',
       truckTypeId:   '',    serviceType: 'standard',
-      deliveryMode:  'door', paymentMethod: 'online', codAmount: '',
+      deliveryMode:  'door', paymentMethod: PAYMENTS_ENABLED ? 'online' : 'whatsapp', codAmount: '',
     });
   };
 
@@ -605,6 +661,8 @@ export default function NewOrder() {
               ? 'Complete your payment to confirm your booking'
               : isTerminal
               ? 'Your booking is complete'
+              : !PAYMENTS_ENABLED
+              ? 'Get a quote and complete your booking via WhatsApp'
               : 'Fill in the details to get a price and book'}
           </p>
         </div>
@@ -940,39 +998,75 @@ export default function NewOrder() {
               )}
             </div>
 
-            {/* Payment method selector */}
-            <div className="od-section" style={{ marginTop: 20 }}>Payment Method</div>
-            <div className="payment-method-grid">
-              {PAYMENT_METHODS.map(m => (
-                <label key={m.value} className={`pm-option ${form.paymentMethod === m.value ? 'active' : ''}`}>
-                  <input type="radio" name="paymentMethod" value={m.value} checked={form.paymentMethod === m.value} onChange={set('paymentMethod')} hidden />
-                  <div className="pm-icon">{m.icon}</div>
-                  <div>
-                    <p className="pm-label">{m.label}</p>
-                    <p className="pm-desc">{m.desc}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            {form.paymentMethod === 'cod' && (
-              <div className="field" style={{ marginTop: 12 }}>
-                <label className="label">Cash on Delivery Amount (₦) — amount receiver will pay</label>
-                <input type="number" className="input" value={form.codAmount} onChange={set('codAmount')} placeholder="e.g. 25000" min="0" />
+            {/* ── Payments-disabled notice (feature flag) ── */}
+            {!PAYMENTS_ENABLED && (
+              <div className="payment-disabled-notice">
+                <div className="pdn-icon">ℹ️</div>
+                <div className="pdn-body">
+                  <p className="pdn-title">Online payment is temporarily unavailable</p>
+                  <p className="pdn-sub">
+                    Please complete your booking via WhatsApp. Our team will confirm your shipment
+                    and send payment details in the chat — usually within a few minutes.
+                  </p>
+                </div>
               </div>
+            )}
+
+            {/* Payment method selector — only shown when online payment is enabled */}
+            {PAYMENTS_ENABLED && (
+              <>
+                <div className="od-section" style={{ marginTop: 20 }}>Payment Method</div>
+                <div className="payment-method-grid">
+                  {PAYMENT_METHODS.map(m => (
+                    <label key={m.value} className={`pm-option ${form.paymentMethod === m.value ? 'active' : ''}`}>
+                      <input type="radio" name="paymentMethod" value={m.value} checked={form.paymentMethod === m.value} onChange={set('paymentMethod')} hidden />
+                      <div className="pm-icon">{m.icon}</div>
+                      <div>
+                        <p className="pm-label">{m.label}</p>
+                        <p className="pm-desc">{m.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                {form.paymentMethod === 'cod' && (
+                  <div className="field" style={{ marginTop: 12 }}>
+                    <label className="label">Cash on Delivery Amount (₦) — amount receiver will pay</label>
+                    <input type="number" className="input" value={form.codAmount} onChange={set('codAmount')} placeholder="e.g. 25000" min="0" />
+                  </div>
+                )}
+              </>
             )}
 
             <div className="step-cta-row">
               <button className="btn-secondary" onClick={goBack}>← Back</button>
-              <button className="btn-primary step-cta" onClick={confirmQuote} disabled={loading}>
-                {loading
-                  ? <span className="spinner spinner-sm" style={{ borderTopColor: 'white' }} />
-                  : form.paymentMethod === 'online'
-                  ? 'Confirm & Proceed to Payment →'
-                  : form.paymentMethod === 'whatsapp'
-                  ? '📱 Confirm & Chat on WhatsApp →'
-                  : '📦 Confirm Booking'}
-              </button>
+
+              {/* ── CTA adapts to feature-flag state ── */}
+              {!PAYMENTS_ENABLED ? (
+                <button className="btn-whatsapp-cta step-cta" onClick={confirmQuote} disabled={loading}>
+                  {loading
+                    ? <span className="spinner spinner-sm" style={{ borderTopColor: 'white' }} />
+                    : (
+                      <>
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.570-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        Continue to WhatsApp →
+                      </>
+                    )
+                  }
+                </button>
+              ) : (
+                <button className="btn-primary step-cta" onClick={confirmQuote} disabled={loading}>
+                  {loading
+                    ? <span className="spinner spinner-sm" style={{ borderTopColor: 'white' }} />
+                    : form.paymentMethod === 'online'
+                    ? 'Confirm & Proceed to Payment →'
+                    : form.paymentMethod === 'whatsapp'
+                    ? '📱 Confirm & Chat on WhatsApp →'
+                    : '📦 Confirm Booking'}
+                </button>
+              )}
             </div>
           </div>
         )}
