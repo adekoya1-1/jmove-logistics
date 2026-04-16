@@ -134,12 +134,34 @@ const orderSchema = new mongoose.Schema({
   codAmount:        { type: Number, default: 0 },   // Cash on Delivery amount
 
   // Status
-  // pending_contact = WhatsApp manual payment flow: order reserved, awaiting admin payment confirmation
+  // pending_contact      = WhatsApp order created; customer has been redirected to WA but not sent proof yet
+  // awaiting_confirmation = Customer claims payment sent; admin needs to verify proof
+  // (all others are standard fulfilment statuses)
   status: {
     type: String,
-    enum: ['pending_contact','booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled'],
+    enum: [
+      'pending_contact',
+      'awaiting_confirmation',
+      'booked',
+      'assigned',
+      'picked_up',
+      'in_transit',
+      'out_for_delivery',
+      'delivered',
+      'returned',
+      'cancelled',
+    ],
     default: 'booked',
   },
+
+  // WhatsApp price negotiation fields
+  // systemQuote — original price calculated at booking time (never mutated)
+  // finalPrice  — price agreed after WhatsApp negotiation; set by admin on confirmation
+  systemQuote: { type: Number, default: null },
+  finalPrice:  { type: Number, default: null },
+
+  // Admin confirmation notes for WhatsApp orders
+  whatsappNote: { type: String, default: null },
 
   assignedAt:   { type: Date },
   pickedUpAt:   { type: Date },

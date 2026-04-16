@@ -1,0 +1,333 @@
+/* ═══════════════════════════════════════════════════════
+   ADMIN WHATSAPP ORDERS
+   Parallel manual-confirmation flow — does NOT affect the
+   automated Paystack / cash-COD payment system.
+═══════════════════════════════════════════════════════ */
+
+.admin-whatsapp-orders { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Page header ─────────────────────────────────────── */
+.wao-title-icon { font-size: 22px; margin-right: 8px; }
+
+.wao-refresh-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: var(--bg-white); color: var(--text-muted);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.wao-refresh-btn:hover    { border-color: var(--brand); color: var(--brand); }
+.wao-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Summary cards ───────────────────────────────────── */
+.wao-summary-cards {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+}
+.wao-sc {
+  background: var(--bg-white); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.wao-sc-num  { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
+.wao-sc-lbl  { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.wao-sc-sub  { font-size: 11px; color: var(--text-faint); }
+.wao-sc-total    { border-left: 4px solid var(--brand); }
+.wao-sc-pending  { border-left: 4px solid #f59e0b; }
+.wao-sc-awaiting { border-left: 4px solid #8b5cf6; }
+
+/* ── Filter tabs ─────────────────────────────────────── */
+.wao-filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.wao-filter-tab {
+  padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 20px;
+  background: var(--bg-white); color: var(--text-muted);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.wao-filter-tab:hover  { border-color: var(--brand); color: var(--brand); }
+.wao-filter-tab.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+/* ── Error banner ────────────────────────────────────── */
+.wao-error-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: #fef2f2; border: 1px solid #fca5a5;
+  border-radius: 8px; padding: 12px 16px;
+  font-size: 13px; color: #dc2626;
+}
+.wao-error-banner button {
+  background: none; border: 1px solid #dc2626; color: #dc2626;
+  padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+}
+
+/* ── Loading shimmer ─────────────────────────────────── */
+.wao-loading { display: flex; flex-direction: column; gap: 12px; }
+.wao-shimmer {
+  height: 180px; background: linear-gradient(90deg, var(--bg) 25%, var(--border) 50%, var(--bg) 75%);
+  background-size: 200% 100%; border-radius: 12px;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── Empty state ─────────────────────────────────────── */
+.wao-empty {
+  text-align: center; padding: 60px 20px;
+  background: var(--bg-white); border: 1.5px dashed var(--border);
+  border-radius: 14px;
+}
+.wao-empty-icon  { font-size: 48px; margin-bottom: 14px; }
+.wao-empty-title { font-size: 18px; font-weight: 700; color: var(--text); margin: 0 0 6px; }
+.wao-empty-sub   { font-size: 14px; color: var(--text-faint); margin: 0; }
+
+/* ── Order card list ─────────────────────────────────── */
+.wao-order-list { display: flex; flex-direction: column; gap: 14px; }
+
+.wao-order-card {
+  background: var(--bg-white); border: 1.5px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.wao-order-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+
+/* Colour-coded left border by status */
+.wao-order-card.wab-pending  { border-left: 4px solid #f59e0b; }
+.wao-order-card.wab-awaiting { border-left: 4px solid #8b5cf6; }
+
+/* ── Card header ── */
+.wao-oc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 10px; border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; gap: 8px;
+}
+.wao-oc-left  { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wao-oc-right { display: flex; align-items: center; gap: 8px; }
+
+.wao-waybill-link {
+  font-size: 14px; font-weight: 800; color: var(--brand);
+  text-decoration: none; letter-spacing: 0.02em; font-family: monospace;
+}
+.wao-waybill-link:hover { text-decoration: underline; }
+
+.wao-oc-time {
+  font-size: 12px; color: var(--text-faint); white-space: nowrap;
+}
+
+/* ── Status badges ── */
+.wao-status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11.5px; font-weight: 700;
+}
+.wao-status-badge.wab-pending  { background: #fef3c7; color: #92400e; }
+.wao-status-badge.wab-awaiting { background: #ede9fe; color: #5b21b6; }
+
+/* ── Card body ── */
+.wao-oc-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0;
+  padding: 0;
+}
+.wao-oc-section {
+  padding: 14px 18px;
+  border-right: 1px solid var(--border);
+}
+.wao-oc-section:last-child { border-right: none; }
+.wao-oc-section-note { grid-column: 1 / -1; border-top: 1px solid var(--border); border-right: none; }
+
+.wao-oc-section-title {
+  font-size: 11px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+}
+
+.wao-oc-name    { font-size: 14px; font-weight: 700; color: var(--text); margin: 0 0 2px; }
+.wao-oc-contact { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+.wao-oc-route   { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.wao-oc-city    { font-size: 13px; font-weight: 700; color: var(--text); }
+.wao-oc-city.origin { color: var(--brand); }
+.wao-oc-city.dest   { color: var(--green); }
+.wao-oc-arrow   { color: var(--text-faint); font-size: 14px; }
+.wao-oc-pkg     { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+.wao-oc-price-block { display: flex; flex-direction: column; gap: 4px; }
+.wao-oc-quote, .wao-oc-final {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.wao-oc-quote-lbl, .wao-oc-final-lbl { font-size: 12px; color: var(--text-muted); }
+.wao-oc-quote-val { font-size: 15px; font-weight: 700; color: var(--text); }
+.wao-oc-final-val { font-size: 15px; font-weight: 700; color: #16a34a; }
+
+.wao-oc-note {
+  font-size: 12.5px; color: var(--text-muted);
+  background: #fffbeb; border-radius: 6px; padding: 8px 10px; margin: 0;
+}
+
+/* ── Card status description bar ── */
+.wao-oc-status-bar {
+  padding: 8px 18px;
+  background: var(--bg); border-top: 1px solid var(--border);
+}
+.wao-oc-status-desc { font-size: 12px; color: var(--text-faint); font-style: italic; }
+
+/* ── Card actions ── */
+.wao-oc-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 12px 18px; border-top: 1px solid var(--border);
+}
+
+/* Shared action button base */
+.wao-btn-advance,
+.wao-btn-confirm-action,
+.wao-btn-cancel-action {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 7px;
+  font-size: 12.5px; font-weight: 700; cursor: pointer;
+  transition: all 0.15s; border: 1.5px solid transparent;
+}
+
+.wao-btn-advance {
+  background: #ede9fe; color: #5b21b6; border-color: #c4b5fd;
+}
+.wao-btn-advance:hover    { background: #ddd6fe; }
+.wao-btn-advance:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.wao-btn-confirm-action {
+  background: #dcfce7; color: #166534; border-color: #86efac;
+}
+.wao-btn-confirm-action:hover { background: #bbf7d0; }
+
+.wao-btn-cancel-action {
+  background: #fef2f2; color: #dc2626; border-color: #fca5a5; margin-left: auto;
+}
+.wao-btn-cancel-action:hover { background: #fee2e2; }
+
+/* ── Shared spinner ─────────────────────────────────── */
+.wao-spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: currentColor; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════════════════════════
+   MODALS
+══════════════════════════════════════════════════════ */
+.wao-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.wao-modal {
+  background: var(--bg-white); border-radius: 16px;
+  width: 100%; max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+.wao-modal-sm { max-width: 400px; }
+
+.wao-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
+}
+.wao-modal-title { font-size: 16px; font-weight: 800; color: var(--text); margin: 0; }
+.wao-modal-close {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg); border: 1px solid var(--border);
+  font-size: 18px; line-height: 1; cursor: pointer; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+}
+.wao-modal-close:hover { background: var(--border); }
+
+.wao-modal-body  { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; }
+.wao-modal-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 16px 22px; border-top: 1px solid var(--border);
+}
+
+/* ── Confirm summary rows ── */
+.wao-confirm-summary {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.wao-cs-row   { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.wao-cs-lbl   { font-size: 12px; color: var(--text-faint); font-weight: 600; white-space: nowrap; }
+.wao-cs-val   { font-size: 13px; color: var(--text); font-weight: 600; text-align: right; }
+.wao-cs-val.mono { font-family: monospace; letter-spacing: 0.04em; }
+.wao-cs-quote { color: var(--brand); font-size: 15px; }
+
+/* ── Modal form fields ── */
+.wao-modal-field  { display: flex; flex-direction: column; gap: 6px; }
+.wao-modal-label  { font-size: 13px; font-weight: 700; color: var(--text); }
+.wao-modal-hint   { font-size: 11.5px; color: var(--text-faint); font-weight: 400; }
+.wao-modal-input  {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 14px; color: var(--text); background: var(--bg-white);
+  box-sizing: border-box; transition: border-color 0.15s;
+}
+.wao-modal-input:focus { outline: none; border-color: var(--brand); }
+
+.wao-price-diff {
+  font-size: 12px; font-weight: 600; margin: 0;
+  padding: 4px 8px; border-radius: 6px; display: inline-block;
+}
+.wao-price-diff.positive { background: #fef3c7; color: #92400e; }
+.wao-price-diff.negative { background: #dcfce7; color: #166534; }
+
+.wao-modal-error {
+  font-size: 13px; color: #dc2626; background: #fef2f2;
+  border: 1px solid #fca5a5; border-radius: 6px;
+  padding: 8px 12px; margin: 0;
+}
+
+.wao-cancel-warn {
+  font-size: 13.5px; color: var(--text-muted); line-height: 1.55; margin: 0;
+  background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px;
+}
+
+/* ── Modal buttons ── */
+.wao-btn-secondary {
+  padding: 9px 18px; border-radius: 7px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+}
+.wao-btn-secondary:hover    { border-color: var(--text-muted); }
+.wao-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.wao-btn-confirm {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 20px; border-radius: 7px;
+  background: #16a34a; border: none; color: #fff;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s;
+}
+.wao-btn-confirm:hover    { background: #15803d; }
+.wao-btn-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.wao-btn-cancel-confirm {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 20px; border-radius: 7px;
+  background: #dc2626; border: none; color: #fff;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s;
+}
+.wao-btn-cancel-confirm:hover    { background: #b91c1c; }
+.wao-btn-cancel-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .wao-summary-cards { grid-template-columns: 1fr 1fr; }
+  .wao-summary-cards .wao-sc-total { grid-column: 1 / -1; }
+  .wao-oc-body { grid-template-columns: 1fr; }
+  .wao-oc-section { border-right: none; border-bottom: 1px solid var(--border); }
+  .wao-oc-section:last-child { border-bottom: none; }
+  .wao-oc-actions { flex-direction: column; align-items: stretch; }
+  .wao-btn-cancel-action { margin-left: 0; }
+  .wao-modal { max-width: 100%; border-radius: 14px 14px 0 0; }
+  .wao-modal-overlay { align-items: flex-end; padding: 0; }
+}

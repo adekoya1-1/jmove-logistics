@@ -147,7 +147,8 @@ const AdminFleet       = lazy(() => import('./pages/admin/AdminFleet.jsx'));
 const AdminSettings    = lazy(() => import('./pages/admin/AdminSettings.jsx'));
 const AdminLogs        = lazy(() => import('./pages/admin/AdminLogs.jsx'));
 const AdminStates      = lazy(() => import('./pages/admin/AdminStates.jsx'));
-const AdminRoutes      = lazy(() => import('./pages/admin/AdminRoutes.jsx'));
+const AdminRoutes           = lazy(() => import('./pages/admin/AdminRoutes.jsx'));
+const AdminWhatsAppOrders   = lazy(() => import('./pages/admin/AdminWhatsAppOrders.jsx'));
 
 // ── Lazy customer pages ───────────────────────────────────────────────────────
 const CustomerLayout     = lazy(() => import('./components/customer/CustomerLayout.jsx'));
@@ -211,8 +212,9 @@ export default function App() {
             <Route path="pricing"     element={<AdminPricing />} />
             <Route path="states"      element={<AdminStates />} />
             <Route path="fleet"       element={<AdminFleet />} />
-            <Route path="routes"      element={<AdminRoutes />} />
-            <Route path="settings"    element={<AdminSettings />} />
+            <Route path="routes"            element={<AdminRoutes />} />
+            <Route path="whatsapp-orders"  element={<AdminWhatsAppOrders />} />
+            <Route path="settings"         element={<AdminSettings />} />
             <Route path="logs"        element={<AdminLogs />} />
           </Route>
 

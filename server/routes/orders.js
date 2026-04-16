@@ -14,7 +14,7 @@ import { Router } from 'express';
 import { randomBytes } from 'crypto';
 import { Order, Payment, User, DriverProfile, DriverEarning, Notification, State } from '../db.js';
 import { authenticate, authorize } from '../middleware/auth.js';
-import { validate, validateAll, orderSchemas } from '../middleware/validate.js';
+import { validate, validateAll, orderSchemas, whatsappSchemas } from '../middleware/validate.js';
 import { calcDynamicPrice } from '../services/pricingService.js';
 import { getCityList } from '../utils/pricing.js';
 import { sendOrderConfirmation, sendOrderUpdate, sendDriverAssignment } from '../utils/email.js';
@@ -335,6 +335,29 @@ router.get('/stats', authenticate, authorize('admin'), async (req, res, next) =>
   } catch (e) { next(e); }
 });
 
+// ── GET /api/orders/whatsapp-pending ────────────────────
+// Admin-only: returns all WhatsApp orders that are actionable
+// (pending_contact or awaiting_confirmation), newest first.
+router.get('/whatsapp-pending', authenticate, authorize('admin'), async (req, res, next) => {
+  try {
+    const orders = await Order.find({
+      paymentMethod: 'whatsapp',
+      status: { $in: ['pending_contact', 'awaiting_confirmation'] },
+    })
+      .populate('customerId', 'firstName lastName email phone')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const counts = {
+      total:                orders.length,
+      pending_contact:      orders.filter(o => o.status === 'pending_contact').length,
+      awaiting_confirmation:orders.filter(o => o.status === 'awaiting_confirmation').length,
+    };
+
+    res.json({ success: true, data: { orders, counts } });
+  } catch (e) { next(e); }
+});
+
 // ── GET /api/orders/:id ──────────────────────────────────
 router.get('/:id', authenticate,
   validate(orderSchemas.idParam, 'params'), async (req, res, next) => {
@@ -536,36 +559,99 @@ router.post('/:id/note', authenticate, authorize('driver', 'admin'),
   } catch (e) { next(e); }
 });
 
+// ══════════════════════════════════════════════════════════
+//  WHATSAPP ORDER ADMIN ACTIONS
+//  All three routes are admin-only and only operate on
+//  orders where paymentMethod === 'whatsapp'.
+// ══════════════════════════════════════════════════════════
+
+// ── PUT /api/orders/:id/whatsapp-advance ─────────────────
+// Moves pending_contact → awaiting_confirmation.
+// Use this when the customer messages saying they have sent proof of payment.
+router.put('/:id/whatsapp-advance', authenticate, authorize('admin'),
+  validateAll({ params: orderSchemas.idParam, body: whatsappSchemas.advance }),
+  async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    if (order.paymentMethod !== 'whatsapp')
+      return res.status(400).json({ success: false, message: 'This action is only for WhatsApp orders.' });
+    if (order.status !== 'pending_contact')
+      return res.status(400).json({ success: false, message: `Expected status "pending_contact", got "${order.status}".` });
+
+    const note = req.body.note || 'Customer claims payment sent — awaiting admin verification';
+
+    order.status = 'awaiting_confirmation';
+    if (req.body.note) order.whatsappNote = req.body.note;
+    order.statusHistory.push({
+      fromStatus: 'pending_contact',
+      toStatus:   'awaiting_confirmation',
+      changedBy:  req.user._id,
+      note,
+    });
+    await order.save();
+
+    // Push real-time update to admin room
+    const io = req.app.get('io');
+    io?.to('admin:room').emit('whatsapp:statusUpdate', {
+      orderId: order._id,
+      status:  'awaiting_confirmation',
+      waybill: order.waybillNumber,
+    });
+
+    await logAction(req, 'order.whatsapp_advanced', 'Order', order._id, {
+      waybill: order.waybillNumber, from: 'pending_contact', to: 'awaiting_confirmation',
+    });
+
+    res.json({ success: true, message: 'Order marked as awaiting confirmation.', data: { order } });
+  } catch (e) { next(e); }
+});
+
 // ── PUT /api/orders/:id/confirm-whatsapp-payment ─────────
-// Admin-only: manually confirms that a WhatsApp payment was received.
-// Moves the order from pending_contact → booked and marks paymentStatus paid.
-// Sends the customer a booking confirmation email at this point.
+// Admin confirms payment and activates the order.
+// Accepts an optional finalPrice — if provided, the system quote is preserved
+// and the order's totalAmount is updated to reflect the negotiated price.
 router.put('/:id/confirm-whatsapp-payment', authenticate, authorize('admin'),
-  validate(orderSchemas.idParam, 'params'),
+  validateAll({ params: orderSchemas.idParam, body: whatsappSchemas.confirm }),
   async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('customerId', 'email firstName lastName');
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-    if (order.paymentMethod !== 'whatsapp') {
+    if (order.paymentMethod !== 'whatsapp')
       return res.status(400).json({ success: false, message: 'This route is only for WhatsApp payment orders.' });
-    }
-    if (order.status !== 'pending_contact') {
-      return res.status(400).json({ success: false, message: `Order is already in status "${order.status}" — cannot re-confirm.` });
+
+    const CONFIRMABLE = ['pending_contact', 'awaiting_confirmation'];
+    if (!CONFIRMABLE.includes(order.status))
+      return res.status(400).json({ success: false, message: `Order is already in status "${order.status}" — cannot confirm.` });
+
+    const { finalPrice, note } = req.body;
+    const prevStatus = order.status;
+
+    // Price negotiation: preserve the original system quote and update totalAmount
+    if (finalPrice !== undefined && finalPrice !== null) {
+      order.systemQuote = order.systemQuote ?? order.totalAmount; // preserve original if not already saved
+      order.finalPrice  = finalPrice;
+      order.totalAmount = finalPrice;
     }
 
     order.status        = 'booked';
     order.paymentStatus = 'paid';
+    if (note) order.whatsappNote = note;
+
     order.statusHistory.push({
-      fromStatus: 'pending_contact',
+      fromStatus: prevStatus,
       toStatus:   'booked',
       changedBy:  req.user._id,
-      note:       `WhatsApp payment manually confirmed by ${req.user.firstName} ${req.user.lastName}`,
+      note: note ||
+        `WhatsApp payment confirmed by ${req.user.firstName} ${req.user.lastName}` +
+        (finalPrice !== undefined ? ` (final price: ₦${finalPrice.toLocaleString()})` : ''),
     });
     await order.save();
 
-    // Notify drivers of newly available job
+    // Notify drivers of the newly available job
     const io = req.app.get('io');
     io?.to('drivers:room').emit('job:new', {
       orderId:         order._id,
@@ -575,8 +661,11 @@ router.put('/:id/confirm-whatsapp-payment', authenticate, authorize('admin'),
       totalAmount:     order.totalAmount,
       serviceType:     order.serviceType,
     });
+    io?.to('admin:room').emit('whatsapp:confirmed', {
+      orderId: order._id, waybill: order.waybillNumber,
+    });
 
-    // Send booking confirmation email — deferred until now for WhatsApp orders
+    // Send booking confirmation email — deferred until admin verifies payment
     const recipientEmail = order.customerId?.email || order.senderEmail;
     const firstName      = order.customerId?.firstName || order.senderName?.split(' ')[0] || 'Customer';
     if (recipientEmail) {
@@ -584,11 +673,57 @@ router.put('/:id/confirm-whatsapp-payment', authenticate, authorize('admin'),
     }
 
     await logAction(req, 'order.whatsapp_payment_confirmed', 'Order', order._id, {
-      waybill: order.waybillNumber,
-      confirmedBy: req.user._id,
+      waybill:      order.waybillNumber,
+      confirmedBy:  req.user._id,
+      systemQuote:  order.systemQuote,
+      finalPrice:   order.finalPrice,
     });
 
-    res.json({ success: true, message: 'WhatsApp payment confirmed. Order is now active.', data: { order } });
+    res.json({
+      success: true,
+      message: 'WhatsApp payment confirmed. Order is now active.',
+      data: { order },
+    });
+  } catch (e) { next(e); }
+});
+
+// ── PUT /api/orders/:id/whatsapp-cancel ──────────────────
+// Admin cancels a WhatsApp order that is still in a pre-booked status.
+router.put('/:id/whatsapp-cancel', authenticate, authorize('admin'),
+  validateAll({ params: orderSchemas.idParam, body: whatsappSchemas.cancel }),
+  async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('customerId', 'email firstName lastName');
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    if (order.paymentMethod !== 'whatsapp')
+      return res.status(400).json({ success: false, message: 'This action is only for WhatsApp orders.' });
+
+    const CANCELLABLE = ['pending_contact', 'awaiting_confirmation'];
+    if (!CANCELLABLE.includes(order.status))
+      return res.status(400).json({ success: false, message: `Cannot cancel an order in status "${order.status}".` });
+
+    const reason = req.body.reason || `Cancelled by admin ${req.user.firstName} ${req.user.lastName}`;
+    const prevStatus = order.status;
+
+    order.status = 'cancelled';
+    order.statusHistory.push({
+      fromStatus: prevStatus,
+      toStatus:   'cancelled',
+      changedBy:  req.user._id,
+      note:       reason,
+    });
+    await order.save();
+
+    const io = req.app.get('io');
+    io?.to('admin:room').emit('whatsapp:cancelled', { orderId: order._id, waybill: order.waybillNumber });
+
+    await logAction(req, 'order.whatsapp_cancelled', 'Order', order._id, {
+      waybill: order.waybillNumber, reason, prevStatus,
+    });
+
+    res.json({ success: true, message: 'WhatsApp order cancelled.', data: { order } });
   } catch (e) { next(e); }
 });
 

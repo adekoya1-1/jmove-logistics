@@ -9,6 +9,8 @@ const nav = [
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> },
   { to: '/admin/orders',     label: 'Orders',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6M5 8h6M5 11h4"/></svg> },
+  { to: '/admin/whatsapp-orders', label: 'WhatsApp Orders',
+    icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1C4.14 1 1 4.14 1 8c0 1.24.32 2.4.87 3.41L1 15l3.7-.85A7 7 0 108 1zm0 1.3a5.7 5.7 0 110 11.4 5.7 5.7 0 010-11.4zm2.47 3.47c-.12-.06-.73-.36-.84-.4-.12-.04-.2-.06-.28.06s-.32.4-.4.49c-.07.09-.15.1-.28.04-.12-.06-.52-.19-.98-.61a3.65 3.65 0 01-.68-.85c-.07-.12 0-.19.05-.25l.18-.21c.06-.07.08-.12.12-.2.04-.08.02-.15-.01-.21-.03-.06-.28-.67-.38-.92-.1-.24-.2-.21-.28-.21h-.24c-.08 0-.21.03-.32.15-.11.12-.42.41-.42.99s.43 1.15.49 1.23c.06.08.85 1.3 2.06 1.82.29.12.51.2.68.25.29.09.55.08.76.05.23-.04.73-.3.83-.59.1-.29.1-.54.07-.59-.03-.05-.11-.08-.23-.14z"/></svg> },
   { to: '/admin/customers',  label: 'Customers',
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 1a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM1 13a4.5 4.5 0 019 0H1zm8.5-9a2 2 0 100 4 2 2 0 000-4zm1.5 6a3.5 3.5 0 016 0h-6z"/></svg> },
   { to: '/admin/drivers',    label: 'Drivers',

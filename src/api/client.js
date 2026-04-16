@@ -258,7 +258,13 @@ export const ordersAPI = {
   addNote:      (id, note, location)          => api.post(`/orders/${encodeURIComponent(id)}/note`, { note, location }),
   calcPrice:             (d)   => api.post('/orders/calculate-price', d),
   stats:                 ()    => api.get('/orders/stats'),
-  confirmWhatsappPayment:(id)  => api.put(`/orders/${encodeURIComponent(id)}/confirm-whatsapp-payment`),
+  // WhatsApp order admin actions
+  whatsappPending:        ()               => api.get('/orders/whatsapp-pending'),
+  whatsappAdvance:        (id, note)       => api.put(`/orders/${encodeURIComponent(id)}/whatsapp-advance`,  { note }),
+  confirmWhatsappPayment: (id, finalPrice, note) =>
+    api.put(`/orders/${encodeURIComponent(id)}/confirm-whatsapp-payment`,
+      { ...(finalPrice !== undefined ? { finalPrice } : {}), ...(note ? { note } : {}) }),
+  whatsappCancel:         (id, reason)     => api.put(`/orders/${encodeURIComponent(id)}/whatsapp-cancel`,   { reason }),
 };
 
 export const driversAPI = {

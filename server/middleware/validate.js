@@ -188,7 +188,7 @@ export const orderSchemas = {
   }),
 
   listQuery: z.object({
-    status:       z.enum(['pending_contact','booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled']).or(z.literal('')).optional(),
+    status:       z.enum(['pending_contact','awaiting_confirmation','booked','assigned','picked_up','in_transit','out_for_delivery','delivered','returned','cancelled']).or(z.literal('')).optional(),
     deliveryType: z.enum(['intrastate','interstate']).or(z.literal('')).optional(),
     serviceType:  z.enum(['standard','express','sameday']).or(z.literal('')).optional(),
     page:         z.coerce.number().int().min(1).max(1000).optional().default(1),
@@ -326,6 +326,26 @@ export const otpSchemas = {
       .regex(/[A-Z]/,        'Password must contain an uppercase letter')
       .regex(/[0-9]/,        'Password must contain a number')
       .regex(/[^A-Za-z0-9]/, 'Password must contain a special character'),
+  }),
+};
+
+// ── WhatsApp order admin actions ────────────────────────
+export const whatsappSchemas = {
+  // Admin marks a pending_contact order as "customer has sent payment proof"
+  advance: z.object({
+    note: z.string().max(500).trim().optional(),
+  }),
+
+  // Admin confirms payment and activates the order.
+  // finalPrice is optional — only set when the agreed price differs from systemQuote.
+  confirm: z.object({
+    finalPrice: z.coerce.number().min(0).max(100_000_000).optional(),
+    note:       z.string().max(500).trim().optional(),
+  }),
+
+  // Admin cancels a pre-booked WhatsApp order
+  cancel: z.object({
+    reason: z.string().max(500).trim().optional(),
   }),
 };
 

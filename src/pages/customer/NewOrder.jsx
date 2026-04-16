@@ -1423,7 +1423,7 @@ export default function NewOrder() {
                 Shipment Reserved!
               </h2>
               <p className="success-sub" style={{ marginBottom: 0 }}>
-                Your shipment has been reserved. Complete payment by chatting with us on WhatsApp.
+                Your booking request has been submitted. Please complete payment via WhatsApp and await confirmation from our team.
               </p>
             </div>
 
@@ -1461,10 +1461,10 @@ export default function NewOrder() {
 
             <div className="wa-steps">
               {[
-                { n: '1', t: 'Tap the button below',    d: 'WhatsApp will open with the message pre-filled.' },
-                { n: '2', t: 'Make your payment',        d: 'Transfer to our account number and send proof.' },
-                { n: '3', t: 'Send payment proof',       d: 'Send your bank receipt or screenshot in the chat.' },
-                { n: '4', t: 'We confirm & dispatch',    d: 'Our team verifies and activates your shipment within minutes.' },
+                { n: '1', t: 'Tap the button below',           d: 'WhatsApp will open with your booking details pre-filled.' },
+                { n: '2', t: 'Make your payment',              d: 'Transfer the quoted amount to our account number.' },
+                { n: '3', t: 'Send your payment proof',        d: 'Reply in the chat with your bank receipt or screenshot.' },
+                { n: '4', t: 'Await confirmation (fast ⚡)',   d: 'Our team verifies and sends you a booking confirmation shortly.' },
               ].map(s => (
                 <div key={s.n} className="wa-step-row">
                   <div className="wa-step-num">{s.n}</div>
