@@ -30,7 +30,7 @@
   height: var(--topbar-h);
   border-bottom: 1px solid rgba(255,255,255,0.1);
   flex-shrink: 0;
-  background: #FF7A00;
+  background: black;
 }
 .sidebar-logo img {
   height: 36px;
