@@ -250,6 +250,166 @@
 }
 @media (max-width: 400px) { .step-label { display: none; } }
 
+/* ══════════════════════════════════════════════════════════
+   PAYMENT FORM (Step 4 — online flow)
+══════════════════════════════════════════════════════════ */
+
+/* ── Amount banner ── */
+.pf-amount-banner {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(135deg, var(--navy), #0f172a);
+  border-radius: var(--radius-lg); padding: 18px 22px;
+  margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+  position: relative; overflow: hidden;
+}
+.pf-amount-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at top right, rgba(230,81,0,0.25), transparent 60%);
+  pointer-events: none;
+}
+.pf-ab-left   { display: flex; flex-direction: column; gap: 2px; z-index: 1; }
+.pf-ab-label  { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.07em; }
+.pf-ab-amount { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -0.02em;
+  background: linear-gradient(to right, #fff, #ffcc80);
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.pf-ab-right  { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; z-index: 1; }
+.pf-ab-route  { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.85); }
+.pf-ab-desc   { font-size: 11px; color: rgba(255,255,255,0.45); }
+
+/* ── Section label above tabs ── */
+.pf-section-label {
+  font-size: 13px; font-weight: 700; color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* ── Payment method tabs ── */
+.pf-tabs {
+  display: flex; gap: 0; margin-bottom: 0;
+  border: 1.5px solid var(--border); border-radius: var(--radius-lg);
+  overflow: hidden; background: var(--bg-elevated);
+}
+.pf-tab {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 11px 8px; font-size: 13px; font-weight: 600;
+  color: var(--text-muted); background: transparent;
+  border: none; border-right: 1.5px solid var(--border);
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.pf-tab:last-child { border-right: none; }
+.pf-tab:hover:not(.active) { background: var(--bg-hover); color: var(--text); }
+.pf-tab.active {
+  background: var(--brand); color: #fff;
+  font-weight: 700;
+}
+.pf-tab.active svg { stroke: #fff; }
+
+/* ── Tab content wrapper ── */
+.pf-tab-content {
+  border: 1.5px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 20px; margin-bottom: 16px;
+  background: var(--bg-white);
+}
+
+/* ── Card tab — visual card ── */
+.pf-card-visual {
+  background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%);
+  border-radius: 14px; padding: 20px 22px;
+  margin-bottom: 18px; min-height: 150px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  box-shadow: 0 8px 24px rgba(26, 35, 126, 0.35);
+  position: relative; overflow: hidden;
+}
+.pf-card-visual::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: rgba(255,255,255,0.06); pointer-events: none;
+}
+.pf-card-visual::after {
+  content: ''; position: absolute; bottom: -60px; left: -20px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: rgba(255,255,255,0.04); pointer-events: none;
+}
+.pf-cv-top     { display: flex; justify-content: space-between; align-items: center; }
+.pf-cv-chip    { width: 36px; height: 28px; background: linear-gradient(135deg, #ffd54f, #ffb300); border-radius: 5px; display: flex; flex-direction: column; justify-content: space-around; padding: 5px 4px; }
+.pf-cv-chip-line { height: 3px; background: rgba(0,0,0,0.2); border-radius: 1px; }
+.pf-cv-brands  { display: flex; gap: 5px; }
+.pf-cv-brand   { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.05em; }
+.pf-cv-brand.visa  { background: rgba(255,255,255,0.2); color: #fff; }
+.pf-cv-brand.mc    { background: rgba(255,152,0,0.3); color: #ffcc80; }
+.pf-cv-brand.verve { background: rgba(76,175,80,0.3); color: #a5d6a7; }
+.pf-cv-number  {
+  font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.9);
+  letter-spacing: 0.22em; font-family: 'Courier New', monospace;
+  margin: 16px 0 12px; z-index: 1; position: relative;
+}
+.pf-cv-bottom  { display: flex; gap: 20px; z-index: 1; position: relative; }
+.pf-cv-sublabel { font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+.pf-cv-subval  { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.05em; }
+
+/* ── Card tab — mock (locked) input fields ── */
+.pf-mock-fields { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.pf-mock-row    { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pf-mock-label  { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; display: block; }
+.pf-mock-input  {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 13px; border: 1.5px solid var(--border);
+  border-radius: var(--radius); background: var(--bg-elevated);
+  font-size: 13px; color: var(--text-faint); font-style: italic;
+  user-select: none; cursor: default;
+}
+.pf-mock-input svg  { flex-shrink: 0; opacity: 0.5; }
+.pf-mock-input span:first-of-type { flex: 1; }
+.pf-mock-lock   { font-size: 12px; opacity: 0.6; }
+
+/* ── Bank transfer steps ── */
+.pf-transfer-steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 16px; }
+.pf-ts-row  { display: flex; gap: 13px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.pf-ts-row:last-child { border-bottom: none; }
+.pf-ts-num  {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+  background: var(--brand); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; margin-top: 1px;
+}
+.pf-ts-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.pf-ts-desc  { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+/* ── Bank logos/pills ── */
+.pf-bank-logos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.pf-bank-pill  {
+  font-size: 11px; font-weight: 600; padding: 4px 10px;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 20px; color: var(--text-muted);
+}
+.pf-bank-more  { background: var(--brand-dim); border-color: var(--brand); color: var(--brand); }
+
+/* ── USSD grid ── */
+.pf-ussd-intro { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5; }
+.pf-ussd-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.pf-ussd-item  {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 13px; border: 1.5px solid var(--border);
+  border-radius: var(--radius); background: var(--bg-elevated);
+}
+.pf-ussd-bank  { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.pf-ussd-code  {
+  font-size: 13px; font-weight: 800; color: var(--brand);
+  font-family: 'Courier New', monospace; letter-spacing: 0.05em;
+}
+
+/* ── Shared note strip (bottom of each tab) ── */
+.pf-method-note {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #f0fdf4; border: 1px solid #bbf7d0;
+  color: #15803d; font-size: 12px; font-weight: 500;
+  padding: 10px 13px; border-radius: var(--radius);
+  line-height: 1.5;
+}
+.pf-method-note svg { flex-shrink: 0; margin-top: 1px; }
+
 /* ── Payment step — order summary card ─────────────────── */
 .payment-order-summary {
   background: var(--bg-elevated);
@@ -379,6 +539,14 @@
 
 /* ── Responsive additions ─────────────────────────────── */
 @media (max-width: 600px) {
-  .pos-amount-value { font-size: 22px; }
-  .btn-paystack     { font-size: 14px; padding: 13px 18px; }
+  .pos-amount-value  { font-size: 22px; }
+  .btn-paystack      { font-size: 14px; padding: 13px 18px; }
+  .pf-amount-banner  { flex-direction: column; align-items: flex-start; }
+  .pf-ab-right       { align-items: flex-start; }
+  .pf-ab-amount      { font-size: 26px; }
+  .pf-tabs           { font-size: 12px; }
+  .pf-tab            { padding: 10px 6px; gap: 5px; font-size: 12px; }
+  .pf-ussd-grid      { grid-template-columns: 1fr; }
+  .pf-mock-row       { grid-template-columns: 1fr 1fr; }
+  .pf-cv-number      { font-size: 15px; letter-spacing: 0.16em; }
 }

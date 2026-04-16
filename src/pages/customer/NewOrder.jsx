@@ -178,6 +178,7 @@ export default function NewOrder() {
   const [pricing,      setPricing]      = useState(null);   // locked server quote
   const [orderId,      setOrderId]      = useState(null);
   const [paymentInit,  setPaymentInit]  = useState(null);   // { reference, access_code }
+  const [payTab,       setPayTab]       = useState('card'); // payment method preview tab
 
   /* ── UI state ── */
   const [loading,    setLoading]    = useState(false);
@@ -951,7 +952,7 @@ export default function NewOrder() {
             </h2>
 
             {machineState === S.VERIFYING ? (
-              /* ── Verifying state: spinner while we call our backend ── */
+              /* ── Verifying: spinner while backend confirms with Paystack ── */
               <div className="payment-verifying">
                 <span className="spinner payment-verify-spinner" />
                 <p className="pv-title">Confirming with Paystack…</p>
@@ -959,64 +960,214 @@ export default function NewOrder() {
               </div>
 
             ) : (
-              /* ── Paying state: show summary + "Pay Now" button ── */
               <>
-                {/* Order summary card */}
-                <div className="payment-order-summary">
-                  <div className="pos-header">Order Summary</div>
-
-                  <div className="pos-route">
-                    <div className="pos-city">
-                      <span className="pos-dot origin" />
-                      <span>{form.originCity}</span>
-                    </div>
-                    <span className="pos-arrow">→</span>
-                    <div className="pos-city">
-                      <span className="pos-dot dest" />
-                      <span>{form.destinationCity}</span>
-                    </div>
-                    <span className="pos-badge">
-                      {pricing?.deliveryType === 'intrastate' ? 'Intrastate' : 'Interstate'}
-                    </span>
+                {/* ── Amount banner ── */}
+                <div className="pf-amount-banner">
+                  <div className="pf-ab-left">
+                    <span className="pf-ab-label">Amount Due</span>
+                    <span className="pf-ab-amount">₦{fmt(pricing?.totalAmount)}</span>
                   </div>
-
-                  <div className="pos-meta">
-                    <span>{form.description}</span>
-                    <span className="pos-meta-sep">·</span>
-                    <span>{form.weight} kg</span>
-                    {pricing?.truckType && (
-                      <>
-                        <span className="pos-meta-sep">·</span>
-                        <span>{pricing.truckType.icon} {pricing.truckType.name}</span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="pos-divider" />
-
-                  <div className="pos-amount-row">
-                    <span className="pos-amount-label">Amount Due</span>
-                    <span className="pos-amount-value">₦{fmt(pricing?.totalAmount)}</span>
+                  <div className="pf-ab-right">
+                    <span className="pf-ab-route">{form.originCity} → {form.destinationCity}</span>
+                    <span className="pf-ab-desc">{form.description} · {form.weight} kg</span>
                   </div>
                 </div>
 
-                {/* Security notice */}
-                <div className="payment-secure-notice">
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <rect x="1.5" y="5.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.4" />
-                    <path d="M4 5.5V4a2.5 2.5 0 015 0v1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                  </svg>
-                  Payments are processed securely by Paystack. JMove Logistics never sees or stores your card details.
+                {/* ── Payment method tabs ── */}
+                <div className="pf-section-label">How would you like to pay?</div>
+                <div className="pf-tabs">
+                  <button
+                    className={`pf-tab ${payTab === 'card' ? 'active' : ''}`}
+                    onClick={() => setPayTab('card')}
+                    type="button"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.8"/>
+                      <path d="M2 10h20" stroke="currentColor" strokeWidth="1.8"/>
+                      <rect x="5" y="14" width="5" height="2" rx="1" fill="currentColor"/>
+                    </svg>
+                    Card
+                  </button>
+                  <button
+                    className={`pf-tab ${payTab === 'transfer' ? 'active' : ''}`}
+                    onClick={() => setPayTab('transfer')}
+                    type="button"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 9l9-6 9 6v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                      <path d="M9 22V12h6v10" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                    </svg>
+                    Bank Transfer
+                  </button>
+                  <button
+                    className={`pf-tab ${payTab === 'ussd' ? 'active' : ''}`}
+                    onClick={() => setPayTab('ussd')}
+                    type="button"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="1.8"/>
+                      <circle cx="12" cy="17" r="1" fill="currentColor"/>
+                      <path d="M9 6h6M9 9h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    USSD
+                  </button>
                 </div>
 
-                {/* Payment reference — only shown after first init attempt */}
+                {/* ── Card tab ── */}
+                {payTab === 'card' && (
+                  <div className="pf-tab-content fade-in">
+                    {/* Visual card */}
+                    <div className="pf-card-visual">
+                      <div className="pf-cv-top">
+                        <div className="pf-cv-chip">
+                          <div className="pf-cv-chip-line" />
+                          <div className="pf-cv-chip-line" />
+                          <div className="pf-cv-chip-line" />
+                        </div>
+                        <div className="pf-cv-brands">
+                          <span className="pf-cv-brand visa">VISA</span>
+                          <span className="pf-cv-brand mc">MC</span>
+                          <span className="pf-cv-brand verve">Verve</span>
+                        </div>
+                      </div>
+                      <div className="pf-cv-number">•••• •••• •••• ••••</div>
+                      <div className="pf-cv-bottom">
+                        <div>
+                          <p className="pf-cv-sublabel">CARDHOLDER NAME</p>
+                          <p className="pf-cv-subval">YOUR NAME</p>
+                        </div>
+                        <div>
+                          <p className="pf-cv-sublabel">EXPIRES</p>
+                          <p className="pf-cv-subval">MM / YY</p>
+                        </div>
+                        <div>
+                          <p className="pf-cv-sublabel">CVV</p>
+                          <p className="pf-cv-subval">•••</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mock fields — clearly labelled as Paystack-handled */}
+                    <div className="pf-mock-fields">
+                      <div className="pf-mock-field">
+                        <label className="pf-mock-label">Card Number</label>
+                        <div className="pf-mock-input">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <rect x="2" y="5" width="20" height="14" rx="2" stroke="var(--text-faint)" strokeWidth="1.5"/>
+                            <path d="M2 10h20" stroke="var(--text-faint)" strokeWidth="1.5"/>
+                          </svg>
+                          <span>Entered securely via Paystack</span>
+                          <span className="pf-mock-lock">🔒</span>
+                        </div>
+                      </div>
+                      <div className="pf-mock-row">
+                        <div className="pf-mock-field">
+                          <label className="pf-mock-label">Expiry Date</label>
+                          <div className="pf-mock-input">
+                            <span>MM / YY</span>
+                            <span className="pf-mock-lock">🔒</span>
+                          </div>
+                        </div>
+                        <div className="pf-mock-field">
+                          <label className="pf-mock-label">CVV</label>
+                          <div className="pf-mock-input">
+                            <span>•••</span>
+                            <span className="pf-mock-lock">🔒</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pf-method-note">
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <rect x="1.5" y="5.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+                        <path d="M4 5.5V4a2.5 2.5 0 015 0v1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                      </svg>
+                      Your card details are entered directly on Paystack's encrypted, PCI-compliant form — JMove Logistics never sees your card number or CVV.
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Bank Transfer tab ── */}
+                {payTab === 'transfer' && (
+                  <div className="pf-tab-content fade-in">
+                    <div className="pf-transfer-steps">
+                      {[
+                        { n: '1', title: 'Click "Open Payment Form"', desc: 'A secure Paystack window will open on this page.' },
+                        { n: '2', title: 'Select Bank Transfer',      desc: 'Choose your bank from the list in the payment window.' },
+                        { n: '3', title: 'Get your account number',   desc: `Paystack generates a unique account number for this ₦${fmt(pricing?.totalAmount)} transaction.` },
+                        { n: '4', title: 'Make the transfer',         desc: 'Transfer the exact amount from your mobile or internet banking app.' },
+                        { n: '5', title: 'Automatic confirmation',    desc: 'Your booking is confirmed the moment Paystack detects the transfer.' },
+                      ].map(s => (
+                        <div key={s.n} className="pf-ts-row">
+                          <div className="pf-ts-num">{s.n}</div>
+                          <div>
+                            <p className="pf-ts-title">{s.title}</p>
+                            <p className="pf-ts-desc">{s.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pf-bank-logos">
+                      {['GTBank', 'Access', 'Zenith', 'First Bank', 'UBA', 'Kuda', 'OPay', 'Moniepoint'].map(b => (
+                        <span key={b} className="pf-bank-pill">{b}</span>
+                      ))}
+                      <span className="pf-bank-pill pf-bank-more">+ all Nigerian banks</span>
+                    </div>
+
+                    <div className="pf-method-note">
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <rect x="1.5" y="5.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+                        <path d="M4 5.5V4a2.5 2.5 0 015 0v1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                      </svg>
+                      Transfer confirmation is usually instant. The account number is valid for this transaction only.
+                    </div>
+                  </div>
+                )}
+
+                {/* ── USSD tab ── */}
+                {payTab === 'ussd' && (
+                  <div className="pf-tab-content fade-in">
+                    <p className="pf-ussd-intro">
+                      Dial your bank's USSD code — no internet required. The code for this transaction will be shown in the payment window.
+                    </p>
+                    <div className="pf-ussd-grid">
+                      {[
+                        { bank: 'GTBank',      code: '*737#'  },
+                        { bank: 'Access Bank', code: '*901#'  },
+                        { bank: 'Zenith Bank', code: '*966#'  },
+                        { bank: 'First Bank',  code: '*894#'  },
+                        { bank: 'UBA',         code: '*919#'  },
+                        { bank: 'Fidelity',    code: '*770#'  },
+                        { bank: 'Sterling',    code: '*822#'  },
+                        { bank: 'Ecobank',     code: '*326#'  },
+                      ].map(u => (
+                        <div key={u.bank} className="pf-ussd-item">
+                          <span className="pf-ussd-bank">{u.bank}</span>
+                          <span className="pf-ussd-code">{u.code}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pf-method-note">
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <rect x="1.5" y="5.5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+                        <path d="M4 5.5V4a2.5 2.5 0 015 0v1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                      </svg>
+                      Click "Open Payment Form" below, then select USSD and your bank. You'll see the exact dial code on screen.
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Payment reference (after first attempt) ── */}
                 {paymentInit?.reference && (
                   <div className="payment-ref-tag">
                     Reference: <strong>{paymentInit.reference}</strong>
                   </div>
                 )}
 
-                {/* Paystack CTA — clicking this initialises payment AND opens popup */}
+                {/* ── Main CTA — initialises payment AND opens Paystack popup ── */}
                 <button
                   className="btn-paystack"
                   onClick={openPaystackPopup}
@@ -1025,27 +1176,29 @@ export default function NewOrder() {
                   {loading ? (
                     <>
                       <span className="spinner spinner-sm" style={{ borderTopColor: 'white' }} />
-                      {paymentInit ? 'Opening payment window…' : 'Preparing payment…'}
+                      {paymentInit ? 'Opening payment form…' : 'Preparing…'}
                     </>
                   ) : (
                     <>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <rect x="2" y="5" width="20" height="14" rx="2.5" stroke="white" strokeWidth="1.8" />
-                        <path d="M2 10h20" stroke="white" strokeWidth="1.8" />
-                        <rect x="5" y="14" width="5" height="2" rx="1" fill="white" />
-                        <rect x="12" y="14" width="3" height="2" rx="1" fill="white" />
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="5" width="20" height="14" rx="2.5" stroke="white" strokeWidth="1.8"/>
+                        <path d="M2 10h20" stroke="white" strokeWidth="1.8"/>
+                        <rect x="5" y="14" width="5" height="2" rx="1" fill="white"/>
+                        <rect x="12" y="14" width="3" height="2" rx="1" fill="white"/>
                       </svg>
-                      Pay ₦{fmt(pricing?.totalAmount)} with Paystack
+                      Open Payment Form — ₦{fmt(pricing?.totalAmount)}
                     </>
                   )}
                 </button>
 
                 <div className="paystack-badges">
-                  <span>🔒 SSL Encrypted</span>
+                  <span>🔒 256-bit SSL</span>
                   <span>·</span>
-                  <span>🛡 PCI DSS Compliant</span>
+                  <span>🛡 PCI DSS</span>
                   <span>·</span>
-                  <span>⚡ Instant Confirmation</span>
+                  <span>⚡ Instant</span>
+                  <span>·</span>
+                  <span>Secured by Paystack</span>
                 </div>
 
                 <div className="step-cta-row" style={{ marginTop: 8 }}>
