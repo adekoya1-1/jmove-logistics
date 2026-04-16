@@ -20,11 +20,6 @@ export default function Login() {
     ? 'Your session expired. Please log in again.'
     : null;
 
-  const fill = (role) => {
-    const c = { admin:['admin@jmovelogistics.com','Admin@123'], customer:['customer@jmovelogistics.com','Customer@123'], driver:['driver@jmovelogistics.com','Driver@123'] };
-    setEmail(c[role][0]); setPassword(c[role][1]);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
@@ -70,13 +65,6 @@ export default function Login() {
         <h1 className="auth-title">Welcome Back to JMove</h1>
         <p className="auth-sub">Sign in to manage your haulage bookings</p>
 
-        <div className="demo-bar">
-          <span className="demo-label">Try demo:</span>
-          {['admin','customer','driver'].map(r => (
-            <button key={r} className="demo-btn" onClick={() => fill(r)}>{r}</button>
-          ))}
-        </div>
-
         {sessionMsg && !error && (
           <div className="auth-error" style={{ background: '#FFFBEB', borderColor: 'rgba(245,158,11,0.3)', color: '#92400E' }}>
             ⏰ {sessionMsg}
@@ -93,7 +81,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="field">
             <label className="label">Email Address</label>
-            <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" required autoFocus />
+            <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required autoFocus />
           </div>
           <div className="field">
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>

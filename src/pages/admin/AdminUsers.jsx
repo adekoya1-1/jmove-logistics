@@ -62,7 +62,7 @@ export default function AdminUsers() {
     setLoading(true);
     usersAPI.staff({ search, page, limit: 20 })
       .then(r => { setStaff(r.data.users); setTotal(r.data.pagination.total); })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 

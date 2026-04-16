@@ -21,9 +21,9 @@ export default function DriverDashboard() {
     authAPI.profile().then(r => {
       setProfile(r.data);
       setDriverStatus(r.data.driverProfile?.status || 'offline');
-    }).catch(console.error);
-    driversAPI.activeOrder().then(r => setOrder(r.data)).catch(console.error);
-    driversAPI.stats().then(r => setStats(r.data)).catch(console.error);
+    }).catch(() => {});
+    driversAPI.activeOrder().then(r => setOrder(r.data)).catch(() => {});
+    driversAPI.stats().then(r => setStats(r.data)).catch(() => {});
     // Check for active route assignment
     routesAPI.activeRoute().then(r => setActiveRoute(r.data)).catch(() => {});
   }, []);
@@ -38,7 +38,7 @@ export default function DriverDashboard() {
       });
       socketRef.current = socket;
       startGPS(); // GPS always on
-    }).catch(console.error);
+    }).catch(() => {});
     return () => {
       socketRef.current?.disconnect();
       if (watchRef.current) navigator.geolocation.clearWatch(watchRef.current);
@@ -69,7 +69,7 @@ export default function DriverDashboard() {
       await driversAPI.updateStatus(newStatus);
       setDriverStatus(newStatus);
       socketRef.current?.emit('driver:statusChange', { status: newStatus });
-    } catch (e) { console.error(e); }
+    } catch { setStatusLoading(false); return; }
     finally { setStatusLoading(false); }
   };
 

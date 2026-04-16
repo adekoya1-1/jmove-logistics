@@ -4,7 +4,9 @@
       "WebFetch(domain:www.pexels.com)",
       "WebSearch",
       "Bash(npm install:*)",
-      "Bash(node --input-type=module --eval ':*)"
+      "Bash(node --input-type=module --eval ':*)",
+      "Bash(grep -v \"//\")",
+      "Bash(powershell -Command ':*)"
     ]
   }
 }

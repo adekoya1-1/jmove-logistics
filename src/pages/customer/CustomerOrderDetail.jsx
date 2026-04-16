@@ -51,7 +51,7 @@ export default function CustomerOrderDetail() {
 
   const load = () => ordersAPI.get(id)
     .then(r => { setOrder(r.data.order); setPayment(r.data.payment); })
-    .catch(console.error)
+    .catch(() => {})
     .finally(() => setLoading(false));
 
   useEffect(() => { load(); }, [id]);
@@ -98,7 +98,7 @@ export default function CustomerOrderDetail() {
       socket.on('order:statusUpdate', ({ orderId }) => {
         if (orderId === id) load();
       });
-    }).catch(console.error);
+    }).catch(() => {});
 
     return () => { socket?.disconnect(); };
   }, [id]);

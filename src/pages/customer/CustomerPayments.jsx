@@ -10,7 +10,7 @@ export default function CustomerPayments() {
   const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
-    paymentsAPI.history().then(r => setPayments(r.data)).catch(console.error).finally(() => setLoading(false));
+    paymentsAPI.history().then(r => setPayments(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const totalPaid = payments.filter(p => p.status === 'paid').reduce((s,p) => s + p.amount, 0);

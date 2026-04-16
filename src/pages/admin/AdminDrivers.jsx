@@ -140,7 +140,7 @@ export default function AdminDrivers() {
     setLoading(true);
     driversAPI.list({ status })
       .then(r => setDrivers(r.data.drivers))
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 

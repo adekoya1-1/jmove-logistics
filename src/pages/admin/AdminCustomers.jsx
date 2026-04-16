@@ -162,7 +162,7 @@ export default function AdminCustomers() {
         setCustomers(fil);
         setTotal(r.data?.pagination?.total || 0);
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [search, page, filter]);
 

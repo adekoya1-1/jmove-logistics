@@ -282,7 +282,7 @@ export default function ForgotPassword() {
                   className="input"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder="your@email.com"
                   required
                   autoFocus
                 />

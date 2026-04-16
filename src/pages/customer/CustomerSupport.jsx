@@ -38,7 +38,7 @@ function TicketDetail({ ticketId, onBack, userId }) {
     setLoading(true);
     supportAPI.get(ticketId)
       .then(r => setTicket(r.data))
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 
@@ -295,7 +295,7 @@ export default function CustomerSupport() {
         setTickets(r.data.tickets || []);
         setTotal(r.data.pagination?.total || 0);
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 

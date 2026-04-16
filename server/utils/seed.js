@@ -6,6 +6,15 @@ dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '../.env') }
 import bcrypt from 'bcryptjs';
 import connectDB, { User, DriverProfile } from '../db.js';
 
+// ── Safety guard ─────────────────────────────────────────────────────────────
+// This script creates test accounts and MUST NEVER run in production.
+// It is purely a development convenience tool for seeding a local / staging DB.
+// ─────────────────────────────────────────────────────────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  console.error('❌  seed.js must not run in production. Aborting.');
+  process.exit(1);
+}
+
 async function seed() {
   await connectDB();
   console.log('🌱 Seeding JMove Logistics database...\n');

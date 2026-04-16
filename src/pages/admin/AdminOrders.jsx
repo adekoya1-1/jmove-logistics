@@ -23,7 +23,7 @@ export default function AdminOrders() {
     setLoading(true);
     ordersAPI.list({ status, search, page, limit: 15 })
       .then(r => { setOrders(r.data.orders); setTotal(r.data.pagination.total); })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 
@@ -31,7 +31,7 @@ export default function AdminOrders() {
 
   const openAssign = (orderId) => {
     setModal({ orderId }); setSelDriver('');
-    driversAPI.list({ status: 'available' }).then(r => setDrivers(r.data.drivers)).catch(console.error);
+    driversAPI.list({ status: 'available' }).then(r => setDrivers(r.data.drivers)).catch(() => {});
   };
 
   const doAssign = async () => {

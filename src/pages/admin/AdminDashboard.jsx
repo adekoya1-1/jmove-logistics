@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     Promise.all([usersAPI.dashboard(), paymentsAPI.stats('30d')])
       .then(([d, r]) => { setData(d.data); setRevenue(r.data); })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

@@ -26,20 +26,6 @@
 .auth-title { font-size: clamp(22px, 3vw, 28px); font-weight: 800; color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; }
 .auth-sub   { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.55; }
 
-/* Demo bar */
-.demo-bar {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  background: var(--bg-elevated); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 10px 14px; margin-bottom: 20px;
-}
-.demo-label { font-size: 10px; font-weight: 800; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap; }
-.demo-btn {
-  padding: 4px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700;
-  background: var(--bg-white); color: var(--text-muted); border: 1px solid var(--border);
-  cursor: pointer; text-transform: capitalize; transition: all 0.15s;
-}
-.demo-btn:hover { background: var(--brand); color: #FFFFFF; border-color: var(--brand); }
-
 /* Error */
 .auth-error {
   background: #FFF5F5; border: 1px solid rgba(229,62,62,0.25);

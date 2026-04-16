@@ -107,7 +107,7 @@ export default function AdminLogs() {
         setTotal(r.data?.pagination?.total || 0);
         if (s) setStats(s.data);
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [page, severity, entity, from, to]);
 

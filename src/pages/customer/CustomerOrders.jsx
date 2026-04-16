@@ -22,7 +22,7 @@ export default function CustomerOrders() {
     setLoading(true);
     ordersAPI.list({ status, page, limit: 10 })
       .then(r => { setOrders(r.data.orders); setTotal(r.data.pagination.total); })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [status, page]);
 

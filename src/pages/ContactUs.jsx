@@ -88,11 +88,11 @@ export default function ContactUs() {
               <div className="contact-form-row">
                 <div className="sp-field">
                   <label className="sp-label">Full Name</label>
-                  <input className="sp-input" type="text" value={form.name} onChange={set('name')} placeholder="John Doe" required />
+                  <input className="sp-input" type="text" value={form.name} onChange={set('name')} placeholder="Your full name" required />
                 </div>
                 <div className="sp-field">
                   <label className="sp-label">Email Address</label>
-                  <input className="sp-input" type="email" value={form.email} onChange={set('email')} placeholder="you@company.com" required />
+                  <input className="sp-input" type="email" value={form.email} onChange={set('email')} placeholder="your@email.com" required />
                 </div>
               </div>
               <div className="contact-form-row">

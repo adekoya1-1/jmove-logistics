@@ -50,16 +50,20 @@ const server = createServer(app);
 
 // ── Allowed origins ─────────────────────────────────────
 const buildOrigins = () => {
-  const base = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5174',
-  ];
-  if (process.env.FRONTEND_URL) {
-    process.env.FRONTEND_URL.split(',').forEach(u => base.push(u.trim()));
+  const origins = [];
+  // Allow localhost only in non-production environments
+  if (process.env.NODE_ENV !== 'production') {
+    origins.push(
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+    );
   }
-  return base;
+  if (process.env.FRONTEND_URL) {
+    process.env.FRONTEND_URL.split(',').forEach(u => origins.push(u.trim()));
+  }
+  return origins;
 };
 const allowedOrigins = buildOrigins();
 

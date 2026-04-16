@@ -150,7 +150,7 @@ export default function CustomerProfile() {
   useEffect(() => {
     authAPI.listAddresses()
       .then(r => setAddresses(r.data || []))
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setAddrLoading(false));
 
     // Load cities for address form

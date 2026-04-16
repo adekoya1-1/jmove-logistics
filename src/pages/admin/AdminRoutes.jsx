@@ -38,15 +38,15 @@ function RouteBuilder({ onClose, onCreated }) {
 
   // Load candidates + drivers + vehicles
   useEffect(() => {
-    routesAPI.candidates().then(r => setCandidates(r.data || [])).catch(console.error);
-    driversAPI.list({ limit: 100, verified: true }).then(r => setDrivers(r.data?.drivers || r.data || [])).catch(console.error);
-    fleetAPI.list({ status: 'active', limit: 100 }).then(r => setVehicles(r.data?.vehicles || r.data || [])).catch(console.error);
+    routesAPI.candidates().then(r => setCandidates(r.data || [])).catch(() => {});
+    driversAPI.list({ limit: 100, verified: true }).then(r => setDrivers(r.data?.drivers || r.data || [])).catch(() => {});
+    fleetAPI.list({ status: 'active', limit: 100 }).then(r => setVehicles(r.data?.vehicles || r.data || [])).catch(() => {});
   }, []);
 
   // Debounced candidate search
   useEffect(() => {
     const t = setTimeout(() => {
-      routesAPI.candidates({ search }).then(r => setCandidates(r.data || [])).catch(console.error);
+      routesAPI.candidates({ search }).then(r => setCandidates(r.data || [])).catch(() => {});
     }, 350);
     return () => clearTimeout(t);
   }, [search]);
@@ -57,7 +57,7 @@ function RouteBuilder({ onClose, onCreated }) {
     setValidating(true);
     routesAPI.validate({ orderIds: selectedIds, vehicleId: vehicleId || undefined })
       .then(r => setValidation(r.data))
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setValidating(false));
   }, [selectedIds, vehicleId]);
 
@@ -360,7 +360,7 @@ function RouteDetailDrawer({ routeId, onClose, onRefresh }) {
     setLoading(true);
     routesAPI.get(routeId)
       .then(r => setRoute(r.data))
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 
@@ -549,7 +549,7 @@ export default function AdminRoutes() {
         setRoutes(r.data.routes || []);
         setTotal(r.data.pagination?.total || 0);
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [page, statusFilter]);
 

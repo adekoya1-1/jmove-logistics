@@ -57,7 +57,7 @@ export default function DriverActive() {
           setNotes(noteEntries.reverse());
         }
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 
@@ -83,7 +83,7 @@ export default function DriverActive() {
         auth: { token: tokens.accessToken }, transports: ['websocket', 'polling'],
       });
       socketRef.current = socket;
-    }).catch(console.error);
+    }).catch(() => {});
     return () => { socketRef.current?.disconnect(); };
   }, []);
 

@@ -14,7 +14,7 @@ export default function AdminMap() {
 
   const loadDrivers = () => driversAPI.map()
     .then(r => setDrivers(r.data))
-    .catch(console.error)
+    .catch(() => {})
     .finally(() => setLoading(false));
 
   useEffect(() => {

@@ -33,7 +33,7 @@ export default function AdminOrderDetail() {
   const load = () =>
     ordersAPI.get(id)
       .then(r => setOrder(r.data.order))
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
 
   useEffect(() => { load(); }, [id]);
@@ -44,7 +44,7 @@ export default function AdminOrderDetail() {
     setDrvLoading(true);
     driversAPI.list({ status: 'available' })
       .then(r => setDrivers(r.data.drivers))
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setDrvLoading(false));
   };
 

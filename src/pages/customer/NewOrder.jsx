@@ -263,8 +263,8 @@ export default function NewOrder() {
      BOOTSTRAP — load reference data & handle rebook
   ───────────────────────────────────────────────────────── */
   useEffect(() => {
-    ordersAPI.cities().then(r => setCities(r.data)).catch(console.error);
-    pricingAPI.config().then(r => setPricingCfg(r.data)).catch(console.error);
+    ordersAPI.cities().then(r => setCities(r.data)).catch(() => {});
+    pricingAPI.config().then(r => setPricingCfg(r.data)).catch(() => {});
     authAPI.listAddresses().then(r => setSavedAddrs(r.data || [])).catch(() => {});
 
     if (rebookId) {

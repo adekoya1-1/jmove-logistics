@@ -25,7 +25,7 @@ export default function AdminAnalytics() {
   useEffect(() => {
     Promise.all([paymentsAPI.stats(period), ordersAPI.stats()])
       .then(([r, o]) => { setRevenue(r.data); setOrders(o.data); })
-      .catch(console.error);
+      .catch(() => {});
   }, [period]);
 
   const chartData = revenue?.daily?.map(d => ({

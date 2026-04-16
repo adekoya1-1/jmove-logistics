@@ -79,7 +79,7 @@ export default function AdminPayments() {
         setTotal(r.pagination?.total || (r.data || []).length);
         if (s) setStats(s.data);
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [page, status, from, to]);
 

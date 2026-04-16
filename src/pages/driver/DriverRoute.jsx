@@ -145,7 +145,7 @@ export default function DriverRoute() {
           if (first) setExpanded(first._id);
         }
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   };
 
@@ -182,7 +182,7 @@ export default function DriverRoute() {
           { enableHighAccuracy: true, maximumAge: 4000 }
         );
       }
-    }).catch(console.error);
+    }).catch(() => {});
   }, [route?._id]);
 
   const handleStopAction = async (stopId, status, note) => {

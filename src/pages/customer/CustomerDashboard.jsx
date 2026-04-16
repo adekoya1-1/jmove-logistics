@@ -17,7 +17,7 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    ordersAPI.list({ limit: 5 }).then(r => setOrders(r.data.orders)).catch(console.error).finally(() => setLoading(false));
+    ordersAPI.list({ limit: 5 }).then(r => setOrders(r.data.orders)).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const stats = {
