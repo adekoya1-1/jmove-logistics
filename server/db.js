@@ -456,7 +456,7 @@ const supportTicketSchema = new mongoose.Schema({
 
 supportTicketSchema.index({ customerId: 1, createdAt: -1 });
 supportTicketSchema.index({ status: 1, createdAt: -1 });
-supportTicketSchema.index({ ticketNumber: 1 });
+// ticketNumber index is created automatically by unique:true in the field definition
 
 export const User           = mongoose.model('User',          userSchema);
 export const DriverProfile  = mongoose.model('DriverProfile', driverProfileSchema);
@@ -517,7 +517,7 @@ const deliveryRouteSchema = new mongoose.Schema({
 
 deliveryRouteSchema.index({ status: 1, createdAt: -1 });
 deliveryRouteSchema.index({ driverId: 1, status: 1 });
-deliveryRouteSchema.index({ routeNumber: 1 });
+// routeNumber index is created automatically by unique:true in the field definition
 
 export const DeliveryRoute  = mongoose.model('DeliveryRoute', deliveryRouteSchema);
 

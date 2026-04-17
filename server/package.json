@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --watch index.js",
     "start": "node index.js",
-    "seed": "node utils/seed.js"
+    "seed": "node utils/seed.js",
+    "reset-db": "cross-env RESET_DB=true node utils/resetDb.js"
   },
   "dependencies": {
     "axios": "^1.7.2",
