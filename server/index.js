@@ -26,7 +26,8 @@ import logsRoutes     from './routes/logs.js';
 import supportRoutes  from './routes/support.js';
 import routeRoutes   from './routes/routes.js';
 import statesRoutes   from './routes/states.js';
-import socketHandler  from './utils/socketHandler.js';
+import socketHandler      from './utils/socketHandler.js';
+import { ensureSuperAdmin } from './utils/ensureSuperAdmin.js';
 
 import compression from 'compression';
 import { noSqlSanitize, xssSanitize, hppProtect } from './middleware/sanitize.js';
@@ -328,7 +329,10 @@ app.use((err, req, res, next) => {
 
 // ── Start ───────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-connectDB().then(() => {
+connectDB().then(async () => {
+  // Seed super admin from env vars (idempotent — safe on every restart)
+  await ensureSuperAdmin();
+
   server.listen(PORT, () => {
     console.log('');
     console.log('  🚛 JMove Logistics API');
