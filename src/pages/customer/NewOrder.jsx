@@ -908,7 +908,6 @@ export default function NewOrder() {
                 { label: 'Base Fee', val: pricing.baseFee },
                 pricing.distanceFee > 0 && {
                   label: 'Distance Cost',
-                  meta: `${pricing.billedKm} km × ₦${fmt(pricing.ratePerKm)}/km${pricing.routeFactor !== 1 ? ` × ${pricing.routeFactor}x route` : ''}`,
                   val: pricing.distanceFee,
                 },
                 form.isFragile && {
