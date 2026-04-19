@@ -306,12 +306,16 @@ const pricingConfigSchema = new mongoose.Schema({
     amount:       { type: Number, required: true, min: 0 },
   }],
 
-  // Distance bands: e.g. 0–30 km → rate ₦200/km, billed min 30 km
-  distanceBands: [{
-    minKm:        { type: Number, required: true, min: 0 },
-    maxKm:        { type: Number, default: null },  // null = no upper limit
-    ratePerKm:    { type: Number, required: true, min: 0 },
-    billedMinKm:  { type: Number, default: 0 },    // minimum billed distance
+  // Distance pricing bands are configured per vehicle type.
+  // Each vehicle can have a completely different band table.
+  vehicleDistanceBands: [{
+    truckTypeId:   { type: mongoose.Schema.Types.ObjectId, ref: 'TruckType', required: true },
+    bands: [{
+      minKm:       { type: Number, required: true, min: 0 },
+      maxKm:       { type: Number, default: null }, // null = no upper limit
+      ratePerKm:   { type: Number, required: true, min: 0 },
+      billedMinKm: { type: Number, default: 0 },
+    }],
   }],
 
   // Zone-pair route multipliers

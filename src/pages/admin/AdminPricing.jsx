@@ -239,7 +239,11 @@ export default function AdminPricing() {
         <div className="ap-stats-row">
           {[
             { label: 'Vehicle Types',   val: sortedTrucks.length,          icon: '🚛' },
-            { label: 'Distance Bands',  val: cfg.distanceBands?.length ?? 0,  icon: '📏' },
+            {
+              label: 'Vehicle Band Tables',
+              val: cfg.vehicleDistanceBands?.length ?? 0,
+              icon: '📏',
+            },
             { label: 'Route Factors',   val: cfg.routeMultipliers?.length ?? 0,icon: '🗺️' },
             { label: 'Minimum Charge',  val: `₦${fmt(cfg.minimumCharge)}`,     icon: '💰' },
           ].map(s => (
@@ -304,7 +308,7 @@ export default function AdminPricing() {
 
           {/* ══ TAB: DISTANCE BANDS ════════════════════════════════════════ */}
           {tab === 'distance' && (
-            <DistanceBandsTab cfg={cfg} saving={saving} onSave={saveEngine} />
+            <DistanceBandsTab cfg={cfg} truckTypes={sortedTrucks} saving={saving} onSave={saveEngine} />
           )}
 
           {/* ══ TAB: ROUTE MULTIPLIERS ═════════════════════════════════════ */}
@@ -495,25 +499,70 @@ function FeeStructureTab({ cfg, truckTypes, saving, onSave }) {
 // ══════════════════════════════════════════════════════════════════════════════
 //  DISTANCE BANDS TAB
 // ══════════════════════════════════════════════════════════════════════════════
-function DistanceBandsTab({ cfg, saving, onSave }) {
-  const [bands, setBands] = useState(() =>
-    (cfg.distanceBands || []).map((b, i) => ({ ...b, _key: i }))
-  );
-  const nextKey = useRef(bands.length);
-
-  const update = (key, field, value) =>
-    setBands(bs => bs.map(b => b._key === key ? { ...b, [field]: value === '' ? null : Number(value) } : b));
-
-  const addBand = () => {
-    const last = bands[bands.length - 1];
-    setBands(bs => [...bs, { _key: nextKey.current++, minKm: (last?.maxKm ?? 0) + 1, maxKm: null, ratePerKm: 100, billedMinKm: 0 }]);
+function DistanceBandsTab({ cfg, truckTypes, saving, onSave }) {
+  const buildInitialMap = () => {
+    const map = {};
+    (cfg.vehicleDistanceBands || []).forEach((entry) => {
+      map[entry.truckTypeId?.toString()] = (entry.bands || []).map((b, i) => ({ ...b, _key: i }));
+    });
+    // Legacy fallback: hydrate each truck from old shared table so admins
+    // can save into the new per-vehicle structure in one click.
+    if ((!cfg.vehicleDistanceBands || cfg.vehicleDistanceBands.length === 0) && cfg.distanceBands?.length) {
+      truckTypes.forEach((tt) => {
+        map[tt._id.toString()] = cfg.distanceBands.map((b, i) => ({ ...b, _key: i }));
+      });
+    }
+    return map;
   };
 
-  const removeBand = key => setBands(bs => bs.filter(b => b._key !== key));
+  const [selectedTruck, setSelectedTruck] = useState(truckTypes[0]?._id?.toString() || '');
+  const [bandsMap, setBandsMap] = useState(buildInitialMap);
+  const nextKey = useRef(1000);
+
+  const selectedBands = bandsMap[selectedTruck] || [];
+
+  const update = (key, field, value) => {
+    setBandsMap(prev => ({
+      ...prev,
+      [selectedTruck]: (prev[selectedTruck] || []).map(b =>
+        b._key === key ? { ...b, [field]: value === '' ? null : Number(value) } : b
+      ),
+    }));
+  };
+
+  const addBand = () => {
+    const last = selectedBands[selectedBands.length - 1];
+    const band = {
+      _key: nextKey.current++,
+      minKm: (last?.maxKm ?? 0) + 1,
+      maxKm: null,
+      ratePerKm: 100,
+      billedMinKm: 0,
+    };
+    setBandsMap(prev => ({ ...prev, [selectedTruck]: [...(prev[selectedTruck] || []), band] }));
+  };
+
+  const removeBand = (key) => {
+    setBandsMap(prev => ({
+      ...prev,
+      [selectedTruck]: (prev[selectedTruck] || []).filter(b => b._key !== key),
+    }));
+  };
 
   const handleSave = () => {
-    const distanceBands = bands.map(({ _key, ...b }) => b);
-    onSave({ distanceBands });
+    const vehicleDistanceBands = truckTypes.map(tt => {
+      const truckId = tt._id.toString();
+      return {
+        truckTypeId: tt._id,
+        bands: (bandsMap[truckId] || []).map(({ _key, ...b }) => ({
+          minKm: Number(b.minKm),
+          maxKm: b.maxKm === '' || b.maxKm === undefined ? null : b.maxKm,
+          ratePerKm: Number(b.ratePerKm),
+          billedMinKm: Number(b.billedMinKm || 0),
+        })),
+      };
+    });
+    onSave({ vehicleDistanceBands });
   };
 
   return (
@@ -521,11 +570,26 @@ function DistanceBandsTab({ cfg, saving, onSave }) {
       <div className="ap-eng-section">
         <div className="ap-eng-section-header">
           <div>
-            <h3 className="ap-eng-title">Distance Bands</h3>
-            <p className="ap-eng-sub">Distance cost = billedKm × rate/km × route multiplier. Click any cell to edit.</p>
+            <h3 className="ap-eng-title">Distance Bands Per Vehicle Type</h3>
+            <p className="ap-eng-sub">Select a vehicle type, then manage its independent distance-band pricing table.</p>
           </div>
-          <button className="btn-secondary ap-add-row-btn" onClick={addBand}>+ Add Band</button>
+          <button className="btn-secondary ap-add-row-btn" onClick={addBand} disabled={!selectedTruck}>+ Add Band</button>
         </div>
+
+        <div className="ap-truck-tabs" style={{ marginBottom: 16 }}>
+          {truckTypes.map(tt => (
+            <button
+              key={tt._id}
+              className={`ap-truck-tab ${selectedTruck === tt._id.toString() ? 'ap-truck-tab--active' : ''}`}
+              onClick={() => setSelectedTruck(tt._id.toString())}
+            >
+              <span>{tt.icon}</span>
+              <span>{tt.name}</span>
+              <span className="ap-truck-cap">{tt.capacityTons}t</span>
+            </button>
+          ))}
+        </div>
+
         <div className="ap-matrix-scroll" style={{ marginBottom: 0 }}>
           <table className="ap-matrix-table ap-eng-table">
             <thead>
@@ -539,7 +603,13 @@ function DistanceBandsTab({ cfg, saving, onSave }) {
               </tr>
             </thead>
             <tbody>
-              {bands.map(b => (
+              {selectedBands.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="ap-eng-td" style={{ textAlign: 'center', color: 'var(--text-faint)', padding: 18 }}>
+                    No distance bands for this vehicle yet. Add at least one band before saving.
+                  </td>
+                </tr>
+              ) : selectedBands.map(b => (
                 <tr key={b._key}>
                   <td className="ap-eng-td">
                     <input className="ap-inline-num" type="number" min="0" value={b.minKm ?? ''} onChange={e => update(b._key, 'minKm', e.target.value)} />
@@ -573,12 +643,12 @@ function DistanceBandsTab({ cfg, saving, onSave }) {
           </table>
         </div>
         <div className="ap-eng-table-hint">
-          Set Max KM to empty (∞) for the last band. Billed Min KM ensures short trips pay a minimum distance fee.
+          Validation runs on save: no overlaps, valid ranges, and ordered bands per vehicle type are required.
         </div>
       </div>
       <div className="ap-eng-save-row">
-        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 160 }}>
-          {saving ? <span className="spinner spinner-sm" /> : 'Save Distance Bands'}
+        <button className="btn-primary" onClick={handleSave} disabled={saving || !selectedTruck} style={{ minWidth: 160 }}>
+          {saving ? <span className="spinner spinner-sm" /> : 'Save Vehicle Distance Bands'}
         </button>
       </div>
     </div>

@@ -9,7 +9,7 @@ import { Router } from 'express';
 import { State, TruckType, PricingConfig } from '../db.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate, pricingSchemas, orderSchemas } from '../middleware/validate.js';
-import { calcDynamicPrice, getPublicConfig, invalidateCache } from '../services/pricingService.js';
+import { calcDynamicPrice, getPublicConfig, invalidateCache, validateVehicleDistanceBandConfig } from '../services/pricingService.js';
 import { STATE_DIRECTIONS, DIRECTIONS } from '../utils/pricing.js';
 
 const router = Router();
@@ -29,7 +29,18 @@ router.post('/calculate', validate(orderSchemas.calcPrice), async (req, res, nex
   try {
     const pricing = await calcDynamicPrice(req.body);
     res.json({ success: true, data: pricing });
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (
+      e.message?.toLowerCase().includes('selected vehicle') ||
+      e.message?.toLowerCase().includes('pricing bands') ||
+      e.message?.toLowerCase().includes('distance band') ||
+      e.message?.toLowerCase().includes('invalid pickup') ||
+      e.message?.toLowerCase().includes('invalid destination')
+    ) {
+      return res.status(400).json({ success: false, message: e.message });
+    }
+    next(e);
+  }
 });
 
 // ══════════════════════════════════════════════════════════
@@ -50,10 +61,14 @@ router.put('/admin/engine', authenticate, authorize('admin'), async (req, res, n
     const safeBody = { ...(req.body || {}) };
     delete safeBody.weightTiers;
     delete safeBody.deliveryFees;
+    delete safeBody.distanceBands;
     if (safeBody.optionalFees && typeof safeBody.optionalFees === 'object') {
       delete safeBody.optionalFees.fragilePercent;
       delete safeBody.optionalFees.expressFee;
       delete safeBody.optionalFees.samedayFee;
+    }
+    if (safeBody.vehicleDistanceBands) {
+      safeBody.vehicleDistanceBands = validateVehicleDistanceBandConfig(safeBody.vehicleDistanceBands);
     }
     const cfg = await PricingConfig.findOneAndUpdate(
       {},
@@ -62,6 +77,7 @@ router.put('/admin/engine', authenticate, authorize('admin'), async (req, res, n
         $unset: {
           weightTiers: 1,
           deliveryFees: 1,
+          distanceBands: 1,
           'optionalFees.fragilePercent': 1,
           'optionalFees.expressFee': 1,
           'optionalFees.samedayFee': 1,
@@ -71,7 +87,12 @@ router.put('/admin/engine', authenticate, authorize('admin'), async (req, res, n
     );
     invalidateCache();
     res.json({ success: true, data: cfg });
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (e?.message?.toLowerCase().includes('band') || e?.message?.toLowerCase().includes('vehicle')) {
+      return res.status(400).json({ success: false, message: e.message });
+    }
+    next(e);
+  }
 });
 
 // ══════════════════════════════════════════════════════════
@@ -122,18 +143,26 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
       amount:      Math.max(5000, Math.round(tt.capacityTons * 3000)),
     }));
 
+    const vehicleDistanceBands = truckTypes.map(tt => {
+      const multiplier = tt.capacityTons <= 1 ? 0.85 : tt.capacityTons <= 2 ? 1 : tt.capacityTons <= 5 ? 1.2 : 1.45;
+      return {
+        truckTypeId: tt._id,
+        bands: [
+          { minKm: 0,   maxKm: 30,  ratePerKm: Math.round(200 * multiplier), billedMinKm: 30 },
+          { minKm: 31,  maxKm: 100, ratePerKm: Math.round(150 * multiplier), billedMinKm: 0  },
+          { minKm: 101, maxKm: 300, ratePerKm: Math.round(120 * multiplier), billedMinKm: 0  },
+          { minKm: 301, maxKm: 700, ratePerKm: Math.round(100 * multiplier), billedMinKm: 0  },
+          { minKm: 701, maxKm: null,ratePerKm: Math.round(90  * multiplier), billedMinKm: 0  },
+        ],
+      };
+    });
+
     await PricingConfig.findOneAndUpdate(
       {},
       {
-        $setOnInsert: {
+        $set: {
           baseFees,
-          distanceBands: [
-            { minKm: 0,   maxKm: 30,  ratePerKm: 200, billedMinKm: 30 },
-            { minKm: 31,  maxKm: 100, ratePerKm: 150, billedMinKm: 0  },
-            { minKm: 101, maxKm: 300, ratePerKm: 120, billedMinKm: 0  },
-            { minKm: 301, maxKm: 700, ratePerKm: 100, billedMinKm: 0  },
-            { minKm: 701, maxKm: null,ratePerKm: 90,  billedMinKm: 0  },
-          ],
+          vehicleDistanceBands,
           routeMultipliers: [
             { fromZone: 'South West',    toZone: 'South West',    multiplier: 1.0  },
             { fromZone: 'South East',    toZone: 'South East',    multiplier: 1.0  },
@@ -178,6 +207,7 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
         $unset: {
           weightTiers: 1,
           deliveryFees: 1,
+          distanceBands: 1,
           'optionalFees.fragilePercent': 1,
           'optionalFees.expressFee': 1,
           'optionalFees.samedayFee': 1,

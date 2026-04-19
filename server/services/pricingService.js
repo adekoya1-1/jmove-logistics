@@ -40,14 +40,6 @@ async function loadConfig() {
 const DEFAULT_CONFIG = {
   baseFees: [],   // falls back to truck capacity × 3000
 
-  distanceBands: [
-    { minKm: 0,   maxKm: 30,  ratePerKm: 200, billedMinKm: 30  },
-    { minKm: 31,  maxKm: 100, ratePerKm: 150, billedMinKm: 0   },
-    { minKm: 101, maxKm: 300, ratePerKm: 120, billedMinKm: 0   },
-    { minKm: 301, maxKm: 700, ratePerKm: 100, billedMinKm: 0   },
-    { minKm: 701, maxKm: null,ratePerKm: 90,  billedMinKm: 0   },
-  ],
-
   routeMultipliers: [
     // same zone → 1.0, adjacent zones → 1.1–1.2, cross-country → 1.3–1.5
     { fromZone: 'South West',   toZone: 'South West',   multiplier: 1.0 },
@@ -103,6 +95,77 @@ const DEFAULT_CONFIG = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+const baseBandTemplate = (rateMultiplier = 1) => [
+  { minKm: 0,   maxKm: 30,  ratePerKm: Math.round(200 * rateMultiplier), billedMinKm: 30 },
+  { minKm: 31,  maxKm: 100, ratePerKm: Math.round(150 * rateMultiplier), billedMinKm: 0  },
+  { minKm: 101, maxKm: 300, ratePerKm: Math.round(120 * rateMultiplier), billedMinKm: 0  },
+  { minKm: 301, maxKm: 700, ratePerKm: Math.round(100 * rateMultiplier), billedMinKm: 0  },
+  { minKm: 701, maxKm: null,ratePerKm: Math.round(90  * rateMultiplier), billedMinKm: 0  },
+];
+
+const defaultBandMultiplierForTruck = (truckType) => {
+  const tons = Number(truckType?.capacityTons || 0);
+  if (tons <= 1) return 0.85;
+  if (tons <= 2) return 1.0;
+  if (tons <= 5) return 1.2;
+  return 1.45;
+};
+
+const normalizeBand = (band) => ({
+  minKm: Number(band.minKm),
+  maxKm: band.maxKm === null || band.maxKm === undefined || band.maxKm === '' ? null : Number(band.maxKm),
+  ratePerKm: Number(band.ratePerKm),
+  billedMinKm: Number(band.billedMinKm || 0),
+});
+
+const validateAndNormalizeBands = (bands = [], contextLabel = 'distance bands') => {
+  if (!Array.isArray(bands) || bands.length === 0) {
+    throw new Error(`${contextLabel} must contain at least one band`);
+  }
+
+  const normalized = bands.map(normalizeBand).sort((a, b) => a.minKm - b.minKm);
+  let previousMax = null;
+
+  normalized.forEach((band, idx) => {
+    if (!Number.isFinite(band.minKm) || band.minKm < 0) {
+      throw new Error(`${contextLabel}: band ${idx + 1} has invalid minKm`);
+    }
+    if (band.maxKm !== null && (!Number.isFinite(band.maxKm) || band.maxKm < band.minKm)) {
+      throw new Error(`${contextLabel}: band ${idx + 1} has invalid maxKm`);
+    }
+    if (!Number.isFinite(band.ratePerKm) || band.ratePerKm < 0) {
+      throw new Error(`${contextLabel}: band ${idx + 1} has invalid ratePerKm`);
+    }
+    if (!Number.isFinite(band.billedMinKm) || band.billedMinKm < 0) {
+      throw new Error(`${contextLabel}: band ${idx + 1} has invalid billedMinKm`);
+    }
+    if (previousMax !== null && band.minKm <= previousMax) {
+      throw new Error(`${contextLabel}: overlapping or unordered bands detected`);
+    }
+    previousMax = band.maxKm;
+  });
+
+  return normalized;
+};
+
+export const validateVehicleDistanceBandConfig = (vehicleDistanceBands = []) => {
+  if (!Array.isArray(vehicleDistanceBands) || vehicleDistanceBands.length === 0) {
+    throw new Error('Vehicle-specific distance bands are required');
+  }
+
+  const seen = new Set();
+  return vehicleDistanceBands.map((entry, idx) => {
+    const truckTypeId = entry?.truckTypeId?.toString?.() || entry?.truckTypeId;
+    if (!truckTypeId) throw new Error(`Vehicle distance band entry ${idx + 1} is missing truckTypeId`);
+    if (seen.has(truckTypeId)) throw new Error(`Duplicate vehicle distance band configuration for truck type ${truckTypeId}`);
+    seen.add(truckTypeId);
+    return {
+      truckTypeId,
+      bands: validateAndNormalizeBands(entry.bands || [], `Vehicle ${truckTypeId} bands`),
+    };
+  });
+};
+
 function findBand(distanceBands, km) {
   return distanceBands.find(b =>
     km >= b.minKm && (b.maxKm === null || km <= b.maxKm)
@@ -130,6 +193,29 @@ function getBaseFee(baseFees, truckTypeId, truckType) {
   return Math.max(5000, Math.round(truckType.capacityTons * 3000));
 }
 
+function resolveVehicleBands({ pc, truckTypes }) {
+  // Preferred structure: vehicleDistanceBands keyed by truckTypeId
+  if (pc?.vehicleDistanceBands?.length) {
+    return validateVehicleDistanceBandConfig(pc.vehicleDistanceBands);
+  }
+
+  // Legacy compatibility: map old global distanceBands to each active vehicle.
+  // This keeps older configs functional while moving runtime logic to
+  // vehicle-specific tables only.
+  if (pc?.distanceBands?.length) {
+    return truckTypes.map(tt => ({
+      truckTypeId: tt._id.toString(),
+      bands: validateAndNormalizeBands(pc.distanceBands, `${tt.name} bands`),
+    }));
+  }
+
+  // System fallback when config is empty.
+  return truckTypes.map(tt => ({
+    truckTypeId: tt._id.toString(),
+    bands: baseBandTemplate(defaultBandMultiplierForTruck(tt)),
+  }));
+}
+
 // ── Main exported calculator ──────────────────────────────────────────────────
 export const calcDynamicPrice = async ({
   originCity,
@@ -153,8 +239,8 @@ export const calcDynamicPrice = async ({
   const { states, truckTypes, pricingConfig } = config;
   const pc = pricingConfig || DEFAULT_CONFIG;
 
-  // Use DB distanceBands/etc, falling back to DEFAULT_CONFIG for each
-  const distanceBands    = pc.distanceBands?.length    ? pc.distanceBands    : DEFAULT_CONFIG.distanceBands;
+  // Use per-vehicle distance bands (required runtime model).
+  const vehicleDistanceBands = resolveVehicleBands({ pc, truckTypes });
   const routeMultipliers = pc.routeMultipliers?.length  ? pc.routeMultipliers : DEFAULT_CONFIG.routeMultipliers;
   const optionalFees     = pc.optionalFees              || DEFAULT_CONFIG.optionalFees;
   const minimumCharge    = pc.minimumCharge             ?? DEFAULT_CONFIG.minimumCharge;
@@ -191,7 +277,14 @@ export const calcDynamicPrice = async ({
 
   // ── Component calculations ────────────────────────────────────────────────
   const baseFee         = getBaseFee(baseFees, truckTypeId, truckType);
-  const { billedKm, ratePerKm, cost: distanceCost } = calcDistanceCost(distanceBands, rawKm);
+  const vehicleBandConfig = vehicleDistanceBands.find(v => v.truckTypeId.toString() === truckTypeId.toString());
+  if (!vehicleBandConfig?.bands?.length) {
+    throw new Error('Pricing bands are not configured for the selected vehicle type. Please contact support.');
+  }
+  const { billedKm, ratePerKm, cost: distanceCost } = calcDistanceCost(vehicleBandConfig.bands, rawKm);
+  if (!ratePerKm) {
+    throw new Error('No matching distance band found for the selected vehicle type and route distance.');
+  }
   const routeFactor     = getRouteMultiplier(routeMultipliers, fromZone, toZone);
   const distanceFee     = Math.round(distanceCost * routeFactor);
   const deliveryModeFee = 0;
@@ -252,6 +345,7 @@ export const calcDynamicPrice = async ({
     breakdown: {
       baseFee,
       distanceFee,
+      distanceBand: findBand(vehicleBandConfig.bands, rawKm),
       deliveryModeFee,
       fragileFee,
       fragileHandlingNote,

@@ -120,7 +120,12 @@ router.post('/calculate-price', validate(orderSchemas.calcPrice), async (req, re
     const pricing = await calcDynamicPrice(req.body);
     res.json({ success: true, data: pricing });
   } catch (e) { 
-    if (e.message === 'Service unavailable in selected state') {
+    if (
+      e.message === 'Service unavailable in selected state' ||
+      e.message?.toLowerCase().includes('selected vehicle') ||
+      e.message?.toLowerCase().includes('pricing bands') ||
+      e.message?.toLowerCase().includes('distance band')
+    ) {
       return res.status(400).json({ error: e.message });
     }
     next(e); 
@@ -285,7 +290,12 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
 
     res.status(201).json({ success: true, message: 'Shipment booked', data: { order, pricing } });
   } catch (e) {
-    if (e.message === 'Service unavailable in selected state') {
+    if (
+      e.message === 'Service unavailable in selected state' ||
+      e.message?.toLowerCase().includes('selected vehicle') ||
+      e.message?.toLowerCase().includes('pricing bands') ||
+      e.message?.toLowerCase().includes('distance band')
+    ) {
       return res.status(400).json({ error: e.message });
     }
 
@@ -571,7 +581,12 @@ router.post('/admin/manual', authenticate, authorize('admin'), requirePermission
         data: { order, pricing, customerLinked: !!customerId, customerCreated },
       });
     } catch (e) {
-      if (e.message === 'Service unavailable in selected state') {
+      if (
+        e.message === 'Service unavailable in selected state' ||
+        e.message?.toLowerCase().includes('selected vehicle') ||
+        e.message?.toLowerCase().includes('pricing bands') ||
+        e.message?.toLowerCase().includes('distance band')
+      ) {
         return res.status(400).json({ success: false, message: e.message });
       }
       next(e);

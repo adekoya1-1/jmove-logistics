@@ -219,15 +219,23 @@ async function reseedPricingConfig(truckTypes) {
     amount:      Math.max(5000, Math.round(tt.capacityTons * 3000)),
   }));
 
+  const vehicleDistanceBands = truckTypes.map(tt => {
+    const multiplier = tt.capacityTons <= 1 ? 0.85 : tt.capacityTons <= 2 ? 1 : tt.capacityTons <= 5 ? 1.2 : 1.45;
+    return {
+      truckTypeId: tt._id,
+      bands: [
+        { minKm: 0,   maxKm: 30,  ratePerKm: Math.round(200 * multiplier), billedMinKm: 30 },
+        { minKm: 31,  maxKm: 100, ratePerKm: Math.round(150 * multiplier), billedMinKm: 0  },
+        { minKm: 101, maxKm: 300, ratePerKm: Math.round(120 * multiplier), billedMinKm: 0  },
+        { minKm: 301, maxKm: 700, ratePerKm: Math.round(100 * multiplier), billedMinKm: 0  },
+        { minKm: 701, maxKm: null,ratePerKm: Math.round(90  * multiplier), billedMinKm: 0  },
+      ],
+    };
+  });
+
   await PricingConfig.create({
     baseFees,
-    distanceBands: [
-      { minKm: 0,   maxKm: 30,  ratePerKm: 200, billedMinKm: 30 },
-      { minKm: 31,  maxKm: 100, ratePerKm: 150, billedMinKm: 0  },
-      { minKm: 101, maxKm: 300, ratePerKm: 120, billedMinKm: 0  },
-      { minKm: 301, maxKm: 700, ratePerKm: 100, billedMinKm: 0  },
-      { minKm: 701, maxKm: null,ratePerKm: 90,  billedMinKm: 0  },
-    ],
+    vehicleDistanceBands,
     routeMultipliers: [
       { fromZone: 'South West',    toZone: 'South West',    multiplier: 1.0  },
       { fromZone: 'South East',    toZone: 'South East',    multiplier: 1.0  },
