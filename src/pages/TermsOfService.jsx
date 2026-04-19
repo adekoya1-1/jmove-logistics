@@ -99,7 +99,7 @@ Violation of these terms may result in immediate account termination and, where 
     body: `For questions about these Terms of Service, contact us at:
 
 **JMove Logistics Ltd**
-Email: legal@jmovelogistics.com
+Email: support@jmovelogistics.com
 Nigeria`,
   },
 ];

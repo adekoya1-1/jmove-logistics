@@ -50,23 +50,40 @@ export default function ContactUs() {
             {
               icon: '📞',
               title: 'Call Us',
-              lines: ['Our team is available during business hours', 'Monday – Friday, 8am – 6pm WAT'],
+              lines: [
+                { text: '+234 801 234 5678', href: 'tel:+2348012345678' },
+                { text: 'Monday – Friday, 8am – 6pm WAT' },
+              ],
             },
             {
               icon: '✉',
               title: 'Email Us',
-              lines: ['Send us a message any time', 'We respond within 24 business hours'],
+              lines: [
+                { text: 'support@jmovelogistics.com', href: 'mailto:support@jmovelogistics.com' },
+                { text: 'We respond within 24 business hours' },
+              ],
             },
             {
               icon: '📍',
               title: 'Visit Us',
-              lines: ['JMove Logistics Ltd', 'Nigeria'],
+              lines: [
+                { text: 'JMove Logistics Ltd' },
+                { text: 'Nigeria' },
+              ],
             },
           ].map(c => (
             <div key={c.title} className="contact-card">
               <div className="contact-card-icon">{c.icon}</div>
               <p className="contact-card-title">{c.title}</p>
-              {c.lines.map(l => <p key={l} className="contact-card-line">{l}</p>)}
+              {c.lines.map((l) => (
+                l.href ? (
+                  <p key={l.text} className="contact-card-line">
+                    <a href={l.href}>{l.text}</a>
+                  </p>
+                ) : (
+                  <p key={l.text} className="contact-card-line">{l.text}</p>
+                )
+              ))}
             </div>
           ))}
         </div>

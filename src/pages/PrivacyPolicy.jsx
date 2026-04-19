@@ -74,7 +74,7 @@ To exercise any of these rights, contact us at privacy@jmovelogistics.com. We wi
     body: `If you have questions about this Privacy Policy or how we handle your data, please contact:
 
 **JMove Logistics Ltd**
-Email: privacy@jmovelogistics.com
+Email: support@jmovelogistics.com
 Nigeria`,
   },
 ];
