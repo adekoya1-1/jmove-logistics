@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  max-width: 760px;
 }
 
 .aco-loading {
@@ -10,42 +11,99 @@
   gap: 10px;
 }
 
-.aco-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 340px;
-  gap: 16px;
-  align-items: start;
+.aco-order-card {
+  padding: 26px 28px;
 }
 
-.aco-card {
-  padding: 18px;
+.aco-order-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-.aco-title {
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 12px;
+.aco-step-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 22px;
+  letter-spacing: -0.01em;
 }
 
 .aco-fields {
-  display: grid;
-  gap: 10px;
-}
-
-.aco-fields.two-col {
-  grid-template-columns: 1fr 1fr;
-}
-
-.aco-fields .full {
-  grid-column: 1 / -1;
-}
-
-.aco-check {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.aco-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.aco-section {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--brand);
+  display: inline-block;
+}
+
+.aco-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+}
+
+.aco-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.aco-toggle:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+.aco-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.aco-toggle-label {
   font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.aco-toggle-sub {
+  font-size: 12px;
   color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.aco-help {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: -4px;
+}
+
+.aco-calc-btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .aco-textarea {
@@ -53,41 +111,42 @@
   min-height: 74px;
 }
 
-.aco-sticky {
-  position: sticky;
-  top: 12px;
-}
-
-.aco-help {
-  font-size: 12px;
-  color: var(--text-faint);
-  margin-bottom: 12px;
-}
-
 .aco-estimate {
-  margin-top: 14px;
-  background: var(--bg-elevated);
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .aco-estimate p {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
   gap: 10px;
   font-size: 13px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
 }
 
-.aco-estimate .aco-total {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
+.aco-estimate p:last-of-type {
+  border-bottom: none;
+}
+
+.aco-total {
+  background: var(--navy);
+  color: #fff;
+}
+
+.aco-total strong {
+  color: var(--brand);
+  font-size: 20px;
+  letter-spacing: -0.02em;
 }
 
 .aco-estimate small {
+  display: block;
+  padding: 10px 14px 12px;
   color: var(--text-faint);
   font-size: 11px;
 }
@@ -95,30 +154,40 @@
 .aco-note-line em {
   font-style: normal;
   color: var(--amber);
-  font-weight: 600;
+  font-weight: 700;
   text-align: right;
 }
 
-.aco-submit {
-  width: 100%;
-  margin-top: 14px;
+.aco-cta-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
 }
 
-@media (max-width: 1200px) {
-  .aco-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .aco-sticky {
-    grid-column: 1 / -1;
-    position: static;
-  }
+.aco-submit {
+  flex: 1;
 }
 
 @media (max-width: 760px) {
-  .aco-grid {
+  .admin-create-order {
+    max-width: 100%;
+  }
+
+  .aco-order-card {
+    padding: 20px 18px;
+  }
+
+  .aco-field-row {
     grid-template-columns: 1fr;
   }
-  .aco-fields.two-col {
-    grid-template-columns: 1fr;
+
+  .aco-cta-row {
+    flex-direction: column;
+  }
+
+  .aco-cta-row .btn-secondary,
+  .aco-submit {
+    width: 100%;
+    justify-content: center;
   }
 }

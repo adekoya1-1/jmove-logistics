@@ -193,159 +193,186 @@ export default function AdminCreateOrder() {
           {Array(6).fill(0).map((_, i) => <div key={i} className="shimmer" style={{ height: 44, borderRadius: 8 }} />)}
         </div>
       ) : (
-        <form className="aco-grid" onSubmit={submitOrder}>
-          <section className="card aco-card">
-            <h2 className="aco-title">Customer Details</h2>
+        <form className="card aco-order-card" onSubmit={submitOrder}>
+          <div className="aco-order-step">
+            <h2 className="aco-step-title">Manual Order Details</h2>
+
             <div className="aco-fields">
-              <div>
-                <label className="label">Full Name</label>
-                <input className="input" required value={form.customerName} onChange={onChange('customerName')} />
-              </div>
-              <div>
-                <label className="label">Phone Number</label>
-                <input className="input" required value={form.customerPhone} onChange={onChange('customerPhone')} />
+              <p className="aco-section">Customer Details</p>
+              <div className="aco-field-row">
+                <div>
+                  <label className="label">Full Name</label>
+                  <input className="input" required value={form.customerName} onChange={onChange('customerName')} />
+                </div>
+                <div>
+                  <label className="label">Phone Number</label>
+                  <input className="input" required value={form.customerPhone} onChange={onChange('customerPhone')} />
+                </div>
               </div>
               <div>
                 <label className="label">Email (Optional)</label>
                 <input className="input" type="email" value={form.customerEmail} onChange={onChange('customerEmail')} />
               </div>
-              <label className="aco-check">
+              <label className="aco-toggle">
                 <input type="checkbox" checked={form.createCustomerRecord} onChange={onChange('createCustomerRecord')} />
-                <span>Create/link customer profile in background if possible</span>
+                <div>
+                  <p className="aco-toggle-label">Create/Link Customer Record</p>
+                  <p className="aco-toggle-sub">Create a customer profile in the background if no match exists.</p>
+                </div>
               </label>
-            </div>
-          </section>
 
-          <section className="card aco-card">
-            <h2 className="aco-title">Order Source & Payment</h2>
-            <div className="aco-fields two-col">
-              <div>
-                <label className="label">Source Channel</label>
-                <select className="input" value={form.sourceChannel} onChange={onChange('sourceChannel')}>
-                  {SOURCE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
+              <div className="aco-divider" />
+              <p className="aco-section">Source & Payment</p>
+              <div className="aco-field-row">
+                <div>
+                  <label className="label">Source Channel</label>
+                  <select className="input" value={form.sourceChannel} onChange={onChange('sourceChannel')}>
+                    {SOURCE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Payment Outcome</label>
+                  <select className="input" value={form.paymentOutcome} onChange={onChange('paymentOutcome')}>
+                    {PAYMENT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                </div>
               </div>
               <div>
-                <label className="label">Payment Outcome</label>
-                <select className="input" value={form.paymentOutcome} onChange={onChange('paymentOutcome')}>
-                  {PAYMENT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-              </div>
-              <div className="full">
                 <label className="label">Payment Note (Optional)</label>
                 <input className="input" value={form.paymentNote} onChange={onChange('paymentNote')} placeholder="Reference, teller info, follow-up note..." />
               </div>
-            </div>
-          </section>
 
-          <section className="card aco-card">
-            <h2 className="aco-title">Shipment Details</h2>
-            <div className="aco-fields two-col">
-              <div>
-                <label className="label">Origin City</label>
-                <select className="input" required value={form.originCity} onChange={onChange('originCity')}>
-                  <option value="">Select state</option>
-                  {cities.map((c) => <option key={c._id} value={c.name}>{c.name}</option>)}
-                </select>
+              <div className="aco-divider" />
+              <p className="aco-section">Shipment Details</p>
+              <div className="aco-field-row">
+                <div>
+                  <label className="label">Origin City</label>
+                  <select className="input" required value={form.originCity} onChange={onChange('originCity')}>
+                    <option value="">Select state</option>
+                    {cities.map((c) => <option key={c._id} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Destination City</label>
+                  <select className="input" required value={form.destinationCity} onChange={onChange('destinationCity')}>
+                    <option value="">Select state</option>
+                    {cities.map((c) => <option key={c._id} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="label">Destination City</label>
-                <select className="input" required value={form.destinationCity} onChange={onChange('destinationCity')}>
-                  <option value="">Select state</option>
-                  {cities.map((c) => <option key={c._id} value={c.name}>{c.name}</option>)}
-                </select>
+              <div className="aco-field-row">
+                <div>
+                  <label className="label">Pickup Address</label>
+                  <input className="input" required value={form.pickupAddress} onChange={onChange('pickupAddress')} />
+                </div>
+                <div>
+                  <label className="label">Delivery Address</label>
+                  <input className="input" required value={form.deliveryAddress} onChange={onChange('deliveryAddress')} />
+                </div>
               </div>
-              <div>
-                <label className="label">Pickup Address</label>
-                <input className="input" required value={form.pickupAddress} onChange={onChange('pickupAddress')} />
+              <div className="aco-field-row">
+                <div>
+                  <label className="label">Pickup Contact Name</label>
+                  <input className="input" required value={form.pickupContactName} onChange={onChange('pickupContactName')} />
+                </div>
+                <div>
+                  <label className="label">Pickup Contact Phone</label>
+                  <input className="input" required value={form.pickupContactPhone} onChange={onChange('pickupContactPhone')} />
+                </div>
               </div>
-              <div>
-                <label className="label">Delivery Address</label>
-                <input className="input" required value={form.deliveryAddress} onChange={onChange('deliveryAddress')} />
+              <div className="aco-field-row">
+                <div>
+                  <label className="label">Receiver Contact Name</label>
+                  <input className="input" required value={form.receiverContactName} onChange={onChange('receiverContactName')} />
+                </div>
+                <div>
+                  <label className="label">Receiver Contact Phone</label>
+                  <input className="input" required value={form.receiverContactPhone} onChange={onChange('receiverContactPhone')} />
+                </div>
               </div>
-              <div>
-                <label className="label">Pickup Contact Name</label>
-                <input className="input" required value={form.pickupContactName} onChange={onChange('pickupContactName')} />
+              <div className="aco-field-row">
+                <div>
+                  <label className="label">Truck / Vehicle Type</label>
+                  <select className="input" required value={form.truckTypeId} onChange={onChange('truckTypeId')}>
+                    <option value="">Select vehicle type</option>
+                    {truckTypes.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Package / Item Description</label>
+                  <input className="input" required value={form.packageDescription} onChange={onChange('packageDescription')} />
+                </div>
               </div>
-              <div>
-                <label className="label">Pickup Contact Phone</label>
-                <input className="input" required value={form.pickupContactPhone} onChange={onChange('pickupContactPhone')} />
+              <div className="aco-field-row">
+                <div>
+                  <label className="label">Quantity</label>
+                  <input className="input" type="number" min="1" value={form.quantity} onChange={onChange('quantity')} />
+                </div>
+                <div>
+                  <label className="label">Weight (kg)</label>
+                  <input className="input" type="number" min="0.1" step="0.1" value={form.weight} onChange={onChange('weight')} />
+                </div>
               </div>
-              <div>
-                <label className="label">Receiver Contact Name</label>
-                <input className="input" required value={form.receiverContactName} onChange={onChange('receiverContactName')} />
+              <div className="aco-field-row">
+                <label className="aco-toggle">
+                  <input type="checkbox" checked={form.isFragile} onChange={onChange('isFragile')} />
+                  <div>
+                    <p className="aco-toggle-label">Fragile Handling</p>
+                    <p className="aco-toggle-sub">Operational flag only, not auto-priced.</p>
+                  </div>
+                </label>
+                <label className="aco-toggle">
+                  <input type="checkbox" checked={form.insuranceEnabled} onChange={onChange('insuranceEnabled')} />
+                  <div>
+                    <p className="aco-toggle-label">Insurance</p>
+                    <p className="aco-toggle-sub">Add insurance based on declared value.</p>
+                  </div>
+                </label>
               </div>
-              <div>
-                <label className="label">Receiver Contact Phone</label>
-                <input className="input" required value={form.receiverContactPhone} onChange={onChange('receiverContactPhone')} />
-              </div>
-              <div>
-                <label className="label">Truck / Vehicle Type</label>
-                <select className="input" required value={form.truckTypeId} onChange={onChange('truckTypeId')}>
-                  <option value="">Select vehicle type</option>
-                  {truckTypes.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Package / Item Description</label>
-                <input className="input" required value={form.packageDescription} onChange={onChange('packageDescription')} />
-              </div>
-              <div>
-                <label className="label">Quantity</label>
-                <input className="input" type="number" min="1" value={form.quantity} onChange={onChange('quantity')} />
-              </div>
-              <div>
-                <label className="label">Weight (kg)</label>
-                <input className="input" type="number" min="0.1" step="0.1" value={form.weight} onChange={onChange('weight')} />
-              </div>
-              <label className="aco-check">
-                <input type="checkbox" checked={form.isFragile} onChange={onChange('isFragile')} />
-                <span>Fragile Handling (operational flag only)</span>
-              </label>
-              <label className="aco-check">
-                <input type="checkbox" checked={form.insuranceEnabled} onChange={onChange('insuranceEnabled')} />
-                <span>Add insurance based on declared value</span>
-              </label>
               {form.insuranceEnabled && (
                 <div>
                   <label className="label">Declared Value (NGN)</label>
                   <input className="input" type="number" min="0" value={form.declaredValue} onChange={onChange('declaredValue')} />
                 </div>
               )}
-              <div className="full">
+              <div>
                 <label className="label">Special Instructions (Optional)</label>
                 <textarea className="input aco-textarea" rows="3" value={form.specialInstructions} onChange={onChange('specialInstructions')} />
               </div>
-              <div className="full">
+              <div>
                 <label className="label">Internal Admin Notes (Optional)</label>
                 <textarea className="input aco-textarea" rows="3" value={form.adminNotes} onChange={onChange('adminNotes')} />
               </div>
-            </div>
-          </section>
 
-          <section className="card aco-card aco-sticky">
-            <h2 className="aco-title">Estimate & Review</h2>
-            <p className="aco-help">Use the same backend pricing engine as the public booking flow.</p>
-            <button type="button" className="btn-secondary" onClick={calculateEstimate} disabled={!canCalculate || calculating}>
-              {calculating ? <span className="spinner spinner-sm" /> : 'Calculate Estimated Shipping Cost'}
-            </button>
+              <div className="aco-divider" />
+              <p className="aco-section">Estimate & Review</p>
+              <p className="aco-help">Use the same backend pricing engine as the customer booking flow.</p>
+              <button type="button" className="btn-secondary aco-calc-btn" onClick={calculateEstimate} disabled={!canCalculate || calculating}>
+                {calculating ? <span className="spinner spinner-sm" /> : 'Calculate Estimated Shipping Cost'}
+              </button>
 
-            {pricing && (
-              <div className="aco-estimate">
-                <p><span>Distance Cost</span><strong>{fmtCurrency(pricing.distanceFee)}</strong></p>
-                <p><span>Base Fee</span><strong>{fmtCurrency(pricing.baseFee)}</strong></p>
-                {pricing.insuranceFee > 0 && <p><span>Insurance</span><strong>{fmtCurrency(pricing.insuranceFee)}</strong></p>}
-                {form.isFragile && <p className="aco-note-line"><span>Fragile Handling</span><em>Price will be determined upon inspection</em></p>}
-                <div className="divider" />
-                <p className="aco-total"><span>Estimated Shipping Cost</span><strong>{fmtCurrency(pricing.totalAmount)}</strong></p>
-                <small>Final cost may vary after inspection or additional handling requirements.</small>
+              {pricing && (
+                <div className="aco-estimate">
+                  <p><span>Distance Cost</span><strong>{fmtCurrency(pricing.distanceFee)}</strong></p>
+                  <p><span>Base Fee</span><strong>{fmtCurrency(pricing.baseFee)}</strong></p>
+                  {pricing.insuranceFee > 0 && <p><span>Insurance</span><strong>{fmtCurrency(pricing.insuranceFee)}</strong></p>}
+                  {form.isFragile && <p className="aco-note-line"><span>Fragile Handling</span><em>Price will be determined upon inspection</em></p>}
+                  <div className="divider" />
+                  <p className="aco-total"><span>Estimated Shipping Cost</span><strong>{fmtCurrency(pricing.totalAmount)}</strong></p>
+                  <small>Final cost may vary after inspection or additional handling requirements.</small>
+                </div>
+              )}
+
+              <div className="aco-cta-row">
+                <button type="button" className="btn-secondary" onClick={() => navigate('/admin/orders')}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary aco-submit" disabled={submitting || calculating}>
+                  {submitting ? <span className="spinner spinner-sm" /> : 'Create Order'}
+                </button>
               </div>
-            )}
-
-            <button type="submit" className="btn-primary aco-submit" disabled={submitting || calculating}>
-              {submitting ? <span className="spinner spinner-sm" /> : 'Create Order'}
-            </button>
-          </section>
+            </div>
+          </div>
         </form>
       )}
     </div>
