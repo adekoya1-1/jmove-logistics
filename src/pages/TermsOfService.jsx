@@ -42,7 +42,7 @@ You are responsible for all activity that occurs under your account. We reserve 
 - Hazardous, flammable, or toxic materials
 - Live animals
 - Human remains
-- Currency or negotiable instruments above ₦500,000
+- Currency
 
 JMove Logistics reserves the right to refuse or terminate any shipment found to contain prohibited items. Law enforcement may be notified.
 
@@ -50,7 +50,7 @@ JMove Logistics reserves the right to refuse or terminate any shipment found to 
   },
   {
     title: '5. Payments',
-    body: `All payments are processed via Paystack. By making a payment, you agree to Paystack's terms and conditions in addition to ours.
+    body: `All payments are made to the company's designated account. By making a payment, you agree to JMove Logistics' terms and conditions.
 
 **5.1 Pricing**: Prices are calculated based on route, vehicle type, and goods weight/volume. All prices are displayed in Nigerian Naira (NGN) and are inclusive of applicable VAT.
 
