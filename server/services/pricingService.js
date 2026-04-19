@@ -6,8 +6,6 @@
  *    Total = max(minimumCharge,
  *               baseFee
  *             + distanceCost × routeMultiplier
- *             + deliveryModeFee
- *             + expressFee
  *             + insuranceFee)
  *
  *  All rates come from the singleton PricingConfig document in MongoDB.
@@ -97,12 +95,8 @@ const DEFAULT_CONFIG = {
     { fromZone: 'North Central',toZone: 'South South',  multiplier: 1.2 },
   ],
 
-  deliveryFees: { doorDelivery: 1500, depotPickup: 0 },
-
   optionalFees: {
     insurancePercent: 1,
-    expressFee:       2000,
-    samedayFee:       3000,
   },
 
   minimumCharge: 5000,
@@ -141,10 +135,8 @@ export const calcDynamicPrice = async ({
   originCity,
   destinationCity,
   truckTypeId,
-  serviceType  = 'standard',
   isFragile    = false,
   declaredValue= 0,
-  deliveryMode = 'door',   // 'door' | 'depot'
 }) => {
   if (!truckTypeId || !originCity || !destinationCity) {
     throw new Error('originCity, destinationCity, and truckTypeId are required to calculate price');
@@ -164,7 +156,6 @@ export const calcDynamicPrice = async ({
   // Use DB distanceBands/etc, falling back to DEFAULT_CONFIG for each
   const distanceBands    = pc.distanceBands?.length    ? pc.distanceBands    : DEFAULT_CONFIG.distanceBands;
   const routeMultipliers = pc.routeMultipliers?.length  ? pc.routeMultipliers : DEFAULT_CONFIG.routeMultipliers;
-  const deliveryFees     = pc.deliveryFees              || DEFAULT_CONFIG.deliveryFees;
   const optionalFees     = pc.optionalFees              || DEFAULT_CONFIG.optionalFees;
   const minimumCharge    = pc.minimumCharge             ?? DEFAULT_CONFIG.minimumCharge;
   const baseFees         = pc.baseFees                  || [];
@@ -203,12 +194,10 @@ export const calcDynamicPrice = async ({
   const { billedKm, ratePerKm, cost: distanceCost } = calcDistanceCost(distanceBands, rawKm);
   const routeFactor     = getRouteMultiplier(routeMultipliers, fromZone, toZone);
   const distanceFee     = Math.round(distanceCost * routeFactor);
-  const deliveryModeFee = deliveryMode === 'door'
-    ? (deliveryFees.doorDelivery || 0)
-    : (deliveryFees.depotPickup  || 0);
+  const deliveryModeFee = 0;
 
   // Subtotal before extras
-  const subtotal = baseFee + distanceFee + deliveryModeFee;
+  const subtotal = baseFee + distanceFee;
 
   // Extras
   const fragileFee  = 0;
@@ -216,13 +205,9 @@ export const calcDynamicPrice = async ({
     ? 'Price will be determined upon inspection'
     : null;
   const insuranceFee= declaredValue > 0 ? Math.round(declaredValue * (optionalFees.insurancePercent || 1) / 100) : 0;
-  const serviceFee  = serviceType === 'express'
-    ? (optionalFees.expressFee  || 2000)
-    : serviceType === 'sameday'
-    ? (optionalFees.samedayFee  || 3000)
-    : 0;
+  const serviceFee  = 0;
 
-  const rawTotal  = subtotal + insuranceFee + serviceFee;
+  const rawTotal  = subtotal + insuranceFee;
   const totalAmount = Math.max(minimumCharge, Math.round(rawTotal / 100) * 100);
 
   // Delivery time estimate
@@ -255,7 +240,7 @@ export const calcDynamicPrice = async ({
     billedKm,
     ratePerKm,
     routeFactor,
-    deliveryMode,
+    deliveryMode: 'door',
     isDynamic:    true,
     truckType: {
       _id:          truckType._id,
@@ -276,7 +261,7 @@ export const calcDynamicPrice = async ({
 
     // Legacy fields kept for backward compatibility with existing order schema
     basePrice:        baseFee + distanceFee,
-    serviceSurcharge: serviceFee,
+    serviceSurcharge: 0,
     // Kept for backward compatibility with existing order schema/history.
     weightSurcharge:  0,
     fragileSurcharge: 0,

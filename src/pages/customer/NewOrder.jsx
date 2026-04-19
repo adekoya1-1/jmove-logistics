@@ -101,17 +101,6 @@ const CATEGORIES = [
   'fragile items', 'general goods', 'health & beauty', 'auto parts',
 ];
 
-const SERVICE_TYPES = [
-  { value: 'standard', label: 'Standard Delivery',   desc: '2–5 business days interstate, 1–2 hrs intrastate', extra: ''        },
-  { value: 'express',  label: 'Express (GoFaster)',   desc: '24–48 hours delivery guaranteed',                  extra: '+₦2,000' },
-  { value: 'sameday',  label: 'Same Day Delivery',    desc: 'Available in select cities only',                  extra: '+₦3,000' },
-];
-
-const DELIVERY_MODES = [
-  { value: 'door',  label: 'Door Delivery', desc: "We deliver directly to the receiver's address", extra: '+₦1,500', icon: '🏠' },
-  { value: 'depot', label: 'Depot Pickup',  desc: 'Receiver picks up from our nearest office',     extra: 'Free',    icon: '🏢' },
-];
-
 const PAYMENT_METHODS = [
   { value: 'online',    label: 'Pay Online',          desc: 'Card, bank transfer or USSD via Paystack',   icon: '💳' },
   { value: 'cash',      label: 'Pay at Centre',        desc: 'Pay cash when you drop off at our office',   icon: '🏢' },
@@ -369,10 +358,8 @@ export default function NewOrder() {
         destinationCity: form.destinationCity,
         truckTypeId:     form.truckTypeId,
         weight:          +form.weight,
-        serviceType:     form.serviceType,
         isFragile:       form.isFragile,
         declaredValue:   +form.declaredValue || 0,
-        deliveryMode:    form.deliveryMode,
       });
       setPricing(r.data);
       transition(S.QUOTED);
@@ -416,6 +403,8 @@ export default function NewOrder() {
       /* Create the order (idempotent via idempotencyKey) */
       const orderRes = await ordersAPI.create({
         ...form,
+        serviceType:    'standard',
+        deliveryMode:   'door',
         paymentMethod:  effectivePaymentMethod,
         weight:         +form.weight,
         quantity:       +form.quantity,
@@ -467,14 +456,6 @@ export default function NewOrder() {
     const waybill  = bookedOrder?.waybillNumber || orderId || 'N/A';
     const amount   = pricing?.totalAmount ? `₦${fmt(pricing.totalAmount)}` : 'as quoted';
 
-    const serviceLabel = {
-      standard: 'Standard Delivery',
-      express:  'Express (GoFaster)',
-      sameday:  'Same Day',
-    }[form.serviceType] || form.serviceType;
-
-    const modeLabel = form.deliveryMode === 'door' ? 'Door Delivery' : 'Depot Pickup';
-
     const lines = [
       `🚚 *BOOKING REQUEST — JMove Logistics*`,
       ``,
@@ -492,8 +473,7 @@ export default function NewOrder() {
       ``,
       `🚛 *Service Details*`,
       `• Vehicle:   ${pricing?.truckType ? `${pricing.truckType.icon} ${pricing.truckType.name}` : 'N/A'}`,
-      `• Service:   ${serviceLabel}`,
-      `• Mode:      ${modeLabel}`,
+      `• Delivery:  Door Delivery`,
       ...(pricing?.distanceKm > 0 ? [`• Distance:  ${pricing.distanceKm} km`] : []),
       ...(pricing?.estimatedDelivery ? [`• ETA:       ${pricing.estimatedDelivery}`] : []),
       ``,
@@ -870,36 +850,8 @@ export default function NewOrder() {
               )}
 
               <div className="od-divider" />
-              <div className="od-section">Service Type</div>
-              <div className="service-type-grid">
-                {SERVICE_TYPES.map(s => (
-                  <label key={s.value} className={`service-option ${form.serviceType === s.value ? 'active' : ''}`}>
-                    <input type="radio" name="serviceType" value={s.value} checked={form.serviceType === s.value} onChange={set('serviceType')} hidden />
-                    <div className="so-header">
-                      <p className="so-label">{s.label}</p>
-                      {s.extra && <span className="so-extra">{s.extra}</span>}
-                    </div>
-                    <p className="so-desc">{s.desc}</p>
-                  </label>
-                ))}
-              </div>
-
-              <div className="od-divider" />
               <div className="od-section">Delivery Mode</div>
-              <div className="service-type-grid">
-                {DELIVERY_MODES.map(m => (
-                  <label key={m.value} className={`service-option ${form.deliveryMode === m.value ? 'active' : ''}`}>
-                    <input type="radio" name="deliveryMode" value={m.value} checked={form.deliveryMode === m.value} onChange={set('deliveryMode')} hidden />
-                    <div className="so-header">
-                      <p className="so-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>{m.icon}</span> <span>{m.label}</span>
-                      </p>
-                      <span className="so-extra">{m.extra}</span>
-                    </div>
-                    <p className="so-desc">{m.desc}</p>
-                  </label>
-                ))}
-              </div>
+              <p className="so-desc" style={{ marginTop: 6 }}>Door Delivery is applied to all shipments by default.</p>
             </div>
 
             <div className="step-cta-row">
@@ -959,17 +911,9 @@ export default function NewOrder() {
                   meta: `${pricing.billedKm} km × ₦${fmt(pricing.ratePerKm)}/km${pricing.routeFactor !== 1 ? ` × ${pricing.routeFactor}x route` : ''}`,
                   val: pricing.distanceFee,
                 },
-                pricing.deliveryModeFee > 0 && {
-                  label: pricing.deliveryMode === 'door' ? 'Door Delivery' : 'Depot Pickup',
-                  val: pricing.deliveryModeFee,
-                },
                 form.isFragile && {
                   label: 'Fragile Handling',
                   note: 'Price will be determined upon inspection',
-                },
-                pricing.serviceFee > 0     && {
-                  label: form.serviceType === 'express' ? 'Express Delivery Fee' : 'Same Day Fee',
-                  val: pricing.serviceFee,
                 },
                 pricing.insuranceFee > 0   && {
                   label: `Insurance (₦${fmt(form.declaredValue)} coverage)`,

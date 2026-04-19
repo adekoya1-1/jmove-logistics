@@ -403,11 +403,7 @@ function FeeStructureTab({ cfg, truckTypes, saving, onSave }) {
 
   const [baseMap,      setBaseMap]      = useState(initialBaseMap);
   const [minCharge,    setMinCharge]    = useState(cfg.minimumCharge ?? 5000);
-  const [doorFee,      setDoorFee]      = useState(cfg.deliveryFees?.doorDelivery ?? 1500);
-  const [depotFee,     setDepotFee]     = useState(cfg.deliveryFees?.depotPickup  ?? 0);
   const [insurance,    setInsurance]    = useState(cfg.optionalFees?.insurancePercent  ?? 1);
-  const [express,      setExpress]      = useState(cfg.optionalFees?.expressFee        ?? 2000);
-  const [sameday,      setSameday]      = useState(cfg.optionalFees?.samedayFee        ?? 3000);
 
   const handleSave = () => {
     const baseFees = truckTypes.map(tt => ({
@@ -417,11 +413,8 @@ function FeeStructureTab({ cfg, truckTypes, saving, onSave }) {
     onSave({
       baseFees,
       minimumCharge: Number(minCharge),
-      deliveryFees:  { doorDelivery: Number(doorFee), depotPickup: Number(depotFee) },
       optionalFees:  {
         insurancePercent: Number(insurance),
-        expressFee:       Number(express),
-        samedayFee:       Number(sameday),
       },
     });
   };
@@ -472,25 +465,21 @@ function FeeStructureTab({ cfg, truckTypes, saving, onSave }) {
         </div>
       </div>
 
-      {/* Delivery mode fees */}
+      {/* Delivery policy */}
       <div className="ap-eng-section">
-        <h3 className="ap-eng-title">Delivery Mode Fees</h3>
-        <p className="ap-eng-sub">Charged based on whether the receiver gets door delivery or picks up at a depot.</p>
+        <h3 className="ap-eng-title">Delivery Policy</h3>
+        <p className="ap-eng-sub">All shipments are handled as Door Delivery by default.</p>
         <div className="ap-eng-row">
-          <NInput label="🏠 Door Delivery" value={doorFee}  onChange={setDoorFee}  prefix="₦" hint="Added when delivery mode = door" />
-          <NInput label="🏢 Depot Pickup"  value={depotFee} onChange={setDepotFee} prefix="₦" hint="Usually ₦0 — receiver picks up themselves" />
           <NInput label="💰 Minimum Charge" value={minCharge} onChange={setMinCharge} prefix="₦" hint="No order can be priced below this" />
         </div>
       </div>
 
       {/* Optional extras */}
       <div className="ap-eng-section">
-        <h3 className="ap-eng-title">Optional Extras</h3>
-        <p className="ap-eng-sub">Applied only when the customer selects the relevant option at checkout.</p>
+        <h3 className="ap-eng-title">Pricing Extras</h3>
+        <p className="ap-eng-sub">Only active extras that still affect automatic pricing.</p>
         <div className="ap-eng-row">
           <NInput label="🛡 Insurance"         value={insurance} onChange={setInsurance} suffix="% of declared value" />
-          <NInput label="⚡ Express Fee"        value={express}   onChange={setExpress}   prefix="₦" hint="Flat fee for express delivery" />
-          <NInput label="🕐 Same Day Fee"      value={sameday}   onChange={setSameday}   prefix="₦" hint="Flat fee for same-day delivery" />
         </div>
       </div>
 

@@ -121,7 +121,7 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       receiverName, receiverPhone, receiverEmail, receiverAddress,
       originCity, destinationCity,
       description, weight, quantity, category, isFragile, declaredValue, specialInstructions,
-      serviceType, deliveryMode, paymentMethod, codAmount,
+      paymentMethod, codAmount,
       pickupLat, pickupLng, deliveryLat, deliveryLng,
       staffNotes, truckTypeId,
       idempotencyKey,
@@ -154,7 +154,7 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       }
     }
 
-    const pricing  = await calcDynamicPrice({ originCity, destinationCity, weight, serviceType, isFragile, declaredValue, truckTypeId, deliveryMode });
+    const pricing  = await calcDynamicPrice({ originCity, destinationCity, weight, isFragile, declaredValue, truckTypeId });
     const isAdmin  = req.user.role === 'admin';
 
     const order = await createOrderWithRetry({
@@ -174,8 +174,8 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       category: category || 'general', isFragile: !!isFragile,
       declaredValue: +declaredValue || 0, specialInstructions,
 
-      serviceType: serviceType || 'standard',
-      deliveryMode:      deliveryMode || 'door',
+      serviceType: 'standard',
+      deliveryMode: 'door',
       deliveryType:      pricing.deliveryType,
       estimatedDelivery: pricing.estimatedDelivery,
       truckTypeId:       pricing.truckType?._id || null,

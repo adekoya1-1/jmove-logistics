@@ -49,12 +49,24 @@ router.put('/admin/engine', authenticate, authorize('admin'), async (req, res, n
   try {
     const safeBody = { ...(req.body || {}) };
     delete safeBody.weightTiers;
+    delete safeBody.deliveryFees;
     if (safeBody.optionalFees && typeof safeBody.optionalFees === 'object') {
       delete safeBody.optionalFees.fragilePercent;
+      delete safeBody.optionalFees.expressFee;
+      delete safeBody.optionalFees.samedayFee;
     }
     const cfg = await PricingConfig.findOneAndUpdate(
       {},
-      { $set: safeBody, $unset: { weightTiers: 1, 'optionalFees.fragilePercent': 1 } },
+      {
+        $set: safeBody,
+        $unset: {
+          weightTiers: 1,
+          deliveryFees: 1,
+          'optionalFees.fragilePercent': 1,
+          'optionalFees.expressFee': 1,
+          'optionalFees.samedayFee': 1,
+        },
+      },
       { upsert: true, new: true, runValidators: true }
     );
     invalidateCache();
@@ -160,11 +172,16 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
             { fromZone: 'North East',    toZone: 'South West',    multiplier: 1.45 },
             { fromZone: 'South West',    toZone: 'North East',    multiplier: 1.45 },
           ],
-          deliveryFees:  { doorDelivery: 1500, depotPickup: 0 },
-          optionalFees:  { insurancePercent: 1, expressFee: 2000, samedayFee: 3000 },
+          optionalFees:  { insurancePercent: 1 },
           minimumCharge: 5000,
         },
-        $unset: { weightTiers: 1, 'optionalFees.fragilePercent': 1 },
+        $unset: {
+          weightTiers: 1,
+          deliveryFees: 1,
+          'optionalFees.fragilePercent': 1,
+          'optionalFees.expressFee': 1,
+          'optionalFees.samedayFee': 1,
+        },
       },
       { upsert: true, new: true }
     );

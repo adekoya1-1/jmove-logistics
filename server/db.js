@@ -308,17 +308,9 @@ const pricingConfigSchema = new mongoose.Schema({
     multiplier:   { type: Number, required: true, min: 0 },
   }],
 
-  // Delivery mode fees
-  deliveryFees: {
-    doorDelivery: { type: Number, default: 0 },
-    depotPickup:  { type: Number, default: 0 },
-  },
-
   // Optional add-on fees
   optionalFees: {
     insurancePercent:  { type: Number, default: 1 },    // % of declared value
-    expressFee:        { type: Number, default: 2000 },
-    samedayFee:        { type: Number, default: 3000 },
   },
 
   minimumCharge: { type: Number, default: 5000 },
