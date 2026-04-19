@@ -6,7 +6,6 @@
  *    Total = max(minimumCharge,
  *               baseFee
  *             + distanceCost × routeMultiplier
- *             + weightFee
  *             + deliveryModeFee
  *             + fragileFee
  *             + expressFee
@@ -99,13 +98,6 @@ const DEFAULT_CONFIG = {
     { fromZone: 'North Central',toZone: 'South South',  multiplier: 1.2 },
   ],
 
-  weightTiers: [
-    { minKg: 0,   maxKg: 10,  fee: 0,    extraPerKg: 0   },
-    { minKg: 10,  maxKg: 50,  fee: 1500, extraPerKg: 50  },
-    { minKg: 50,  maxKg: 100, fee: 3500, extraPerKg: 100 },
-    { minKg: 100, maxKg: null,fee: 8500, extraPerKg: 150 },
-  ],
-
   deliveryFees: { doorDelivery: 1500, depotPickup: 0 },
 
   optionalFees: {
@@ -133,16 +125,6 @@ function calcDistanceCost(distanceBands, rawKm) {
   return { billedKm, ratePerKm: band.ratePerKm, cost, band };
 }
 
-function calcWeightFee(weightTiers, kg) {
-  for (const tier of weightTiers) {
-    if (kg >= tier.minKg && (tier.maxKg === null || kg <= tier.maxKg)) {
-      const extra = (tier.extraPerKg || 0) * Math.max(0, kg - tier.minKg);
-      return { fee: tier.fee + extra, tier };
-    }
-  }
-  return { fee: 0, tier: null };
-}
-
 function getRouteMultiplier(routeMultipliers, fromZone, toZone) {
   const match = routeMultipliers.find(r => r.fromZone === fromZone && r.toZone === toZone)
              || routeMultipliers.find(r => r.fromZone === toZone   && r.toZone === fromZone);
@@ -161,7 +143,6 @@ export const calcDynamicPrice = async ({
   originCity,
   destinationCity,
   truckTypeId,
-  weight       = 0,
   serviceType  = 'standard',
   isFragile    = false,
   declaredValue= 0,
@@ -182,10 +163,9 @@ export const calcDynamicPrice = async ({
   const { states, truckTypes, pricingConfig } = config;
   const pc = pricingConfig || DEFAULT_CONFIG;
 
-  // Use DB distanceBands/weightTiers/etc, falling back to DEFAULT_CONFIG for each
+  // Use DB distanceBands/etc, falling back to DEFAULT_CONFIG for each
   const distanceBands    = pc.distanceBands?.length    ? pc.distanceBands    : DEFAULT_CONFIG.distanceBands;
   const routeMultipliers = pc.routeMultipliers?.length  ? pc.routeMultipliers : DEFAULT_CONFIG.routeMultipliers;
-  const weightTiers      = pc.weightTiers?.length       ? pc.weightTiers      : DEFAULT_CONFIG.weightTiers;
   const deliveryFees     = pc.deliveryFees              || DEFAULT_CONFIG.deliveryFees;
   const optionalFees     = pc.optionalFees              || DEFAULT_CONFIG.optionalFees;
   const minimumCharge    = pc.minimumCharge             ?? DEFAULT_CONFIG.minimumCharge;
@@ -225,13 +205,12 @@ export const calcDynamicPrice = async ({
   const { billedKm, ratePerKm, cost: distanceCost } = calcDistanceCost(distanceBands, rawKm);
   const routeFactor     = getRouteMultiplier(routeMultipliers, fromZone, toZone);
   const distanceFee     = Math.round(distanceCost * routeFactor);
-  const { fee: weightFee } = calcWeightFee(weightTiers, weight);
   const deliveryModeFee = deliveryMode === 'door'
     ? (deliveryFees.doorDelivery || 0)
     : (deliveryFees.depotPickup  || 0);
 
   // Subtotal before extras
-  const subtotal = baseFee + distanceFee + weightFee + deliveryModeFee;
+  const subtotal = baseFee + distanceFee + deliveryModeFee;
 
   // Extras
   const fragileFee  = isFragile    ? Math.round(subtotal * (optionalFees.fragilePercent   || 10) / 100) : 0;
@@ -263,7 +242,6 @@ export const calcDynamicPrice = async ({
     // Components (for UI breakdown)
     baseFee,
     distanceFee,
-    weightFee,
     deliveryModeFee,
     fragileFee,
     serviceFee,
@@ -287,7 +265,6 @@ export const calcDynamicPrice = async ({
     breakdown: {
       baseFee,
       distanceFee,
-      weightFee,
       deliveryModeFee,
       fragileFee,
       serviceFee,
@@ -297,7 +274,8 @@ export const calcDynamicPrice = async ({
     // Legacy fields kept for backward compatibility with existing order schema
     basePrice:        baseFee + distanceFee,
     serviceSurcharge: serviceFee,
-    weightSurcharge:  weightFee,
+    // Kept for backward compatibility with existing order schema/history.
+    weightSurcharge:  0,
     fragileSurcharge: fragileFee,
 
     // Old direction fields — keep for admin displays

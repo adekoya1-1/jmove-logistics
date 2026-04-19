@@ -47,9 +47,11 @@ router.get('/admin/engine', authenticate, authorize('admin'), async (req, res, n
 // PUT  /api/pricing/admin/engine — upsert the PricingConfig singleton
 router.put('/admin/engine', authenticate, authorize('admin'), async (req, res, next) => {
   try {
+    const safeBody = { ...(req.body || {}) };
+    delete safeBody.weightTiers;
     const cfg = await PricingConfig.findOneAndUpdate(
       {},
-      { $set: req.body },
+      { $set: safeBody, $unset: { weightTiers: 1 } },
       { upsert: true, new: true, runValidators: true }
     );
     invalidateCache();
@@ -155,16 +157,11 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
             { fromZone: 'North East',    toZone: 'South West',    multiplier: 1.45 },
             { fromZone: 'South West',    toZone: 'North East',    multiplier: 1.45 },
           ],
-          weightTiers: [
-            { minKg: 0,   maxKg: 10,  fee: 0,    extraPerKg: 0   },
-            { minKg: 10,  maxKg: 50,  fee: 1500, extraPerKg: 50  },
-            { minKg: 50,  maxKg: 100, fee: 3500, extraPerKg: 100 },
-            { minKg: 100, maxKg: null,fee: 8500, extraPerKg: 150 },
-          ],
           deliveryFees:  { doorDelivery: 1500, depotPickup: 0 },
           optionalFees:  { fragilePercent: 10, insurancePercent: 1, expressFee: 2000, samedayFee: 3000 },
           minimumCharge: 5000,
         },
+        $unset: { weightTiers: 1 },
       },
       { upsert: true, new: true }
     );
@@ -173,7 +170,7 @@ router.post('/admin/seed-defaults', authenticate, authorize('admin'), async (req
 
     res.json({
       success: true,
-      message: 'States, truck types, and hybrid pricing config seeded successfully',
+      message: 'States, truck types, and pricing config seeded successfully',
       data: { states: states.length, trucks: truckTypes.length },
     });
   } catch (e) { next(e); }

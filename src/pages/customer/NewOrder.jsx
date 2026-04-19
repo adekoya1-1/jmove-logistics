@@ -959,7 +959,6 @@ export default function NewOrder() {
                   meta: `${pricing.billedKm} km × ₦${fmt(pricing.ratePerKm)}/km${pricing.routeFactor !== 1 ? ` × ${pricing.routeFactor}x route` : ''}`,
                   val: pricing.distanceFee,
                 },
-                pricing.weightFee > 0      && { label: `Weight Fee (${form.weight} kg)`, val: pricing.weightFee },
                 pricing.deliveryModeFee > 0 && {
                   label: pricing.deliveryMode === 'door' ? 'Door Delivery' : 'Depot Pickup',
                   val: pricing.deliveryModeFee,

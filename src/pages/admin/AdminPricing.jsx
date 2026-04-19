@@ -80,7 +80,7 @@ function TruckTypeForm({ initial, onSave, onCancel, saving }) {
   );
 }
 
-// ── Inline number cell (for multiplier / band / tier grids) ──────────────────
+// ── Inline number cell (for multiplier / band grids) ──────────────────
 function InlineCell({ value, prefix = '', suffix = '', onSave, className = '' }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal]         = useState('');
@@ -205,7 +205,6 @@ export default function AdminPricing() {
   const TABS = [
     { id: 'fees',        label: 'Fee Structure'     },
     { id: 'distance',    label: 'Distance Bands'    },
-    { id: 'weight',      label: 'Weight Tiers'      },
     { id: 'multipliers', label: 'Route Multipliers' },
     { id: 'vehicles',    label: `Vehicle Types (${sortedTrucks.length})` },
   ];
@@ -222,7 +221,7 @@ export default function AdminPricing() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Pricing Management</h1>
-          <p className="page-subtitle">Hybrid engine: distance × route × weight × extras — all configurable</p>
+          <p className="page-subtitle">Engine: distance × route × extras — all configurable</p>
         </div>
         {cfg && (
           <button className="btn-secondary ap-reseed-btn" onClick={handleSeed} disabled={seeding}>
@@ -241,7 +240,6 @@ export default function AdminPricing() {
           {[
             { label: 'Vehicle Types',   val: sortedTrucks.length,          icon: '🚛' },
             { label: 'Distance Bands',  val: cfg.distanceBands?.length ?? 0,  icon: '📏' },
-            { label: 'Weight Tiers',    val: cfg.weightTiers?.length ?? 0,     icon: '⚖️' },
             { label: 'Route Factors',   val: cfg.routeMultipliers?.length ?? 0,icon: '🗺️' },
             { label: 'Minimum Charge',  val: `₦${fmt(cfg.minimumCharge)}`,     icon: '💰' },
           ].map(s => (
@@ -264,8 +262,8 @@ export default function AdminPricing() {
             <h3 className="ap-setup-title">Pricing engine not configured</h3>
             <p className="ap-eng-sub" style={{ maxWidth: 480 }}>
               {sortedTrucks.length > 0
-                ? `Vehicle types exist but the hybrid pricing config is missing. Click below to seed the engine config (distance bands, weight tiers, zone multipliers) — existing vehicle types will be replaced.`
-                : `Seed the 36 Nigerian states, 4 default vehicle types, and a complete hybrid pricing config with distance bands, weight tiers, and zone multipliers.`}
+                ? `Vehicle types exist but the pricing config is missing. Click below to seed the engine config (distance bands and zone multipliers) — existing vehicle types will be replaced.`
+                : `Seed the 36 Nigerian states, 4 default vehicle types, and a complete pricing config with distance bands and zone multipliers.`}
             </p>
             <button className="btn-primary ap-setup-btn" onClick={handleSeed} disabled={seeding}>
               {seeding ? <><span className="spinner spinner-sm" /> Setting up…</> : '⚡ Initialize Pricing Engine'}
@@ -307,11 +305,6 @@ export default function AdminPricing() {
           {/* ══ TAB: DISTANCE BANDS ════════════════════════════════════════ */}
           {tab === 'distance' && (
             <DistanceBandsTab cfg={cfg} saving={saving} onSave={saveEngine} />
-          )}
-
-          {/* ══ TAB: WEIGHT TIERS ══════════════════════════════════════════ */}
-          {tab === 'weight' && (
-            <WeightTiersTab cfg={cfg} saving={saving} onSave={saveEngine} />
           )}
 
           {/* ══ TAB: ROUTE MULTIPLIERS ═════════════════════════════════════ */}
@@ -600,103 +593,6 @@ function DistanceBandsTab({ cfg, saving, onSave }) {
       <div className="ap-eng-save-row">
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 160 }}>
           {saving ? <span className="spinner spinner-sm" /> : 'Save Distance Bands'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-//  WEIGHT TIERS TAB
-// ══════════════════════════════════════════════════════════════════════════════
-function WeightTiersTab({ cfg, saving, onSave }) {
-  const [tiers, setTiers] = useState(() =>
-    (cfg.weightTiers || []).map((t, i) => ({ ...t, _key: i }))
-  );
-  const nextKey = useRef(tiers.length);
-
-  const update = (key, field, value) =>
-    setTiers(ts => ts.map(t => t._key === key ? { ...t, [field]: value === '' ? null : Number(value) } : t));
-
-  const addTier = () => {
-    const last = tiers[tiers.length - 1];
-    setTiers(ts => [...ts, { _key: nextKey.current++, minKg: (last?.maxKg ?? 0) + 1, maxKg: null, fee: 0, extraPerKg: 0 }]);
-  };
-
-  const removeTier = key => setTiers(ts => ts.filter(t => t._key !== key));
-
-  const handleSave = () => {
-    const weightTiers = tiers.map(({ _key, ...t }) => t);
-    onSave({ weightTiers });
-  };
-
-  return (
-    <div className="ap-engine-tab fade-in">
-      <div className="ap-eng-section">
-        <div className="ap-eng-section-header">
-          <div>
-            <h3 className="ap-eng-title">Weight Tiers</h3>
-            <p className="ap-eng-sub">Weight fee = tier base fee + (extra per kg × kg above tier minimum).</p>
-          </div>
-          <button className="btn-secondary ap-add-row-btn" onClick={addTier}>+ Add Tier</button>
-        </div>
-        <div className="ap-matrix-scroll" style={{ marginBottom: 0 }}>
-          <table className="ap-matrix-table ap-eng-table">
-            <thead>
-              <tr>
-                <th>Min KG</th>
-                <th>Max KG</th>
-                <th>Base Fee (₦)</th>
-                <th>Extra per KG (₦)</th>
-                <th>Example (30 kg in tier)</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {tiers.map(t => {
-                const exampleKg = Math.max(t.minKg + 20, t.minKg);
-                const exampleFee = t.fee + (t.extraPerKg || 0) * (exampleKg - t.minKg);
-                return (
-                  <tr key={t._key}>
-                    <td className="ap-eng-td">
-                      <input className="ap-inline-num" type="number" min="0" value={t.minKg ?? ''} onChange={e => update(t._key, 'minKg', e.target.value)} />
-                    </td>
-                    <td className="ap-eng-td">
-                      <input className="ap-inline-num" type="number" min="0" value={t.maxKg ?? ''} placeholder="∞" onChange={e => update(t._key, 'maxKg', e.target.value === '' ? null : e.target.value)} />
-                    </td>
-                    <td className="ap-eng-td">
-                      <div className="ap-inline-prefix-wrap">
-                        <span className="ap-inline-label">₦</span>
-                        <input className="ap-inline-num" type="number" min="0" value={t.fee ?? ''} onChange={e => update(t._key, 'fee', e.target.value)} />
-                      </div>
-                    </td>
-                    <td className="ap-eng-td">
-                      <div className="ap-inline-prefix-wrap">
-                        <span className="ap-inline-label">₦</span>
-                        <input className="ap-inline-num" type="number" min="0" value={t.extraPerKg ?? ''} onChange={e => update(t._key, 'extraPerKg', e.target.value)} />
-                      </div>
-                    </td>
-                    <td className="ap-eng-td ap-eng-example">
-                      {t.fee > 0 || t.extraPerKg > 0
-                        ? `${exampleKg}kg → ₦${new Intl.NumberFormat('en-NG').format(exampleFee)}`
-                        : '—'}
-                    </td>
-                    <td style={{ padding: '0 12px', textAlign: 'center' }}>
-                      <button className="ap-del-btn" onClick={() => removeTier(t._key)} title="Remove tier">✕</button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="ap-eng-table-hint">
-          Leave Max KG empty for the final tier. Tiers are matched top to bottom — ensure they don't overlap.
-        </div>
-      </div>
-      <div className="ap-eng-save-row">
-        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 160 }}>
-          {saving ? <span className="spinner spinner-sm" /> : 'Save Weight Tiers'}
         </button>
       </div>
     </div>

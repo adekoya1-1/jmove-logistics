@@ -285,7 +285,7 @@ const truckTypeSchema = new mongoose.Schema({
 // ── Pricing schema REMOVED — replaced by PricingConfig (hybrid engine) ────────
 // Old direction-matrix model deprecated. Use PricingConfig for all pricing logic.
 
-// ── PricingConfig — Singleton document for the hybrid pricing engine ─────────
+// ── PricingConfig — Singleton document for distance-first pricing engine ─────
 const pricingConfigSchema = new mongoose.Schema({
   // Base fee by truck type (array so each truck can have its own base)
   baseFees: [{
@@ -306,14 +306,6 @@ const pricingConfigSchema = new mongoose.Schema({
     fromZone:     { type: String, required: true },
     toZone:       { type: String, required: true },
     multiplier:   { type: Number, required: true, min: 0 },
-  }],
-
-  // Weight tiers (flat fee per tier, plus optional per-kg above min)
-  weightTiers: [{
-    minKg:        { type: Number, required: true, min: 0 },
-    maxKg:        { type: Number, default: null },
-    fee:          { type: Number, required: true, min: 0 },
-    extraPerKg:   { type: Number, default: 0 },    // charged on (weight - minKg)
   }],
 
   // Delivery mode fees

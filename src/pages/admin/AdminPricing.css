@@ -406,7 +406,7 @@ tr:hover td { background: #fcfcfd; }
 .ap-bfc-name   { font-weight: 700; font-size: 14px; color: var(--ap-text-main); margin: 0; }
 .ap-bfc-cap    { font-size: 12px; color: var(--ap-text-muted); margin: 2px 0 0; }
 
-/* Engine table (distance bands / weight tiers) */
+/* Engine table (distance bands / route multipliers) */
 .ap-eng-table thead th {
   padding: 14px 16px !important; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
   background: #f8fafc; color: var(--ap-text-muted); font-weight: 800; border-bottom: 1px solid #e2e8f0;

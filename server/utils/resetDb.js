@@ -266,12 +266,6 @@ async function reseedPricingConfig(truckTypes) {
       { fromZone: 'North East',    toZone: 'South West',    multiplier: 1.45 },
       { fromZone: 'South West',    toZone: 'North East',    multiplier: 1.45 },
     ],
-    weightTiers: [
-      { minKg: 0,   maxKg: 10,  fee: 0,    extraPerKg: 0   },
-      { minKg: 10,  maxKg: 50,  fee: 1500, extraPerKg: 50  },
-      { minKg: 50,  maxKg: 100, fee: 3500, extraPerKg: 100 },
-      { minKg: 100, maxKg: null,fee: 8500, extraPerKg: 150 },
-    ],
     deliveryFees:  { doorDelivery: 1500, depotPickup: 0 },
     optionalFees:  { fragilePercent: 10, insurancePercent: 1, expressFee: 2000, samedayFee: 3000 },
     minimumCharge: 5000,
