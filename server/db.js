@@ -316,7 +316,6 @@ const pricingConfigSchema = new mongoose.Schema({
 
   // Optional add-on fees
   optionalFees: {
-    fragilePercent:    { type: Number, default: 10 },   // % of subtotal before extras
     insurancePercent:  { type: Number, default: 1 },    // % of declared value
     expressFee:        { type: Number, default: 2000 },
     samedayFee:        { type: Number, default: 3000 },

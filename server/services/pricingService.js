@@ -7,7 +7,6 @@
  *               baseFee
  *             + distanceCost × routeMultiplier
  *             + deliveryModeFee
- *             + fragileFee
  *             + expressFee
  *             + insuranceFee)
  *
@@ -101,7 +100,6 @@ const DEFAULT_CONFIG = {
   deliveryFees: { doorDelivery: 1500, depotPickup: 0 },
 
   optionalFees: {
-    fragilePercent:   10,
     insurancePercent: 1,
     expressFee:       2000,
     samedayFee:       3000,
@@ -213,7 +211,10 @@ export const calcDynamicPrice = async ({
   const subtotal = baseFee + distanceFee + deliveryModeFee;
 
   // Extras
-  const fragileFee  = isFragile    ? Math.round(subtotal * (optionalFees.fragilePercent   || 10) / 100) : 0;
+  const fragileFee  = 0;
+  const fragileHandlingNote = isFragile
+    ? 'Price will be determined upon inspection'
+    : null;
   const insuranceFee= declaredValue > 0 ? Math.round(declaredValue * (optionalFees.insurancePercent || 1) / 100) : 0;
   const serviceFee  = serviceType === 'express'
     ? (optionalFees.expressFee  || 2000)
@@ -221,7 +222,7 @@ export const calcDynamicPrice = async ({
     ? (optionalFees.samedayFee  || 3000)
     : 0;
 
-  const rawTotal  = subtotal + fragileFee + insuranceFee + serviceFee;
+  const rawTotal  = subtotal + insuranceFee + serviceFee;
   const totalAmount = Math.max(minimumCharge, Math.round(rawTotal / 100) * 100);
 
   // Delivery time estimate
@@ -244,6 +245,7 @@ export const calcDynamicPrice = async ({
     distanceFee,
     deliveryModeFee,
     fragileFee,
+    fragileHandlingNote,
     serviceFee,
     insuranceFee,
     totalAmount,
@@ -267,6 +269,7 @@ export const calcDynamicPrice = async ({
       distanceFee,
       deliveryModeFee,
       fragileFee,
+      fragileHandlingNote,
       serviceFee,
       insuranceFee,
     },
@@ -276,7 +279,7 @@ export const calcDynamicPrice = async ({
     serviceSurcharge: serviceFee,
     // Kept for backward compatibility with existing order schema/history.
     weightSurcharge:  0,
-    fragileSurcharge: fragileFee,
+    fragileSurcharge: 0,
 
     // Old direction fields — keep for admin displays
     fromDirection: fromZone,

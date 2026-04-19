@@ -405,7 +405,6 @@ function FeeStructureTab({ cfg, truckTypes, saving, onSave }) {
   const [minCharge,    setMinCharge]    = useState(cfg.minimumCharge ?? 5000);
   const [doorFee,      setDoorFee]      = useState(cfg.deliveryFees?.doorDelivery ?? 1500);
   const [depotFee,     setDepotFee]     = useState(cfg.deliveryFees?.depotPickup  ?? 0);
-  const [fragile,      setFragile]      = useState(cfg.optionalFees?.fragilePercent    ?? 10);
   const [insurance,    setInsurance]    = useState(cfg.optionalFees?.insurancePercent  ?? 1);
   const [express,      setExpress]      = useState(cfg.optionalFees?.expressFee        ?? 2000);
   const [sameday,      setSameday]      = useState(cfg.optionalFees?.samedayFee        ?? 3000);
@@ -420,7 +419,6 @@ function FeeStructureTab({ cfg, truckTypes, saving, onSave }) {
       minimumCharge: Number(minCharge),
       deliveryFees:  { doorDelivery: Number(doorFee), depotPickup: Number(depotFee) },
       optionalFees:  {
-        fragilePercent:   Number(fragile),
         insurancePercent: Number(insurance),
         expressFee:       Number(express),
         samedayFee:       Number(sameday),
@@ -490,7 +488,6 @@ function FeeStructureTab({ cfg, truckTypes, saving, onSave }) {
         <h3 className="ap-eng-title">Optional Extras</h3>
         <p className="ap-eng-sub">Applied only when the customer selects the relevant option at checkout.</p>
         <div className="ap-eng-row">
-          <NInput label="⚠ Fragile Handling"  value={fragile}   onChange={setFragile}   suffix="% of subtotal" />
           <NInput label="🛡 Insurance"         value={insurance} onChange={setInsurance} suffix="% of declared value" />
           <NInput label="⚡ Express Fee"        value={express}   onChange={setExpress}   prefix="₦" hint="Flat fee for express delivery" />
           <NInput label="🕐 Same Day Fee"      value={sameday}   onChange={setSameday}   prefix="₦" hint="Flat fee for same-day delivery" />

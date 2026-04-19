@@ -963,7 +963,10 @@ export default function NewOrder() {
                   label: pricing.deliveryMode === 'door' ? 'Door Delivery' : 'Depot Pickup',
                   val: pricing.deliveryModeFee,
                 },
-                pricing.fragileFee > 0     && { label: 'Fragile Handling',  val: pricing.fragileFee },
+                form.isFragile && {
+                  label: 'Fragile Handling',
+                  note: 'Price will be determined upon inspection',
+                },
                 pricing.serviceFee > 0     && {
                   label: form.serviceType === 'express' ? 'Express Delivery Fee' : 'Same Day Fee',
                   val: pricing.serviceFee,
@@ -977,8 +980,11 @@ export default function NewOrder() {
                   <span className="pr-label">
                     {row.label}
                     {row.meta && <span className="pr-meta">{row.meta}</span>}
+                    {row.note && <span className="pr-meta">{row.note}</span>}
                   </span>
-                  <span className="pr-val">₦{fmt(row.val)}</span>
+                  {row.note
+                    ? <span className="pr-val" />
+                    : <span className="pr-val">₦{fmt(row.val)}</span>}
                 </div>
               ))}
 

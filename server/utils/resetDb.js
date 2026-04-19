@@ -267,7 +267,7 @@ async function reseedPricingConfig(truckTypes) {
       { fromZone: 'South West',    toZone: 'North East',    multiplier: 1.45 },
     ],
     deliveryFees:  { doorDelivery: 1500, depotPickup: 0 },
-    optionalFees:  { fragilePercent: 10, insurancePercent: 1, expressFee: 2000, samedayFee: 3000 },
+    optionalFees:  { insurancePercent: 1, expressFee: 2000, samedayFee: 3000 },
     minimumCharge: 5000,
   });
 
