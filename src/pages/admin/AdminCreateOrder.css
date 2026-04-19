@@ -1,0 +1,124 @@
+.admin-create-order {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.aco-loading {
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.aco-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+.aco-card {
+  padding: 18px;
+}
+
+.aco-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.aco-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.aco-fields.two-col {
+  grid-template-columns: 1fr 1fr;
+}
+
+.aco-fields .full {
+  grid-column: 1 / -1;
+}
+
+.aco-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.aco-textarea {
+  resize: vertical;
+  min-height: 74px;
+}
+
+.aco-sticky {
+  position: sticky;
+  top: 12px;
+}
+
+.aco-help {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 12px;
+}
+
+.aco-estimate {
+  margin-top: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.aco-estimate p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.aco-estimate .aco-total {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.aco-estimate small {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.aco-note-line em {
+  font-style: normal;
+  color: var(--amber);
+  font-weight: 600;
+  text-align: right;
+}
+
+.aco-submit {
+  width: 100%;
+  margin-top: 14px;
+}
+
+@media (max-width: 1200px) {
+  .aco-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .aco-sticky {
+    grid-column: 1 / -1;
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .aco-grid {
+    grid-template-columns: 1fr;
+  }
+  .aco-fields.two-col {
+    grid-template-columns: 1fr;
+  }
+}

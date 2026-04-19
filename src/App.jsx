@@ -135,6 +135,7 @@ const TermsOfService = lazy(() => import('./pages/TermsOfService.jsx'));
 const AdminLayout      = lazy(() => import('./components/admin/AdminLayout.jsx'));
 const AdminDashboard   = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
 const AdminOrders      = lazy(() => import('./pages/admin/AdminOrders.jsx'));
+const AdminCreateOrder = lazy(() => import('./pages/admin/AdminCreateOrder.jsx'));
 const AdminOrderDetail = lazy(() => import('./pages/admin/AdminOrderDetail.jsx'));
 const AdminDrivers     = lazy(() => import('./pages/admin/AdminDrivers.jsx'));
 const AdminUsers       = lazy(() => import('./pages/admin/AdminUsers.jsx'));
@@ -202,6 +203,7 @@ export default function App() {
           <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminLayout /></RequireAuth>}>
             <Route index              element={<AdminDashboard />} />
             <Route path="orders"      element={<AdminOrders />} />
+            <Route path="orders/create" element={<AdminCreateOrder />} />
             <Route path="orders/:id"  element={<AdminOrderDetail />} />
             <Route path="drivers"     element={<AdminDrivers />} />
             <Route path="users"       element={<AdminUsers />} />

@@ -18,6 +18,16 @@ const STATUS_LABEL = {
   delivered:'Delivered', returned:'Returned', cancelled:'Cancelled',
 };
 
+const SOURCE_LABEL = {
+  website: 'Website',
+  admin_walkin: 'Walk-in',
+  admin_whatsapp: 'WhatsApp',
+  admin_instagram: 'Instagram',
+  admin_facebook: 'Facebook',
+  admin_phone: 'Phone Call',
+  admin_other: 'Other',
+};
+
 export default function AdminOrderDetail() {
   const { id } = useParams();
   const [order,      setOrder]     = useState(null);
@@ -295,6 +305,34 @@ export default function AdminOrderDetail() {
                 <div className="info-item"><p className="info-lbl">COD Amount</p><p className="info-val">₦{fmt(order.codAmount)}</p></div>
               )}
             </div>
+            {(order.sourceChannel || order.createdByStaff || order.manualPayment?.status) && (
+              <>
+                <div className="divider" style={{ margin: '8px 0 12px' }} />
+                <div className="info-grid">
+                  {order.sourceChannel && (
+                    <div className="info-item">
+                      <p className="info-lbl">Source</p>
+                      <p className="info-val">{SOURCE_LABEL[order.sourceChannel] || order.sourceChannel}</p>
+                    </div>
+                  )}
+                  {order.createdByStaff && (
+                    <div className="info-item">
+                      <p className="info-lbl">Created By</p>
+                      <p className="info-val">Admin Staff</p>
+                    </div>
+                  )}
+                  {order.manualPayment?.status && (
+                    <div className="info-item">
+                      <p className="info-lbl">Manual Payment</p>
+                      <p className="info-val" style={{ textTransform: 'capitalize' }}>
+                        {order.manualPayment.status.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {order.manualPayment?.note && <p className="info-desc">{order.manualPayment.note}</p>}
+              </>
+            )}
           </div>
 
           {/* Driver */}

@@ -27,6 +27,8 @@ const cityKey = z.string()
   .regex(/^[A-Za-z\s\(\)\-\.]+$/, 'Invalid location format');
 
 const nigerianAmount = z.number().min(0).max(100_000_000);
+const adminOrderSource = z.enum(['admin_walkin', 'admin_whatsapp', 'admin_instagram', 'admin_facebook', 'admin_phone', 'admin_other']);
+const manualPaymentOutcome = z.enum(['pending', 'paid_offline', 'whatsapp_contact', 'pay_later']);
 
 // ── Core validation middleware factory ──────────────────
 export const validate = (schema, source = 'body') => (req, res, next) => {
@@ -155,6 +157,43 @@ export const orderSchemas = {
       .max(128)
       .regex(/^[A-Za-z0-9\-_]+$/, 'Invalid idempotency key format')
       .optional(),
+  }),
+
+  adminManualCreate: z.object({
+    customer: z.object({
+      fullName: z.string().min(1).max(100).trim(),
+      phone: phone,
+      email: z.string().email().max(254).optional().or(z.literal('')),
+      createCustomerRecord: z.coerce.boolean().optional().default(true),
+    }),
+
+    sourceChannel: adminOrderSource,
+
+    shipment: z.object({
+      pickupAddress: z.string().min(1).max(300).trim(),
+      deliveryAddress: z.string().min(1).max(300).trim(),
+      pickupContactName: z.string().min(1).max(100).trim(),
+      pickupContactPhone: phone,
+      receiverContactName: z.string().min(1).max(100).trim(),
+      receiverContactPhone: phone,
+      packageDescription: z.string().min(1).max(200).trim(),
+      quantity: z.coerce.number().int().min(1).max(1000).optional().default(1),
+      weight: z.coerce.number().min(0.1).max(5000),
+      isFragile: z.coerce.boolean().optional().default(false),
+      insuranceEnabled: z.coerce.boolean().optional().default(false),
+      declaredValue: z.coerce.number().min(0).max(100_000_000).optional().default(0),
+      truckTypeId: objectId,
+      originCity: cityKey,
+      destinationCity: cityKey,
+      specialInstructions: z.string().max(500).trim().optional(),
+    }),
+
+    payment: z.object({
+      outcome: manualPaymentOutcome,
+      note: z.string().max(500).trim().optional(),
+    }),
+
+    adminNotes: z.string().max(500).trim().optional(),
   }),
 
   calcPrice: z.object({

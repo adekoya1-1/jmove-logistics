@@ -265,6 +265,7 @@ export const ordersAPI = {
     api.put(`/orders/${encodeURIComponent(id)}/confirm-whatsapp-payment`,
       { ...(finalPrice !== undefined ? { finalPrice } : {}), ...(note ? { note } : {}) }),
   whatsappCancel:         (id, reason)     => api.put(`/orders/${encodeURIComponent(id)}/whatsapp-cancel`,   { reason }),
+  createManual:           (d)              => api.post('/orders/admin/manual', d),
 };
 
 export const driversAPI = {

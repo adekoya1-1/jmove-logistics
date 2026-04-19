@@ -48,6 +48,7 @@ export default function AdminOrders() {
     <div className="admin-orders">
       <div className="page-header">
         <div><h1 className="page-title">Orders</h1><p className="page-subtitle">Manage all haulage bookings</p></div>
+        <Link to="/admin/orders/create" className="btn-primary">+ Create Order</Link>
       </div>
 
       <div className="orders-toolbar">

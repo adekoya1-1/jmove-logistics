@@ -92,6 +92,12 @@ const orderSchema = new mongoose.Schema({
   customerId:   { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // null for walk-in
   driverId:     { type: mongoose.Schema.Types.ObjectId, ref: 'DriverProfile' },
   createdByStaff: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // admin/staff who created
+  createdByRole: { type: String, enum: ['admin', 'customer', 'driver'], default: null },
+  sourceChannel: {
+    type: String,
+    enum: ['website', 'admin_walkin', 'admin_whatsapp', 'admin_instagram', 'admin_facebook', 'admin_phone', 'admin_other'],
+    default: 'website',
+  },
 
   // Sender details
   senderName:   { type: String, required: true },
@@ -132,6 +138,13 @@ const orderSchema = new mongoose.Schema({
   paymentStatus:    { type: String, enum: ['pending','paid','failed','refunded'], default: 'pending' },
   paystackReference:{ type: String },
   codAmount:        { type: Number, default: 0 },   // Cash on Delivery amount
+  manualPayment: {
+    status:       { type: String, enum: ['pending', 'paid_offline', 'pay_later', 'whatsapp_contact'], default: null },
+    note:         { type: String, default: null },
+    recordedBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    recordedAt:   { type: Date, default: null },
+    recordedByRole: { type: String, enum: ['admin', 'customer', 'driver'], default: null },
+  },
 
   // Status
   // pending_contact      = WhatsApp order created; customer has been redirected to WA but not sent proof yet

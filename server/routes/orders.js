@@ -12,8 +12,9 @@
  */
 import { Router } from 'express';
 import { randomBytes } from 'crypto';
+import bcrypt from 'bcryptjs';
 import { Order, Payment, User, DriverProfile, DriverEarning, Notification, State } from '../db.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, requirePermission } from '../middleware/auth.js';
 import { validate, validateAll, orderSchemas, whatsappSchemas } from '../middleware/validate.js';
 import { calcDynamicPrice } from '../services/pricingService.js';
 import { getCityList } from '../utils/pricing.js';
@@ -73,6 +74,35 @@ const createOrderWithRetry = async (data, maxAttempts = 5) => {
 
 // ── Escape user input for use in regex ───────────────────
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const SOURCE_LABEL = {
+  website: 'Website',
+  admin_walkin: 'Walk-in',
+  admin_whatsapp: 'WhatsApp',
+  admin_instagram: 'Instagram',
+  admin_facebook: 'Facebook',
+  admin_phone: 'Phone call',
+  admin_other: 'Other',
+};
+
+const PAYMENT_OUTCOME = {
+  pending:          { paymentMethod: 'online',   paymentStatus: 'pending', orderStatus: 'booked',          manualStatus: 'pending' },
+  paid_offline:     { paymentMethod: 'cash',     paymentStatus: 'paid',    orderStatus: 'booked',          manualStatus: 'paid_offline' },
+  whatsapp_contact: { paymentMethod: 'whatsapp', paymentStatus: 'pending', orderStatus: 'pending_contact', manualStatus: 'whatsapp_contact' },
+  pay_later:        { paymentMethod: 'online',   paymentStatus: 'pending', orderStatus: 'booked',          manualStatus: 'pay_later' },
+};
+
+const splitName = (fullName = '') => {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  const firstName = parts[0] || 'Customer';
+  const lastName = parts.slice(1).join(' ') || 'Manual';
+  return { firstName, lastName };
+};
+
+const genManualCustomerEmail = (fullName = '') => {
+  const safeSlug = fullName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '') || 'customer';
+  return `manual.${safeSlug}.${Date.now().toString(36)}@swifthaul.local`;
+};
 
 // ── GET /api/orders/cities ───────────────────────────────
 router.get('/cities', async (req, res, next) => {
@@ -161,6 +191,8 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       waybillNumber:  genWaybill(originCity),
       customerId:     req.user.role === 'customer' ? req.user._id : null,
       createdByStaff: isAdmin ? req.user._id : null,
+      createdByRole:  isAdmin ? req.user.role : null,
+      sourceChannel:  'website',
 
       senderName, senderPhone,
       senderEmail: senderEmail || (req.user.email || undefined),
@@ -204,6 +236,7 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       // online/wallet stay pending until Paystack webhook confirms.
       paymentStatus:  (paymentMethod === 'cash' || paymentMethod === 'cod') ? 'paid' : 'pending',
       codAmount:      paymentMethod === 'cod' ? +codAmount || 0 : 0,
+      manualPayment:  null,
 
       pickupLat, pickupLng, deliveryLat, deliveryLng,
       staffNotes: isAdmin ? staffNotes : undefined,  // only admin can set staffNotes
@@ -363,6 +396,188 @@ router.get('/whatsapp-pending', authenticate, authorize('admin'), async (req, re
     res.json({ success: true, data: { orders, counts } });
   } catch (e) { next(e); }
 });
+
+// ── POST /api/orders/admin/manual ───────────────────────
+// Admin operations can create orders on behalf of walk-ins, phone calls,
+// social channels, and other offline sources. Pricing still comes from the
+// same backend pricing engine used by public booking flow.
+router.post('/admin/manual', authenticate, authorize('admin'), requirePermission('orders'),
+  validate(orderSchemas.adminManualCreate),
+  async (req, res, next) => {
+    try {
+      const { customer, sourceChannel, shipment, payment, adminNotes } = req.body;
+      const {
+        fullName, phone, email, createCustomerRecord,
+      } = customer;
+      const {
+        pickupAddress, deliveryAddress,
+        pickupContactName, pickupContactPhone,
+        receiverContactName, receiverContactPhone,
+        packageDescription, quantity, weight, isFragile,
+        insuranceEnabled, declaredValue,
+        truckTypeId, originCity, destinationCity, specialInstructions,
+      } = shipment;
+
+      const pricing = await calcDynamicPrice({
+        originCity,
+        destinationCity,
+        truckTypeId,
+        isFragile,
+        declaredValue: insuranceEnabled ? declaredValue : 0,
+      });
+
+      const existingCustomer = await User.findOne({
+        role: 'customer',
+        $or: [
+          ...(email ? [{ email: String(email).toLowerCase().trim() }] : []),
+          ...(phone ? [{ phone: String(phone).trim() }] : []),
+        ],
+      }).select('_id').lean();
+
+      let customerId = existingCustomer?._id || null;
+      let customerCreated = false;
+
+      if (!customerId && createCustomerRecord) {
+        const { firstName, lastName } = splitName(fullName);
+        let customerEmail = email ? String(email).toLowerCase().trim() : genManualCustomerEmail(fullName);
+
+        while (await User.exists({ email: customerEmail })) {
+          customerEmail = genManualCustomerEmail(fullName);
+        }
+
+        const tempPassword = randomBytes(12).toString('hex');
+        const customerUser = await User.create({
+          email: customerEmail,
+          password: await bcrypt.hash(tempPassword, 12),
+          firstName,
+          lastName,
+          phone: phone?.trim() || undefined,
+          role: 'customer',
+          emailVerified: !!email,
+        });
+
+        customerId = customerUser._id;
+        customerCreated = true;
+      }
+
+      const paymentConfig = PAYMENT_OUTCOME[payment.outcome];
+      const manualPaymentNote = payment.note || null;
+      const fragileNote = isFragile ? 'Price will be determined upon inspection' : null;
+
+      const order = await createOrderWithRetry({
+        waybillNumber: genWaybill(originCity),
+        customerId,
+        createdByStaff: req.user._id,
+        createdByRole: req.user.role,
+        sourceChannel,
+
+        senderName: pickupContactName,
+        senderPhone: pickupContactPhone,
+        senderEmail: email || undefined,
+        senderAddress: pickupAddress,
+        originCity,
+
+        receiverName: receiverContactName,
+        receiverPhone: receiverContactPhone,
+        receiverAddress: deliveryAddress,
+        destinationCity,
+
+        description: packageDescription,
+        weight: +weight,
+        quantity: +quantity || 1,
+        category: 'general',
+        isFragile: !!isFragile,
+        declaredValue: insuranceEnabled ? (+declaredValue || 0) : 0,
+        specialInstructions,
+
+        serviceType: 'standard',
+        deliveryMode: 'door',
+        deliveryType: pricing.deliveryType,
+        estimatedDelivery: pricing.estimatedDelivery,
+        truckTypeId: pricing.truckType?._id || truckTypeId,
+        truckTypeName: pricing.truckType?.name || null,
+
+        basePrice: pricing.basePrice,
+        weightSurcharge: pricing.weightSurcharge,
+        serviceSurcharge: pricing.serviceSurcharge,
+        fragileSurcharge: pricing.fragileSurcharge,
+        insuranceFee: pricing.insuranceFee,
+        totalAmount: pricing.totalAmount,
+        pricingBreakdown: {
+          ...(pricing.breakdown || {}),
+          fragileHandlingNote: fragileNote,
+        },
+
+        systemQuote: payment.outcome === 'whatsapp_contact' ? pricing.totalAmount : null,
+        finalPrice: null,
+
+        paymentMethod: paymentConfig.paymentMethod,
+        paymentStatus: paymentConfig.paymentStatus,
+        codAmount: 0,
+        manualPayment: {
+          status: paymentConfig.manualStatus,
+          note: manualPaymentNote,
+          recordedBy: req.user._id,
+          recordedAt: new Date(),
+          recordedByRole: req.user.role,
+        },
+
+        status: paymentConfig.orderStatus,
+        statusHistory: [{
+          toStatus: paymentConfig.orderStatus,
+          changedBy: req.user._id,
+          note: `Created by admin from ${SOURCE_LABEL[sourceChannel] || 'manual source'}`,
+        }],
+
+        staffNotes: adminNotes || null,
+      });
+
+      // Only create a pending online payment record when a linked customer exists.
+      // This prevents fake or orphaned gateway records for manual/offline orders.
+      if (paymentConfig.paymentMethod === 'online' && paymentConfig.paymentStatus === 'pending' && customerId) {
+        await Payment.findOneAndUpdate(
+          { orderId: order._id },
+          { $setOnInsert: { orderId: order._id, customerId, amount: pricing.totalAmount } },
+          { upsert: true, new: true }
+        );
+      }
+
+      if (paymentConfig.orderStatus === 'booked') {
+        const io = req.app.get('io');
+        io?.to('drivers:room').emit('job:new', {
+          orderId: order._id,
+          waybillNumber: order.waybillNumber,
+          originCity: order.originCity,
+          destinationCity: order.destinationCity,
+          totalAmount: order.totalAmount,
+          serviceType: order.serviceType,
+        });
+      }
+
+      await logAction(req, 'order.admin_manual_created', 'Order', order._id, {
+        waybill: order.waybillNumber,
+        sourceChannel,
+        paymentOutcome: payment.outcome,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        totalAmount: order.totalAmount,
+        linkedCustomerId: customerId,
+        customerCreated,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Manual order created successfully',
+        data: { order, pricing, customerLinked: !!customerId, customerCreated },
+      });
+    } catch (e) {
+      if (e.message === 'Service unavailable in selected state') {
+        return res.status(400).json({ success: false, message: e.message });
+      }
+      next(e);
+    }
+  }
+);
 
 // ── GET /api/orders/:id ──────────────────────────────────
 router.get('/:id', authenticate,
