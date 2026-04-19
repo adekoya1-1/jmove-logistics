@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ordersAPI } from '../api/client.js';
 import './Landing.css';
 import PublicNav from '../components/PublicNav.jsx';
 import SEO from '../components/SEO.jsx';
@@ -33,15 +34,14 @@ function TrackForm() {
 
   const track = async (e) => {
     e.preventDefault();
-    if (!waybill.trim()) return;
+    const wb = waybill.trim().toUpperCase();
+    if (!wb) return;
     setLoading(true); setError(''); setResult(null);
     try {
-      const r    = await fetch(`/api/orders/track/${waybill.trim()}`);
-      const data = await r.json();
-      if (!data.success) throw new Error(data.message);
-      setResult(data.data);
+      const r = await ordersAPI.track(wb);
+      setResult(r.data);
     } catch (err) {
-      setError(err.message || 'Waybill not found. Please check and try again.');
+      setError(err?.response?.data?.message || 'Waybill not found. Please check and try again.');
     } finally { setLoading(false); }
   };
 
