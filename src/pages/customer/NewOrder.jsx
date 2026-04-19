@@ -933,9 +933,12 @@ export default function NewOrder() {
               ))}
 
               <div className="pricing-total" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                <span>Total Shipping Cost</span>
+                <span>Estimated Shipping Cost</span>
                 <span className="pt-total">₦{fmt(pricing.totalAmount)}</span>
               </div>
+              <p style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+                Final cost may vary after inspection or additional handling requirements.
+              </p>
             </div>
 
             <div className="pricing-route-info">
