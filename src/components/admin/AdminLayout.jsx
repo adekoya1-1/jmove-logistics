@@ -5,37 +5,44 @@ import NotificationBell from '../shared/NotificationBell.jsx';
 import './AdminLayout.css';
 
 const nav = [
-  { to: '/admin',            label: 'Dashboard',  end: true,
+  { to: '/admin',                  label: 'Dashboard',        end: true,  perm: null,
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> },
-  { to: '/admin/orders',     label: 'Orders',
+  { to: '/admin/orders',           label: 'Orders',           perm: 'orders',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6M5 8h6M5 11h4"/></svg> },
-  { to: '/admin/whatsapp-orders', label: 'WhatsApp Orders',
+  { to: '/admin/whatsapp-orders',  label: 'WhatsApp Orders',  perm: 'orders',
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1C4.14 1 1 4.14 1 8c0 1.24.32 2.4.87 3.41L1 15l3.7-.85A7 7 0 108 1zm0 1.3a5.7 5.7 0 110 11.4 5.7 5.7 0 010-11.4zm2.47 3.47c-.12-.06-.73-.36-.84-.4-.12-.04-.2-.06-.28.06s-.32.4-.4.49c-.07.09-.15.1-.28.04-.12-.06-.52-.19-.98-.61a3.65 3.65 0 01-.68-.85c-.07-.12 0-.19.05-.25l.18-.21c.06-.07.08-.12.12-.2.04-.08.02-.15-.01-.21-.03-.06-.28-.67-.38-.92-.1-.24-.2-.21-.28-.21h-.24c-.08 0-.21.03-.32.15-.11.12-.42.41-.42.99s.43 1.15.49 1.23c.06.08.85 1.3 2.06 1.82.29.12.51.2.68.25.29.09.55.08.76.05.23-.04.73-.3.83-.59.1-.29.1-.54.07-.59-.03-.05-.11-.08-.23-.14z"/></svg> },
-  { to: '/admin/customers',  label: 'Customers',
+  { to: '/admin/customers',        label: 'Customers',        perm: 'orders',
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 1a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM1 13a4.5 4.5 0 019 0H1zm8.5-9a2 2 0 100 4 2 2 0 000-4zm1.5 6a3.5 3.5 0 016 0h-6z"/></svg> },
-  { to: '/admin/drivers',    label: 'Drivers',
+  { to: '/admin/drivers',          label: 'Drivers',          perm: 'drivers',
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a3 3 0 100 6 3 3 0 000-6zM2 14a6 6 0 0112 0H2z"/></svg> },
-  { to: '/admin/fleet',      label: 'Fleet',
+  { to: '/admin/fleet',            label: 'Fleet',            perm: 'drivers',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="5" width="14" height="7" rx="1.5"/><circle cx="4.5" cy="12.5" r="1.5"/><circle cx="11.5" cy="12.5" r="1.5"/><path d="M1 8h14M4 5V3.5A1.5 1.5 0 015.5 2h5A1.5 1.5 0 0112 3.5V5"/></svg> },
-  { to: '/admin/users',      label: 'Staff',
+  { to: '/admin/users',            label: 'Staff',            perm: 'staff',
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a3 3 0 100 6 3 3 0 000-6zM4 14a4 4 0 018 0H4zm7-8.5a.5.5 0 01.5-.5H13v-1.5a.5.5 0 011 0V5h1.5a.5.5 0 010 1H14v1.5a.5.5 0 01-1 0V6h-1.5a.5.5 0 01-.5-.5z"/></svg> },
-  { to: '/admin/map',        label: 'Live Map',
+  { to: '/admin/map',              label: 'Live Map',         perm: 'map',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6c0 3.5 4.5 8.5 4.5 8.5S12.5 9.5 12.5 6c0-2.5-2-4.5-4.5-4.5z"/><circle cx="8" cy="6" r="1.5"/></svg> },
-  { to: '/admin/analytics',  label: 'Analytics',
+  { to: '/admin/analytics',        label: 'Analytics',        perm: 'analytics',
     icon: <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 14h14v1H1zM3 10h2v4H3zm4-3h2v7H7zm4-4h2v11h-2z"/></svg> },
-  { to: '/admin/payments',   label: 'Payments',
+  { to: '/admin/payments',         label: 'Payments',         perm: 'payments',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="14" height="9" rx="1.5"/><path d="M1 7h14"/></svg> },
-  { to: '/admin/pricing',    label: 'Pricing',
+  { to: '/admin/pricing',          label: 'Pricing',          perm: 'payments',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v1.5M8 10.5V12M5.5 9.5A1.5 1.5 0 007 11h2a1.5 1.5 0 000-3H7a1.5 1.5 0 010-3h2A1.5 1.5 0 0110.5 6.5"/></svg> },
-  { to: '/admin/routes',     label: 'Routes',
+  { to: '/admin/routes',           label: 'Routes',           perm: 'super_admin_only',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8h12M8 2l6 6-6 6"/><circle cx="2" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="14" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg> },
-  { to: '/admin/states',     label: 'States (Regions)',
+  { to: '/admin/states',           label: 'States (Regions)', perm: 'super_admin_only',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 4A6 6 0 1 0 2 4c0 3 6 10 6 10s6-7 6-10z"/><circle cx="8" cy="4" r="2"/></svg> },
-  { to: '/admin/logs',       label: 'Audit Logs',
+  { to: '/admin/logs',             label: 'Audit Logs',       perm: 'super_admin_only',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 4h6M5 7h6M5 10h4"/><circle cx="12" cy="12" r="3" fill="var(--brand)" stroke="none"/><path d="M11 12h2M12 11v2" stroke="#fff" strokeWidth="1.2"/></svg> },
-  { to: '/admin/settings',   label: 'Settings',
+  { to: '/admin/settings',         label: 'Settings',         perm: 'super_admin_only',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.93 2.93l1.41 1.41M11.66 11.66l1.41 1.41M2.93 13.07l1.41-1.41M11.66 4.34l1.41-1.41"/></svg> },
 ];
+
+function canAccess(navItem, user) {
+  if (!navItem.perm) return true;
+  if (user?.staffCategory === 'super_admin') return true;
+  if (navItem.perm === 'super_admin_only') return false;
+  return user?.permissions?.includes(navItem.perm);
+}
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
@@ -43,6 +50,8 @@ export default function AdminLayout() {
   const [open, setOpen] = useState(false);
 
   const handleLogout = async () => { await logout(); navigate('/login'); };
+
+  const visibleNav = nav.filter(n => canAccess(n, user));
 
   return (
     <div className="app-layout">
@@ -57,7 +66,7 @@ export default function AdminLayout() {
           />
         </div>
         <nav className="sidebar-nav">
-          {nav.map(n => (
+          {visibleNav.map(n => (
             <NavLink key={n.to} to={n.to} end={n.end}
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               onClick={() => setOpen(false)}

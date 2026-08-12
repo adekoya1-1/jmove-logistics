@@ -111,6 +111,17 @@ function RequireAuth({ children, roles }) {
   return children;
 }
 
+function RequirePermission({ children, perm }) {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.staffCategory === 'super_admin';
+  if (perm === 'super_admin_only') {
+    return isSuperAdmin ? children : <Navigate to="/admin" replace />;
+  }
+  if (!perm || isSuperAdmin) return children;
+  if (!user?.permissions?.includes(perm)) return <Navigate to="/admin" replace />;
+  return children;
+}
+
 // ── Page imports ──────────────────────────────────────────────────────────────
 // Eager: only the three pages a landing-page visitor might hit immediately.
 // Everything else is lazy-loaded so the initial JS bundle only contains what's
@@ -202,22 +213,22 @@ export default function App() {
           {/* Admin */}
           <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminLayout /></RequireAuth>}>
             <Route index              element={<AdminDashboard />} />
-            <Route path="orders"      element={<AdminOrders />} />
-            <Route path="orders/create" element={<AdminCreateOrder />} />
-            <Route path="orders/:id"  element={<AdminOrderDetail />} />
-            <Route path="drivers"     element={<AdminDrivers />} />
-            <Route path="users"       element={<AdminUsers />} />
-            <Route path="customers"   element={<AdminCustomers />} />
-            <Route path="map"         element={<AdminMap />} />
-            <Route path="analytics"   element={<AdminAnalytics />} />
-            <Route path="payments"    element={<AdminPayments />} />
-            <Route path="pricing"     element={<AdminPricing />} />
-            <Route path="states"      element={<AdminStates />} />
-            <Route path="fleet"       element={<AdminFleet />} />
-            <Route path="routes"            element={<AdminRoutes />} />
-            <Route path="whatsapp-orders"  element={<AdminWhatsAppOrders />} />
-            <Route path="settings"         element={<AdminSettings />} />
-            <Route path="logs"        element={<AdminLogs />} />
+            <Route path="orders"      element={<RequirePermission perm="orders"><AdminOrders /></RequirePermission>} />
+            <Route path="orders/create" element={<RequirePermission perm="orders"><AdminCreateOrder /></RequirePermission>} />
+            <Route path="orders/:id"  element={<RequirePermission perm="orders"><AdminOrderDetail /></RequirePermission>} />
+            <Route path="whatsapp-orders" element={<RequirePermission perm="orders"><AdminWhatsAppOrders /></RequirePermission>} />
+            <Route path="customers"   element={<RequirePermission perm="orders"><AdminCustomers /></RequirePermission>} />
+            <Route path="drivers"     element={<RequirePermission perm="drivers"><AdminDrivers /></RequirePermission>} />
+            <Route path="fleet"       element={<RequirePermission perm="drivers"><AdminFleet /></RequirePermission>} />
+            <Route path="users"       element={<RequirePermission perm="staff"><AdminUsers /></RequirePermission>} />
+            <Route path="map"         element={<RequirePermission perm="map"><AdminMap /></RequirePermission>} />
+            <Route path="analytics"   element={<RequirePermission perm="analytics"><AdminAnalytics /></RequirePermission>} />
+            <Route path="payments"    element={<RequirePermission perm="payments"><AdminPayments /></RequirePermission>} />
+            <Route path="pricing"     element={<RequirePermission perm="payments"><AdminPricing /></RequirePermission>} />
+            <Route path="routes"      element={<RequirePermission perm="super_admin_only"><AdminRoutes /></RequirePermission>} />
+            <Route path="states"      element={<RequirePermission perm="super_admin_only"><AdminStates /></RequirePermission>} />
+            <Route path="settings"    element={<RequirePermission perm="super_admin_only"><AdminSettings /></RequirePermission>} />
+            <Route path="logs"        element={<RequirePermission perm="super_admin_only"><AdminLogs /></RequirePermission>} />
           </Route>
 
           {/* Customer */}
