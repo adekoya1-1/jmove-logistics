@@ -97,7 +97,12 @@ export default function AdminUsers() {
       setForm({ firstName:'', lastName:'', email:'', phone:'', password:'', staffCategory:'', permissions:[] });
       load();
     } catch (err) {
-      setFormErr(err?.response?.data?.message || 'Failed to create staff account');
+      const data = err?.response?.data;
+      if (data?.errors?.length) {
+        setFormErr(data.errors.map(e => `${e.field}: ${e.message}`).join(' · '));
+      } else {
+        setFormErr(data?.message || 'Failed to create staff account');
+      }
     } finally { setCreating(false); }
   };
 
