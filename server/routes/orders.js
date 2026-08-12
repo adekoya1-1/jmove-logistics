@@ -981,4 +981,17 @@ router.put('/:id/whatsapp-cancel', authenticate, authorize('admin'),
   } catch (e) { next(e); }
 });
 
+// ── DELETE /api/orders/all ───────────────────────────────
+router.delete('/all', authenticate, authorize('admin'), async (req, res, next) => {
+  try {
+    if (req.user.staffCategory !== 'super_admin')
+      return res.status(403).json({ success: false, message: 'Super admin only' });
+
+    const result = await Order.deleteMany({});
+    await logAction(req, 'order.bulk_delete', 'Order', null, { deletedCount: result.deletedCount }, 'critical');
+
+    res.json({ success: true, message: `Deleted ${result.deletedCount} orders` });
+  } catch (e) { next(e); }
+});
+
 export default router;
