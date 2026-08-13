@@ -169,7 +169,12 @@ export default function AdminCreateOrder() {
         navigate('/admin/orders');
       }
     } catch (e2) {
-      setError(e2?.response?.data?.message || 'Failed to create manual order');
+      const data = e2?.response?.data;
+      if (data?.errors?.length) {
+        setError(data.errors.map(e => `${e.field}: ${e.message}`).join(' · '));
+      } else {
+        setError(data?.message || 'Failed to create manual order');
+      }
     } finally {
       setSubmitting(false);
     }
