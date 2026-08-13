@@ -473,6 +473,8 @@ router.post('/admin/manual', authenticate, authorize('admin'), requirePermission
       const paymentConfig = PAYMENT_OUTCOME[payment.outcome];
       const manualPaymentNote = payment.note || null;
       const fragileNote = isFragile ? 'Price will be determined upon inspection' : null;
+      const customPrice = payment.customPrice != null ? +payment.customPrice : null;
+      const effectiveTotal = customPrice ?? pricing.totalAmount;
 
       const order = await createOrderWithRetry({
         waybillNumber: genWaybill(originCity),
@@ -512,14 +514,14 @@ router.post('/admin/manual', authenticate, authorize('admin'), requirePermission
         serviceSurcharge: pricing.serviceSurcharge,
         fragileSurcharge: pricing.fragileSurcharge,
         insuranceFee: pricing.insuranceFee,
-        totalAmount: pricing.totalAmount,
+        totalAmount: effectiveTotal,
         pricingBreakdown: {
           ...(pricing.breakdown || {}),
           fragileHandlingNote: fragileNote,
         },
 
-        systemQuote: payment.outcome === 'whatsapp_contact' ? pricing.totalAmount : null,
-        finalPrice: null,
+        systemQuote: pricing.totalAmount,
+        finalPrice: customPrice,
 
         paymentMethod: paymentConfig.paymentMethod,
         paymentStatus: paymentConfig.paymentStatus,

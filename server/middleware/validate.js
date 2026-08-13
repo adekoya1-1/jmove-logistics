@@ -191,6 +191,7 @@ export const orderSchemas = {
     payment: z.object({
       outcome: manualPaymentOutcome,
       note: z.string().max(500).trim().optional(),
+      customPrice: z.coerce.number().min(0).max(100_000_000).optional(),
     }),
 
     adminNotes: z.string().max(500).trim().optional(),

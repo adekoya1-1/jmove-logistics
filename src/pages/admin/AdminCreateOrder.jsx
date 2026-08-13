@@ -46,6 +46,7 @@ const initForm = {
 
   paymentOutcome: 'pending',
   paymentNote: '',
+  customPrice: '',
 };
 
 const fmtCurrency = (n) => `N${Number(n || 0).toLocaleString('en-NG')}`;
@@ -108,6 +109,7 @@ export default function AdminCreateOrder() {
         weight: Number(form.weight || 1),
       });
       setPricing(r.data);
+      setForm((prev) => ({ ...prev, customPrice: String(r.data.totalAmount) }));
     } catch (e) {
       setError(e?.response?.data?.message || 'Could not calculate estimated shipping cost');
     } finally {
@@ -156,6 +158,9 @@ export default function AdminCreateOrder() {
         payment: {
           outcome: form.paymentOutcome,
           note: form.paymentNote,
+          ...(form.customPrice !== '' && Number(form.customPrice) !== pricing?.totalAmount
+            ? { customPrice: Number(form.customPrice) }
+            : {}),
         },
         adminNotes: form.adminNotes,
       };
@@ -363,7 +368,26 @@ export default function AdminCreateOrder() {
                   {pricing.insuranceFee > 0 && <p><span>Insurance</span><strong>{fmtCurrency(pricing.insuranceFee)}</strong></p>}
                   {form.isFragile && <p className="aco-note-line"><span>Fragile Handling</span><em>Price will be determined upon inspection</em></p>}
                   <div className="divider" />
-                  <p className="aco-total"><span>Estimated Shipping Cost</span><strong>{fmtCurrency(pricing.totalAmount)}</strong></p>
+                  <p className="aco-total"><span>System Quote</span><strong>{fmtCurrency(pricing.totalAmount)}</strong></p>
+                  <div style={{ marginTop: 12 }}>
+                    <label className="label" style={{ marginBottom: 6, display: 'block' }}>
+                      Amount Actually Paid (NGN)
+                      <span style={{ fontWeight: 400, color: 'var(--text-faint)', marginLeft: 6 }}>— override the system quote if the customer paid a different amount</span>
+                    </label>
+                    <input
+                      className="input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={form.customPrice}
+                      onChange={onChange('customPrice')}
+                    />
+                    {form.customPrice !== '' && Number(form.customPrice) !== pricing.totalAmount && (
+                      <p style={{ fontSize: 12, color: 'var(--brand)', marginTop: 4 }}>
+                        ✎ Custom price: {fmtCurrency(form.customPrice)} (system quote: {fmtCurrency(pricing.totalAmount)})
+                      </p>
+                    )}
+                  </div>
                   <small>Final cost may vary after inspection or additional handling requirements.</small>
                 </div>
               )}
