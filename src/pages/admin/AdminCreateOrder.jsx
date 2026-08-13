@@ -92,7 +92,7 @@ export default function AdminCreateOrder() {
     const target = e.target;
     const value = target.type === 'checkbox' ? target.checked : target.value;
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (pricing) setPricing(null);
+    if (pricing && key !== 'customPrice') setPricing(null);
   };
 
   const calculateEstimate = async () => {
