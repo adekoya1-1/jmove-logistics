@@ -168,6 +168,153 @@
   flex: 1;
 }
 
+/* ── Order type toggle ──────────────────────────────────── */
+.aco-type-toggle {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.aco-type-btn {
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.aco-type-btn:first-child {
+  border-right: 1.5px solid var(--border);
+}
+
+.aco-type-btn.active {
+  background: var(--brand);
+  color: #fff;
+}
+
+.aco-type-btn:hover:not(.active) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* ── Corporate account search ───────────────────────────── */
+.corp-search-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.corp-search-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.corp-search-field {
+  flex: 1;
+  position: relative;
+}
+
+.corp-search-loading {
+  font-size: 12px;
+  color: var(--text-faint);
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.corp-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.corp-result-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.corp-result-item:last-child { border-bottom: none; }
+.corp-result-item:hover { background: var(--bg-hover); }
+
+.corp-result-item strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.corp-result-item span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.corp-new-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.corp-new-form {
+  padding: 16px;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Corporate selected card ────────────────────────────── */
+.corp-selected-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--brand-faint, rgba(234, 88, 12, 0.06));
+  border: 1.5px solid var(--brand);
+  border-radius: var(--radius);
+}
+
+.corp-selected-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.corp-selected-info strong {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.corp-selected-info span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 @media (max-width: 760px) {
   .admin-create-order {
     max-width: 100%;

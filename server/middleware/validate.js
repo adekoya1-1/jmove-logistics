@@ -160,9 +160,12 @@ export const orderSchemas = {
   }),
 
   adminManualCreate: z.object({
+    orderType: z.enum(['individual', 'corporate']).default('individual'),
+    corporateAccountId: z.string().optional(),
+
     customer: z.object({
       fullName: z.string().min(1).max(100).trim(),
-      phone: phone,
+      phone: phone.optional().or(z.literal('')),
       email: z.string().email().max(254).optional().or(z.literal('')),
       createCustomerRecord: z.coerce.boolean().optional().default(true),
     }),
@@ -195,6 +198,13 @@ export const orderSchemas = {
     }),
 
     adminNotes: z.string().max(500).trim().optional(),
+  }).superRefine((data, ctx) => {
+    if (data.orderType === 'individual' && !data.customer.phone) {
+      ctx.addIssue({ code: 'custom', path: ['customer', 'phone'], message: 'Phone number is required for individual orders' });
+    }
+    if (data.orderType === 'corporate' && !data.corporateAccountId) {
+      ctx.addIssue({ code: 'custom', path: ['corporateAccountId'], message: 'Corporate account is required' });
+    }
   }),
 
   calcPrice: z.object({

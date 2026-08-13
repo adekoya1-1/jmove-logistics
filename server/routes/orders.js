@@ -13,7 +13,7 @@
 import { Router } from 'express';
 import { randomBytes } from 'crypto';
 import bcrypt from 'bcryptjs';
-import { Order, Payment, User, DriverProfile, DriverEarning, Notification, State } from '../db.js';
+import { Order, Payment, User, DriverProfile, DriverEarning, Notification, State, CorporateAccount } from '../db.js';
 import { authenticate, authorize, requirePermission } from '../middleware/auth.js';
 import { validate, validateAll, orderSchemas, whatsappSchemas } from '../middleware/validate.js';
 import { calcDynamicPrice } from '../services/pricingService.js';
@@ -415,7 +415,7 @@ router.post('/admin/manual', authenticate, authorize('admin'), requirePermission
   validate(orderSchemas.adminManualCreate),
   async (req, res, next) => {
     try {
-      const { customer, sourceChannel, shipment, payment, adminNotes } = req.body;
+      const { orderType = 'individual', corporateAccountId, customer, sourceChannel, shipment, payment, adminNotes } = req.body;
       const {
         fullName, phone, email, createCustomerRecord,
       } = customer;
@@ -478,6 +478,8 @@ router.post('/admin/manual', authenticate, authorize('admin'), requirePermission
 
       const order = await createOrderWithRetry({
         waybillNumber: genWaybill(originCity),
+        orderType,
+        corporateAccountId: orderType === 'corporate' ? corporateAccountId : null,
         customerId,
         createdByStaff: req.user._id,
         createdByRole: req.user.role,

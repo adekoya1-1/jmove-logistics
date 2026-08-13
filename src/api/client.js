@@ -399,4 +399,11 @@ export const statesAPI = {
   toggle: (id) => api.patch(`/states/${encodeURIComponent(id)}/toggle`),
 };
 
+export const corporateAPI = {
+  list:   (p)     => api.get(`/corporate?${new URLSearchParams(p || {})}`),
+  create: (d)     => api.post('/corporate', d),
+  update: (id, d) => api.put(`/corporate/${encodeURIComponent(id)}`, d),
+  remove: (id)    => api.delete(`/corporate/${encodeURIComponent(id)}`),
+};
+
 export default api;

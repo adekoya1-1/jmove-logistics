@@ -99,16 +99,20 @@ const orderSchema = new mongoose.Schema({
     default: 'website',
   },
 
+  // Order type — individual or corporate account
+  orderType:          { type: String, enum: ['individual', 'corporate'], default: 'individual' },
+  corporateAccountId: { type: mongoose.Schema.Types.ObjectId, ref: 'CorporateAccount', default: null },
+
   // Sender details
   senderName:   { type: String, required: true },
-  senderPhone:  { type: String, required: true },
+  senderPhone:  { type: String },
   senderEmail:  { type: String },
   senderAddress:{ type: String },
   originCity:   { type: String, required: true },
 
   // Receiver details
   receiverName:   { type: String, required: true },
-  receiverPhone:  { type: String, required: true },
+  receiverPhone:  { type: String },
   receiverEmail:  { type: String },
   receiverAddress:{ type: String, required: true },
   destinationCity:{ type: String, required: true },
@@ -457,6 +461,24 @@ const supportTicketSchema = new mongoose.Schema({
 supportTicketSchema.index({ customerId: 1, createdAt: -1 });
 supportTicketSchema.index({ status: 1, createdAt: -1 });
 // ticketNumber index is created automatically by unique:true in the field definition
+
+// ── CorporateAccount — Company clients ──────────────────────────────────────
+const corporateAccountSchema = new mongoose.Schema({
+  companyName:       { type: String, required: true, trim: true },
+  contactPersonName: { type: String, required: true, trim: true },
+  contactPhone:      { type: String, required: true },
+  contactEmail:      { type: String, trim: true, lowercase: true },
+  address:           { type: String, trim: true },
+  industry:          { type: String, trim: true },
+  notes:             { type: String, trim: true },
+  createdBy:         { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  isActive:          { type: Boolean, default: true },
+}, { timestamps: true });
+
+corporateAccountSchema.index({ companyName: 1 });
+corporateAccountSchema.index({ isActive: 1, createdAt: -1 });
+
+export const CorporateAccount = mongoose.model('CorporateAccount', corporateAccountSchema);
 
 export const User           = mongoose.model('User',          userSchema);
 export const DriverProfile  = mongoose.model('DriverProfile', driverProfileSchema);
