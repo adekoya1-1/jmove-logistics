@@ -127,12 +127,14 @@ app.set('io', io);
 // 1. Trust proxy (Heroku, Vercel, Nginx — needed for req.ip to be real IP)
 app.set('trust proxy', 1);
 
-// 1a. Compression — must be registered before any response-generating middleware.
-//     level 6 = good balance of CPU cost vs ratio; threshold 1KB = skip tiny payloads.
-//     In production this cuts JS/CSS/JSON payloads by 60-70%.
+// 2. CORS (Must be registered FIRST so preflight OPTIONS requests & redirects return CORS headers)
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// 3. Compression — registered before any response-generating middleware
 app.use(compression({ level: 6, threshold: 1024 }));
 
-// 2. Helmet — security headers
+// 4. Helmet — security headers
 app.use(helmet({
   // Content Security Policy
   contentSecurityPolicy: {
@@ -166,7 +168,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-// 3. HTTPS redirect in production
+// 5. HTTPS redirect in production (after CORS so preflight requests are handled by CORS first)
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
     if (req.header('x-forwarded-proto') !== 'https') {
@@ -175,9 +177,6 @@ if (process.env.NODE_ENV === 'production') {
     next();
   });
 }
-
-// 4. CORS
-app.use(cors(corsOptions));
 
 // 5. Abuse tracker (global, before rate limiting)
 app.use(checkBlocked);
