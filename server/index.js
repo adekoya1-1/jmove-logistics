@@ -52,7 +52,10 @@ const server = createServer(app);
 
 // ── Allowed origins ─────────────────────────────────────
 const buildOrigins = () => {
-  const origins = [];
+  const origins = [
+    'https://jmovelogistics.com',
+    'https://www.jmovelogistics.com',
+  ];
   // Allow localhost only in non-production environments
   if (process.env.NODE_ENV !== 'production') {
     origins.push(
@@ -63,32 +66,47 @@ const buildOrigins = () => {
     );
   }
   if (process.env.FRONTEND_URL) {
-    process.env.FRONTEND_URL.split(',').forEach(u => origins.push(u.trim()));
+    process.env.FRONTEND_URL.split(',').forEach(u => {
+      const trimmed = u.trim().replace(/\/+$/, '');
+      if (trimmed) origins.push(trimmed);
+    });
   }
   return origins;
 };
 const allowedOrigins = buildOrigins();
 
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // allow non-browser clients (Postman, cURL, server-to-server)
+  const clean = origin.trim().replace(/\/+$/, '');
+  if (allowedOrigins.some(o => clean === o || clean.startsWith(o + '/'))) return true;
+  if (process.env.NODE_ENV === 'production' && (clean.endsWith('.vercel.app') || clean.endsWith('.onrender.com'))) return true;
+  return false;
+};
+
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);   // allow non-browser clients
-    if (allowedOrigins.some(o => origin.startsWith(o))) return callback(null, true);
-    if (process.env.NODE_ENV === 'production' && origin.endsWith('.vercel.app')) return callback(null, true);
-    callback(new Error(`CORS blocked: ${origin}`));
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
+  optionsSuccessStatus: 200,
 };
 
 // ── Socket.io ───────────────────────────────────────────
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.some(o => origin.startsWith(o))) return callback(null, true);
-      if (process.env.NODE_ENV === 'production' && origin?.endsWith('.vercel.app')) return callback(null, true);
-      callback(new Error('Socket CORS blocked'));
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
     },
     methods: ['GET', 'POST'],
     credentials: true,
@@ -123,7 +141,7 @@ app.use(helmet({
       scriptSrc:      ["'self'"],
       styleSrc:       ["'self'", "'unsafe-inline'"],
       imgSrc:         ["'self'", 'data:', 'https:'],
-      connectSrc:     ["'self'", ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])],
+      connectSrc:     ["'self'", 'https://jmovelogistics.com', 'https://www.jmovelogistics.com', ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(u => u.trim()) : [])],
       fontSrc:        ["'self'", 'https:', 'data:'],
       objectSrc:      ["'none'"],
       frameSrc:       ["'none'"],
