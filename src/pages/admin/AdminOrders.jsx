@@ -79,13 +79,29 @@ export default function AdminOrders() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map(o => (
-                  <tr key={o._id}>
-                    <td><Link to={`/admin/orders/${o._id}`} className="order-num">{o.waybillNumber}</Link></td>
-                    <td>
-                      <p className="td-name">{o.senderName}</p>
-                      <p className="td-sub">{o.senderPhone}</p>
-                    </td>
+                {orders.map(o => {
+                  const isCorp = o.orderType === 'corporate';
+                  const compName = isCorp ? (o.corporateAccountId?.companyName || o.senderName) : o.senderName;
+                  return (
+                    <tr key={o._id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <Link to={`/admin/orders/${o._id}`} className="order-num">{o.waybillNumber}</Link>
+                          {isCorp && (
+                            <span className="badge badge-assigned" style={{ fontSize: 10, padding: '2px 6px' }}>
+                              🏢 Corporate
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <p className="td-name">{compName}</p>
+                        <p className="td-sub">
+                          {isCorp && o.corporateAccountId?.companyName
+                            ? `Contact: ${o.senderName} · ${o.senderPhone || ''}`
+                            : o.senderPhone}
+                        </p>
+                      </td>
                     <td className="td-route">
                       <p className="td-addr" style={{fontWeight:600}}>{o.originCity}</p>
                       <p className="td-sub">→ {o.destinationCity}</p>
@@ -107,7 +123,8 @@ export default function AdminOrders() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>

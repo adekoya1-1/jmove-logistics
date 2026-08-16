@@ -199,8 +199,13 @@ export const orderSchemas = {
 
     adminNotes: z.string().max(500).trim().optional(),
   }).superRefine((data, ctx) => {
-    if (data.orderType === 'individual' && !data.customer.phone) {
-      ctx.addIssue({ code: 'custom', path: ['customer', 'phone'], message: 'Phone number is required for individual orders' });
+    if (data.orderType === 'individual') {
+      if (!data.customer.phone && !data.shipment.pickupContactPhone) {
+        ctx.addIssue({ code: 'custom', path: ['customer', 'phone'], message: 'Sender phone number is required for individual orders' });
+      }
+      if (!data.shipment.receiverContactPhone) {
+        ctx.addIssue({ code: 'custom', path: ['shipment', 'receiverContactPhone'], message: 'Receiver phone number is required for individual orders' });
+      }
     }
     if (data.orderType === 'corporate' && !data.corporateAccountId) {
       ctx.addIssue({ code: 'custom', path: ['corporateAccountId'], message: 'Corporate account is required' });

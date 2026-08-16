@@ -347,6 +347,7 @@ router.get('/', authenticate, validate(orderSchemas.listQuery, 'query'), async (
     const total  = await Order.countDocuments(filter);
     const orders = await Order.find(filter)
       .populate('customerId', 'firstName lastName email phone')
+      .populate('corporateAccountId', 'companyName contactPersonName contactPhone contactEmail address industry')
       .populate({ path: 'driverId', populate: { path: 'userId', select: 'firstName lastName phone' } })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
@@ -394,6 +395,7 @@ router.get('/whatsapp-pending', authenticate, authorize('admin'), async (req, re
       status: { $in: ['pending_contact', 'awaiting_confirmation'] },
     })
       .populate('customerId', 'firstName lastName email phone')
+      .populate('corporateAccountId', 'companyName contactPersonName contactPhone contactEmail address industry')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -604,6 +606,7 @@ router.get('/:id', authenticate,
   try {
     const order = await Order.findById(req.params.id)
       .populate('customerId', 'firstName lastName email phone')
+      .populate('corporateAccountId', 'companyName contactPersonName contactPhone contactEmail address industry')
       .populate({ path: 'driverId', populate: { path: 'userId', select: 'firstName lastName phone' } })
       .lean();
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });

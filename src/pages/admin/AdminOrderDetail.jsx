@@ -259,6 +259,32 @@ export default function AdminOrderDetail() {
 
         <div className="detail-sidebar">
 
+          {/* Corporate Account */}
+          {order.orderType === 'corporate' && (
+            <div className="card detail-info-card" style={{ borderLeft: '3px solid var(--brand)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <p className="detail-section-title" style={{ marginBottom: 0 }}>🏢 Corporate Account</p>
+                <span className="badge badge-assigned" style={{ fontSize: 10 }}>Corporate</span>
+              </div>
+              <p className="info-person">{order.corporateAccountId?.companyName || 'Corporate Client'}</p>
+              {order.corporateAccountId?.contactPersonName && (
+                <p className="info-contact">👤 Contact: {order.corporateAccountId.contactPersonName}</p>
+              )}
+              {order.corporateAccountId?.contactPhone && (
+                <p className="info-contact">📞 {order.corporateAccountId.contactPhone}</p>
+              )}
+              {order.corporateAccountId?.contactEmail && (
+                <p className="info-contact">✉ {order.corporateAccountId.contactEmail}</p>
+              )}
+              {order.corporateAccountId?.industry && (
+                <p className="info-contact" style={{ textTransform: 'capitalize' }}>🏭 Industry: {order.corporateAccountId.industry}</p>
+              )}
+              {order.corporateAccountId?.address && (
+                <p className="info-contact">📍 {order.corporateAccountId.address}</p>
+              )}
+            </div>
+          )}
+
           {/* Sender */}
           <div className="card detail-info-card">
             <p className="detail-section-title">Sender</p>

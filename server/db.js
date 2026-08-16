@@ -223,6 +223,8 @@ const orderSchema = new mongoose.Schema({
 
 // Sparse unique index so old orders without the field don't conflict
 orderSchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });
+orderSchema.index({ corporateAccountId: 1 });
+orderSchema.index({ orderType: 1 });
 
 // Payment schema
 const paymentSchema = new mongoose.Schema({
@@ -476,7 +478,10 @@ const corporateAccountSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 corporateAccountSchema.index({ companyName: 1 });
+corporateAccountSchema.index({ contactPhone: 1 }); // Exact / prefix phone lookups
 corporateAccountSchema.index({ isActive: 1, createdAt: -1 });
+// Note: GET /api/corporate uses case-insensitive unanchored regex ($or with RegExp).
+// B-tree indexes optimize exact matches and left-anchored queries; contactPhone is indexed for exact lookups.
 
 export const CorporateAccount = mongoose.model('CorporateAccount', corporateAccountSchema);
 

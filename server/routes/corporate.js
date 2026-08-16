@@ -71,7 +71,7 @@ router.put('/:id', authenticate, authorize('admin'), requirePermission('orders')
 );
 
 // ── DELETE /api/corporate/:id ────────────────────────────
-router.delete('/:id', authenticate, authorize('admin'), requirePermission('staff'),
+router.delete('/:id', authenticate, authorize('admin'), requirePermission('orders'),
   async (req, res, next) => {
     try {
       const account = await CorporateAccount.findByIdAndUpdate(
