@@ -82,16 +82,23 @@ function CorporateSearch({ onSelect }) {
   const handleNewChange = (k) => (e) => setNewForm(f => ({ ...f, [k]: e.target.value }));
 
   const saveNew = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    if (saving) return;
+    if (!newForm.companyName.trim() || !newForm.contactPersonName.trim() || !newForm.contactPhone.trim()) {
+      setSaveErr('Company Name, Contact Person, and Contact Phone are required.');
+      return;
+    }
     setSaveErr('');
     setSaving(true);
     try {
       const r = await corporateAPI.create(newForm);
-      onSelect(r.data);
+      const account = r.data || r;
+      onSelect(account);
       setShowNew(false);
+      setNewForm({ companyName:'', contactPersonName:'', contactPhone:'', contactEmail:'', address:'', industry:'' });
     } catch (err) {
       const d = err?.response?.data;
-      setSaveErr(d?.errors?.length ? d.errors.map(e => `${e.field}: ${e.message}`).join(' · ') : d?.message || 'Failed to create');
+      setSaveErr(d?.errors?.length ? d.errors.map(e => `${e.field}: ${e.message}`).join(' · ') : d?.message || 'Failed to create corporate account');
     } finally { setSaving(false); }
   };
 
@@ -125,7 +132,7 @@ function CorporateSearch({ onSelect }) {
       </div>
 
       {showNew && (
-        <form className="corp-new-form" onSubmit={saveNew}>
+        <div className="corp-new-form">
           <p className="aco-section" style={{ marginBottom: 10 }}>Register Corporate Account</p>
           {saveErr && <div className="notice-error" style={{ marginBottom: 10 }}>⚠ {saveErr}</div>}
           <div className="aco-field-row">
@@ -158,10 +165,10 @@ function CorporateSearch({ onSelect }) {
               <input className="input" placeholder="e.g. Manufacturing, Retail..." value={newForm.industry} onChange={handleNewChange('industry')} />
             </div>
           </div>
-          <button type="submit" className="btn-primary" style={{ marginTop: 8 }} disabled={saving}>
+          <button type="button" className="btn-primary" style={{ marginTop: 8 }} disabled={saving} onClick={saveNew}>
             {saving ? <span className="spinner spinner-sm" /> : 'Save Corporate Account'}
           </button>
-        </form>
+        </div>
       )}
     </div>
   );
