@@ -256,7 +256,7 @@ router.post('/', authenticate, validate(orderSchemas.create), async (req, res, n
       }],
 
       // Stored for idempotency — backend returns existing order on retry
-      idempotencyKey: idempotencyKey || null,
+      idempotencyKey: idempotencyKey || undefined,
     });
 
     if (paymentMethod === 'online' || !paymentMethod) {

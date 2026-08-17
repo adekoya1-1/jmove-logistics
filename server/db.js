@@ -8,6 +8,9 @@ const dropStaleIndexes = async () => {
     const col = mongoose.connection.collection('orders');
     const indexes = await col.indexes();
 
+    // Clean up any null idempotencyKey fields so sparse unique index ignores them
+    await col.updateMany({ idempotencyKey: null }, { $unset: { idempotencyKey: "" } });
+
     // Fields that were renamed / removed in current schema
     const STALE_FIELDS = ['orderNumber', 'orderNo', 'shipmentNumber'];
 
@@ -218,7 +221,7 @@ const orderSchema = new mongoose.Schema({
   // Idempotency key — generated per checkout session on the frontend.
   // Sparse unique index: if the same key is submitted twice, the second
   // request returns the first order instead of creating a duplicate.
-  idempotencyKey: { type: String, default: null },
+  idempotencyKey: { type: String },
 }, { timestamps: true });
 
 // Sparse unique index so old orders without the field don't conflict
